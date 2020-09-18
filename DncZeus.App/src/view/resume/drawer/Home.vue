@@ -1,9 +1,9 @@
 <template>
-  <div class="demo-grid">
+  <div class="demo-grid" ref="imageResume">
     <Row>
       <Col class="resume-left" span="8">
         <!-- 头像 -->
-        <header-img></header-img>
+        <header-img :fields="fields" @getSubChildFields="_getChildFields"></header-img>
         <!-- 个人基本信息 -->
         <div class="baseInfo">
           <mu-container>
@@ -27,7 +27,7 @@
               fullWidth
               icon="phone"
               placeholder="输入电话号码"
-              v-model="fields.phone"
+              v-model="fields.mobile"
             ></mu-text-field>
             <mu-text-field
               :underlineShow="false"
@@ -40,9 +40,9 @@
           </mu-container>
         </div>
         <!-- 技能 -->
-        <skills></skills>
+        <skills :fields="fields" @getSubChildFields="_getChildFields"></skills>
         <!-- 兴趣爱好 -->
-        <interest></interest>
+        <interest :fields="fields" @getSubChildFields="_getChildFields"></interest>
       </Col>
 
       <Col span="16">
@@ -57,8 +57,7 @@
             v-model="fields.realName"
           ></mu-text-field>
           <div class="ambition">
-            <mu-select label="请选择求职部门" v-model="fields.departmentCode" 
-            style="padding-right:20px">
+            <mu-select label="请选择求职部门" style="padding-right:20px" v-model="fields.departmentCode">
               <mu-option
                 :key="department.code"
                 :label="department.name"
@@ -91,15 +90,49 @@
               </mu-option>
             </mu-select>
           </div>
+          <div class="ambition">
+            <mu-select label="性别" style="padding-right:20px" v-model="fields.sex">
+              <mu-option
+                :key="sexVal.code"
+                :label="sexVal.name"
+                :value="sexVal.code"
+                avatar
+                v-for="sexVal,index in sex"
+              >
+                <mu-list-item-action avatar>
+                  <mu-avatar :size="36" color="primary">{{sexVal.name.substring(0, 1)}}</mu-avatar>
+                </mu-list-item-action>
+                <mu-list-item-content>
+                  <mu-list-item-title>{{sexVal.name}}</mu-list-item-title>
+                </mu-list-item-content>
+              </mu-option>
+            </mu-select>
+            <mu-select label="婚姻状况" v-model="fields.homeInfo">
+              <mu-option
+                :key="homeInfoVal.code"
+                :label="homeInfoVal.name"
+                :value="homeInfoVal.code"
+                avatar
+                v-for="homeInfoVal,index in homeInfo"
+              >
+                <mu-list-item-action avatar>
+                  <mu-avatar :size="36" color="primary">{{homeInfoVal.name.substring(0, 1)}}</mu-avatar>
+                </mu-list-item-action>
+                <mu-list-item-content>
+                  <mu-list-item-title>{{homeInfoVal.name}}</mu-list-item-title>
+                </mu-list-item-content>
+              </mu-option>
+            </mu-select>
+          </div>
         </div>
         <!-- 教育背景 -->
-        <education></education>
+        <education :fields="fields" @getSubChildFields="_getChildFields"></education>
         <!-- 工作经验 -->
-        <work></work>
+        <work :fields="fields" @getSubChildFields="_getChildFields"></work>
         <!-- 奖项荣誉 -->
-        <award></award>
+        <award :fields="fields" @getSubChildFields="_getChildFields"></award>
         <!-- 自我评价 -->
-        <assessment></assessment>
+        <assessment :fields="fields" @getSubChildFields="_getChildFields"></assessment>
 
         <!-- 简历预览 -->
         <div v-if="readResume">
@@ -128,7 +161,8 @@ import Education from './Education'
 import Work from './Work'
 import Award from './Award'
 import Assessment from './Assessment'
-import Html2canvas from '@/libs/html2canvas'
+//import Html2canvas from '@/libs/html2canvas'
+import html2canvas from 'html2canvas'
 
 import MuIcon from 'muse-ui/src/Icon/Icon'
 
@@ -136,44 +170,44 @@ import { loadPositionSimpleList } from '@/api/user/position'
 import { loadDepartmentSimpleList } from '@/api/user/department'
 
 export default {
-   props:['fields'],
+  props: ['fields'],
   watch: {
-        fields:{
-            handler: function (val, oldVal) {
-              //注意这里接收，不能直接更新prop值，需要定义变量，否则会提示有风险更新父组件
-            console.log("========",val.age,oldVal.age)
-            this.$emit('getChildFields',val)
-            },
-            deep:true
-        },
-       
-        
+    fields: {
+      handler: function (val, oldVal) {
+        //注意这里接收，不能直接更新prop值，需要定义变量，否则会提示有风险更新父组件
+        this.$emit('getChildFields', val)
+      },
+      deep: true,
     },
+  },
   data() {
     return {
       positions: [],
-      departments:[],
-      age: '',
-      adress: '',
-      phone: '',
-      email: '',
-      name: '',
-      ambition: '',
-      url: '',
+      departments: [],
+      sex: [
+        { name: '男', code: 1 },
+        { name: '女', code: 2 },
+        { name: '其他', code: 3 },
+      ],
+      homeInfo: [
+        { name: '已婚', code: 1 },
+        { name: '未婚', code: 2 },
+        { name: '离异', code: 3 },
+        { name: '丧偶', code: 4 },
+        { name: '其他', code: 5 },
+      ],
+
       resumeImg: '../../static/img/headerImg.jpg',
       readResume: false,
-      custom: {
-        value1: '',
-        value2: '',
-      },
     }
   },
   mounted() {
-    console.log(this.fields)
-    this.fields.works="rer"
     this.InitData()
   },
   methods: {
+    _getChildFields(fields) {
+      this.fields = fields
+    },
     InitData() {
       loadPositionSimpleList().then((res) => {
         this.positions = res.data.data
@@ -184,29 +218,35 @@ export default {
     },
     createImg() {
       console.log('生成图片中')
-      const height = document.getElementById('app').offsetHeight
-      const width = document.getElementById('app').offsetWidth
-      const canvas = document.querySelector('canvas')
-      debugger
-      const ctx = canvas.getContext('2d')
-      const _this = this
-      // canvas.width = width;
-      // canvas.height = height;
-      // Html2canvas(document.querySelector("#app"), {canvas: canvas}).then(function(canvas) {
-      //     // console.log('简历已经生成');
-      //     var img = canvas.toDataURL();
-      //     console.log(img);
-      // });
-      Html2canvas(document.querySelector('#app'), {
-        onrendered: function (canvas) {
-          // document.body.appendChild(canvas);
-          const img = canvas.toDataURL()
-          // console.log(img); //在console中会输出图片的路径，然后复制在浏览器一粘贴，就可以看到。
-          _this.url = img
-          _this.resumeImg = img
-          _this.readResume = true
-        },
+      html2canvas(this.$refs.imageResume).then((canvas) => {
+        // 转成图片，生成图片地址
+        this.url = canvas.toDataURL('image/png')
+        this.resumeImg = canvas.toDataURL('image/png')
+        this.readResume = true
       })
+      // const height = document.getElementById('app').offsetHeight
+      // const width = document.getElementById('app').offsetWidth
+      // const canvas = document.querySelector('canvas')
+      // debugger
+      // const ctx = canvas.getContext('2d')
+      // const _this = this
+      // // canvas.width = width;
+      // // canvas.height = height;
+      // // Html2canvas(document.querySelector("#app"), {canvas: canvas}).then(function(canvas) {
+      // //     // console.log('简历已经生成');
+      // //     var img = canvas.toDataURL();
+      // //     console.log(img);
+      // // });
+      // Html2canvas(document.querySelector('#app'), {
+      //   onrendered: function (canvas) {
+      //     // document.body.appendChild(canvas);
+      //     const img = canvas.toDataURL()
+      //     // console.log(img); //在console中会输出图片的路径，然后复制在浏览器一粘贴，就可以看到。
+      //     _this.url = img
+      //     _this.resumeImg = img
+      //     _this.readResume = true
+      //   },
+      // })
     },
     closeResume() {
       this.readResume = false

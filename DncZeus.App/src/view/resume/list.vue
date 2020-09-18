@@ -118,9 +118,7 @@
         label-position="left"
         ref="formResumeInfo"
       >
-        <Home :fields="formModel.fields" 
-        @getChildFields="_getChildFields">
-        </Home>
+        <Home :fields="formModel.fields" @getChildFields="_getChildFields" v-if="formModel.opened"></Home>
       </Form>
       <div class="demo-drawer-footer">
         <Button @click="handleSubmitResume" icon="md-checkmark-circle" type="primary">保 存</Button>
@@ -163,23 +161,24 @@ export default {
         fields: {
           code: '',
           realName: '',
-          departmentCode:'',
-          positionCode:'',
-          educationBackgrounds:'',
-          interests:'',
-          age:'1',
-          address:'',
-          skills:'',
-          works:'',
-          awards:'',
-          email:'',
-          tel:'',
-          mobile:'',
-          levelID: 0,
+          departmentCode: '',
+          positionCode: '',
+          educationBackgrounds: '',
+          interests: '',
+          age: '',
+          address: '',
+          skills: '',
+          works: '',
+          awards: '',
+          email: '',
+          selfEvaluations: '',
+          tel: '',
+          mobile: '',
+          imagePath: '',
           status: 1,
           isDeleted: 0,
-          
         },
+        
         rules: {
           realName: [
             {
@@ -276,7 +275,10 @@ export default {
                 )
               },
             },
-            { title: '层级', key: 'levelID', width: 100 },
+            { title: '职位', key: 'positionName', width: 100 },
+            { title: '部门', key: 'departmentName', width: 100 },
+            { title: '手机号', key: 'mobile', width: 100 },
+            { title: '邮箱', key: 'email', width: 200 },
             {
               title: '创建时间',
               width: 150,
@@ -394,7 +396,6 @@ export default {
     }
   },
   computed: {
-    
     formTitle() {
       if (this.formModel.mode === 'create') {
         return '创建简历'
@@ -412,9 +413,8 @@ export default {
     },
   },
   methods: {
-    _getChildFields(fields){
-       this.formModel.fields=fields
-       console.log("parent:",this.formModel.fields.age)
+    _getChildFields(fields) {
+      this.formModel.fields = fields
     },
     loadResumeInfoList() {
       getResumeInfoList(this.stores.resumeInfo.query).then((res) => {
@@ -436,6 +436,9 @@ export default {
       this.handleOpenFormWindow()
     },
     handleEdit(params) {
+      Object.keys(this.formModel.fields).forEach(key=>this.formModel.fields[key]='');
+      this.formModel.fields.isDeleted=0;
+      this.formModel.fields.status=1;
       this.handleSwitchFormModeToEdit()
       this.handleResetFormResumeInfo()
       this.doLoadResumeInfo(params.row.code)
@@ -448,13 +451,16 @@ export default {
       this.loadResumeInfoList()
     },
     handleShowCreateWindow() {
+      Object.keys(this.formModel.fields).forEach(key=>this.formModel.fields[key]='');
+      this.formModel.fields.isDeleted=0;
+      this.formModel.fields.status=1;
       this.handleSwitchFormModeToCreate()
       this.handleOpenFormWindow()
       this.handleResetFormResumeInfo()
     },
     handleSubmitResume() {
       //let valid = this.validateResumeInfoForm()
-      let valid=true
+      let valid = true
       if (valid) {
         if (this.formModel.mode === 'create') {
           this.doCreateResumeInfo()
@@ -504,7 +510,6 @@ export default {
     doLoadResumeInfo(code) {
       loadResumeInfo({ code: code }).then((res) => {
         this.formModel.fields = res.data.data
-        console.log(this.formModel.fields)
       })
     },
     handleDelete(params) {

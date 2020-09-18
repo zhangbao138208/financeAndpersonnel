@@ -3,42 +3,56 @@
   <div class="interest">
     <div class="title">
       <span>兴趣爱好</span>
-      <a href="javascript:void(0);" class="add addBtn" @click="openInterest" >
-        <mu-icon value="add" color="#fff" ></mu-icon>
+      <a @click="openInterest" class="add addBtn" href="javascript:void(0);">
+        <mu-icon color="#fff" value="add"></mu-icon>
       </a>
     </div>
     <div>
-      <mu-dialog :open="interestDialog" title="兴趣爱好" @close="closeInterest">
-        <mu-text-field label="兴趣爱好" labelFloat fullWidth v-model="interest" ></mu-text-field>
-        <mu-button flat @click="closeInterest" color="primary" label="取消">取消</mu-button>
-        <mu-button flat color="success" label="确定" @click="interestData" >确定</mu-button>
+      <mu-dialog :open="interestDialog" @close="closeInterest" title="兴趣爱好">
+        <mu-text-field fullWidth label="兴趣爱好" labelFloat v-model="interest"></mu-text-field>
+        <mu-button @click="closeInterest" color="primary" flat label="取消">取消</mu-button>
+        <mu-button @click="interestData" color="success" flat label="确定">确定</mu-button>
       </mu-dialog>
     </div>
 
     <div class="interest-item">
-      <div v-if="interestEmpty" class="empty">请先添加兴趣爱好</div>
-      <div v-for="(item,index) in interests" class="list" v-else>
+      <div class="empty" v-if="interestEmpty">请先添加兴趣爱好</div>
+      <div class="list" v-else v-for="(item,index) in interests">
         <p>
-          <span>  • {{item}}</span>
-          <a href="javascript:void (0);" class="delete" @click="deleteInterest(index)">
-            <mu-icon value="delete" ></mu-icon>
+          <span>• {{item}}</span>
+          <a @click="deleteInterest(index)" class="delete" href="javascript:void (0);">
+            <mu-icon value="delete"></mu-icon>
           </a>
         </p>
       </div>
-  </div>
-
-
+    </div>
   </div>
 </template>
 <style></style>
 <script>
 export default {
-  data () {
+  props: ['fields'],
+  watch: {
+    fields: {
+      handler: function (val, oldVal) {
+        if (val.interests && val.interests.length) {
+          this.interests = JSON.parse(val.interests)
+          this.interestEmpty = false
+        }
+        this.$emit('getSubChildFields', val)
+      },
+      deep: true,
+    },
+    interests: function (val, oldVal) {
+      this.fields.interests = JSON.stringify(val)
+    },
+  },
+  data() {
     return {
-      interestDialog:false,
-      interest:"",
-      interests:[],
-      interestEmpty:true,
+      interestDialog: false,
+      interest: '',
+      interests: [],
+      interestEmpty: true,
     }
   },
   methods: {
@@ -48,18 +62,18 @@ export default {
     closeInterest() {
       this.interestDialog = false
     },
-    interestData(){
-        this.interests.push(this.interest);
-        this.interest="";
-        this.interestDialog = false;
-        this.interestEmpty = false;
+    interestData() {
+      this.interests.push(this.interest)
+      this.interest = ''
+      this.interestDialog = false
+      this.interestEmpty = false
     },
-    deleteInterest(index){
-      this.interests.splice(index,1);
-      if(this.interests===0){
-          this.interestEmpty = true;
+    deleteInterest(index) {
+      this.interests.splice(index, 1)
+      if (this.interests === 0) {
+        this.interestEmpty = true
       }
-    }
-  }
+    },
+  },
 }
 </script>

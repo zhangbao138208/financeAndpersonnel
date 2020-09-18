@@ -14,9 +14,18 @@ import 'iview/dist/styles/iview.css'
 import './index.less'
 import '@/assets/icons/iconfont.css'
 import TreeTable from 'tree-table-vue'
+import Moment from 'moment'
 
+// 定义全局时间戳过滤器
+Vue.filter('formatDate', function(value) {
+    return Moment(value).format('YYYY-MM-DD')
+})
 import { initRouter } from '@/libs/router-util'
+import MuseUI from 'muse-ui';
+import 'muse-ui/dist/muse-ui.css';
+//import '../static/css/theme-carbon.css' // 使用 carbon 主题(可更改)
 
+Vue.use(MuseUI);
 
 // 实际打包时应该不引入mock
 /* eslint-disable */
@@ -26,42 +35,42 @@ import hasPermission from '@/directive/hasPermission.js';
 Vue.use(hasPermission);
 
 Vue.use(iView, {
-  i18n: (key, value) => i18n.t(key, value)
+    i18n: (key, value) => i18n.t(key, value)
 })
 Vue.use(TreeTable)
-/**
- * @description 注册admin内置插件
- */
+    /**
+     * @description 注册admin内置插件
+     */
 installPlugin(Vue)
-/**
- * @description 生产环境关掉提示
- */
+    /**
+     * @description 生产环境关掉提示
+     */
 Vue.config.productionTip = false
-/**
- * @description 全局注册应用配置
- */
+    /**
+     * @description 全局注册应用配置
+     */
 Vue.prototype.$config = config
-/**
- * 注册指令
- */
+    /**
+     * 注册指令
+     */
 importDirective(Vue)
 
 /* eslint-disable no-new */
 new Vue({
-  el: '#app',
-  router,
-  i18n,
-  store,
-  created(){
+    el: '#app',
+    router,
+    i18n,
+    store,
+    created() {
 
-  },
-  mounted() {
-    var target = this;
-    //initRouter(target);
-    // 调用方法，动态生成路由
-    setTimeout(function(){
-      //initRouter(target);
-    },1500);
-  },
-  render: h => h(App)
+    },
+    mounted() {
+        var target = this;
+        //initRouter(target);
+        // 调用方法，动态生成路由
+        setTimeout(function() {
+            //initRouter(target);
+        }, 1500);
+    },
+    render: h => h(App)
 })

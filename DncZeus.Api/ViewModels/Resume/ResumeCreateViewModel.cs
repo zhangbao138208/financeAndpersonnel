@@ -10,17 +10,17 @@ namespace DncZeus.Api.ViewModels.Refuse
     public class ResumeCreateViewModel
     {
         public string Code { get; set; }
-        public Guid UserGuid { get; set; }
+        public Guid? UserGuid { get; set; }
         public string DepartmentCode { get; set; }
         public string PositionCode { get; set; }
         /// <summary>
         /// 简历类型
         /// </summary>
-        public TypeID TypeID { get; set; }
+        public int? TypeID { get; set; }
         /// <summary>
         /// 人员状态
         /// </summary>
-        public JobStatus JobStatus { get; set; }
+        public int? JobStatus { get; set; }
         /// <summary>
         /// 真实姓名
         /// </summary>
@@ -35,14 +35,14 @@ namespace DncZeus.Api.ViewModels.Refuse
         /// 属相
         /// </summary>
         public string AnimalSign { get; set; }
-        public int Age { get; set; }
-        public Sex Sex { get; set; }
+        public int? Age { get; set; }
+        public int? Sex { get; set; }
         public string Weight { get; set; }
         public string Height { get; set; }
         /// <summary>
         /// 工作年限
         /// </summary>
-        public int Years { get; set; }
+        public int? Years { get; set; }
         public string Language { get; set; }
         /// <summary>
         /// 身份证号
@@ -117,12 +117,12 @@ namespace DncZeus.Api.ViewModels.Refuse
         /// <summary>
         /// 家庭情况
         /// </summary>
-        public HomeInfo HomeInfo { get; set; }
+        public int? HomeInfo { get; set; }
         public string Remark { get; set; }
         public string ImagePath { get; set; }
         public Status Status { get; set; }
         public string CreatedOn { get; set; }
-        public Guid CreatedByUserGuid { get; set; }
+        public Guid? CreatedByUserGuid { get; set; }
         public string CreatedByUserName { get; set; }
         public string ModifiedOn { get; set; }
         public Guid? ModifiedByUserGuid { get; set; }

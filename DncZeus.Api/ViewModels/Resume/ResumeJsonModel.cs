@@ -13,6 +13,8 @@ namespace DncZeus.Api.ViewModels.Refuse
         public Guid UserGuid { get; set; }
         public string DepartmentCode { get; set; }
         public string PositionCode { get; set; }
+        public string DepartmentName { get; set; }
+        public string PositionName { get; set; }
         /// <summary>
         /// 简历类型
         /// </summary>

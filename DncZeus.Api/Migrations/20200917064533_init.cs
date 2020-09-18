@@ -1,10 +1,9 @@
 ﻿using System;
-using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 namespace DncZeus.Api.Migrations
 {
-    public partial class Init : Migration
+    public partial class init : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {
@@ -13,7 +12,7 @@ namespace DncZeus.Api.Migrations
                 columns: table => new
                 {
                     Id = table.Column<int>(nullable: false)
-                        .Annotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn),
+                        .Annotation("SqlServer:Identity", "1, 1"),
                     Code = table.Column<string>(type: "nvarchar(50)", nullable: false),
                     Size = table.Column<string>(type: "nvarchar(20)", nullable: true),
                     Color = table.Column<string>(type: "nvarchar(50)", nullable: true),
@@ -67,6 +66,38 @@ namespace DncZeus.Api.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "DncPermissionWithAssignProperty",
+                columns: table => new
+                {
+                    Code = table.Column<string>(nullable: true),
+                    Name = table.Column<string>(nullable: true),
+                    MenuGuid = table.Column<Guid>(nullable: true),
+                    ActionCode = table.Column<string>(nullable: true),
+                    RoleCode = table.Column<string>(nullable: true),
+                    IsAssigned = table.Column<int>(nullable: false)
+                },
+                constraints: table =>
+                {
+                });
+
+            migrationBuilder.CreateTable(
+                name: "DncPermissionWithMenu",
+                columns: table => new
+                {
+                    PermissionCode = table.Column<string>(nullable: true),
+                    PermissionActionCode = table.Column<string>(nullable: true),
+                    PermissionName = table.Column<string>(nullable: true),
+                    PermissionType = table.Column<int>(nullable: false),
+                    MenuName = table.Column<string>(nullable: true),
+                    MenuGuid = table.Column<Guid>(nullable: false),
+                    MenuAlias = table.Column<string>(nullable: true),
+                    IsDefaultRouter = table.Column<int>(nullable: false)
+                },
+                constraints: table =>
+                {
+                });
+
+            migrationBuilder.CreateTable(
                 name: "DncRole",
                 columns: table => new
                 {
@@ -113,6 +144,131 @@ namespace DncZeus.Api.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_DncUser", x => x.Guid);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "ResumeInfo",
+                columns: table => new
+                {
+                    Code = table.Column<string>(type: "nvarchar(50)", nullable: false),
+                    Status = table.Column<int>(nullable: false),
+                    IsDeleted = table.Column<int>(nullable: false),
+                    CreatedOn = table.Column<DateTime>(nullable: false),
+                    CreatedByUserGuid = table.Column<Guid>(nullable: false),
+                    CreatedByUserName = table.Column<string>(nullable: true),
+                    ModifiedOn = table.Column<DateTime>(nullable: true),
+                    ModifiedByUserGuid = table.Column<Guid>(nullable: true),
+                    ModifiedByUserName = table.Column<string>(nullable: true),
+                    UserGuid = table.Column<Guid>(nullable: false),
+                    DepartmentCode = table.Column<string>(nullable: true),
+                    PositionCode = table.Column<string>(nullable: true),
+                    TypeID = table.Column<int>(nullable: false),
+                    JobStatus = table.Column<int>(nullable: false),
+                    RealName = table.Column<string>(nullable: true),
+                    NickName = table.Column<string>(nullable: true),
+                    Password = table.Column<string>(nullable: true),
+                    Birthday = table.Column<DateTime>(nullable: true),
+                    AnimalSign = table.Column<string>(nullable: true),
+                    Age = table.Column<int>(nullable: false),
+                    Sex = table.Column<int>(nullable: false),
+                    Weight = table.Column<string>(nullable: true),
+                    Height = table.Column<string>(nullable: true),
+                    Years = table.Column<int>(nullable: false),
+                    Language = table.Column<string>(nullable: true),
+                    License = table.Column<string>(nullable: true),
+                    Comments = table.Column<string>(nullable: true),
+                    LevelID = table.Column<string>(nullable: true),
+                    Education = table.Column<string>(nullable: true),
+                    EducationBackgrounds = table.Column<string>(nullable: true),
+                    Works = table.Column<string>(nullable: true),
+                    Awards = table.Column<string>(nullable: true),
+                    SelfEvaluations = table.Column<string>(nullable: true),
+                    Interests = table.Column<string>(nullable: true),
+                    Skills = table.Column<string>(nullable: true),
+                    Email = table.Column<string>(nullable: true),
+                    TEL = table.Column<string>(nullable: true),
+                    Mobile = table.Column<string>(nullable: true),
+                    Wechat = table.Column<string>(nullable: true),
+                    Telegram = table.Column<string>(nullable: true),
+                    QQ = table.Column<string>(nullable: true),
+                    Alipay = table.Column<string>(nullable: true),
+                    Country = table.Column<string>(nullable: true),
+                    Province = table.Column<string>(nullable: true),
+                    City = table.Column<string>(nullable: true),
+                    County = table.Column<string>(nullable: true),
+                    Address = table.Column<string>(nullable: true),
+                    HomeInfo = table.Column<int>(nullable: false),
+                    Remark = table.Column<string>(nullable: true),
+                    ImagePath = table.Column<string>(nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ResumeInfo", x => x.Code);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "UserDepartment",
+                columns: table => new
+                {
+                    Code = table.Column<string>(type: "nvarchar(50)", nullable: false),
+                    Status = table.Column<int>(nullable: false),
+                    IsDeleted = table.Column<int>(nullable: false),
+                    CreatedOn = table.Column<DateTime>(nullable: false),
+                    CreatedByUserGuid = table.Column<Guid>(nullable: false),
+                    CreatedByUserName = table.Column<string>(nullable: true),
+                    ModifiedOn = table.Column<DateTime>(nullable: true),
+                    ModifiedByUserGuid = table.Column<Guid>(nullable: true),
+                    ModifiedByUserName = table.Column<string>(nullable: true),
+                    Name = table.Column<string>(nullable: true),
+                    Phone1 = table.Column<string>(nullable: true),
+                    Phone2 = table.Column<string>(nullable: true),
+                    Fax = table.Column<string>(nullable: true),
+                    Email = table.Column<string>(nullable: true),
+                    Address = table.Column<string>(nullable: true),
+                    ParentCode = table.Column<string>(nullable: true),
+                    LevelID = table.Column<int>(nullable: false),
+                    SortID = table.Column<int>(nullable: false),
+                    TypeID = table.Column<int>(nullable: false),
+                    Province = table.Column<string>(nullable: true),
+                    City = table.Column<string>(nullable: true),
+                    County = table.Column<string>(nullable: true),
+                    Zone = table.Column<string>(nullable: true),
+                    Manager = table.Column<string>(nullable: true),
+                    Company = table.Column<string>(nullable: true),
+                    Monday = table.Column<string>(nullable: true),
+                    Tuesday = table.Column<string>(nullable: true),
+                    Wednesday = table.Column<string>(nullable: true),
+                    Thursday = table.Column<string>(nullable: true),
+                    Friday = table.Column<string>(nullable: true),
+                    Saturday = table.Column<string>(nullable: true),
+                    Sunday = table.Column<string>(nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_UserDepartment", x => x.Code);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "UserPosition",
+                columns: table => new
+                {
+                    Code = table.Column<string>(type: "nvarchar(50)", nullable: false),
+                    Status = table.Column<int>(nullable: false),
+                    IsDeleted = table.Column<int>(nullable: false),
+                    CreatedOn = table.Column<DateTime>(nullable: false),
+                    CreatedByUserGuid = table.Column<Guid>(nullable: false),
+                    CreatedByUserName = table.Column<string>(nullable: true),
+                    ModifiedOn = table.Column<DateTime>(nullable: true),
+                    ModifiedByUserGuid = table.Column<Guid>(nullable: true),
+                    ModifiedByUserName = table.Column<string>(nullable: true),
+                    Name = table.Column<string>(nullable: true),
+                    ParentCode = table.Column<string>(nullable: true),
+                    LevelID = table.Column<int>(nullable: false),
+                    SortID = table.Column<int>(nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_UserPosition", x => x.Code);
                 });
 
             migrationBuilder.CreateTable(
@@ -230,10 +386,25 @@ namespace DncZeus.Api.Migrations
                 name: "DncIcon");
 
             migrationBuilder.DropTable(
+                name: "DncPermissionWithAssignProperty");
+
+            migrationBuilder.DropTable(
+                name: "DncPermissionWithMenu");
+
+            migrationBuilder.DropTable(
                 name: "DncRolePermissionMapping");
 
             migrationBuilder.DropTable(
                 name: "DncUserRoleMapping");
+
+            migrationBuilder.DropTable(
+                name: "ResumeInfo");
+
+            migrationBuilder.DropTable(
+                name: "UserDepartment");
+
+            migrationBuilder.DropTable(
+                name: "UserPosition");
 
             migrationBuilder.DropTable(
                 name: "DncPermission");

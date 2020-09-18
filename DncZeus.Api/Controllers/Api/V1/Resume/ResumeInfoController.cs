@@ -57,7 +57,10 @@ namespace DncZeus.Api.Controllers.Api.V1.Resume
                 var list = query.Paged(payload.CurrentPage, payload.PageSize).OrderBy(r => r.LevelID).ToList();
                 var totalCount = query.Count();
                 var data = list.Select(_mapper.Map<ResumeInfo, ResumeJsonModel>).ToList();
-
+                data.ForEach(d=> {
+                    d.PositionName = _dbContext.UserPosition.Find(d.PositionCode)?.Name;
+                    d.DepartmentName = _dbContext.UserDepartment.Find(d.DepartmentCode)?.Name;
+                });
                 response.SetData(data, totalCount);
                 return Ok(response);
             }

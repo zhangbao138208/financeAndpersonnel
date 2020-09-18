@@ -12,6 +12,9 @@ using DncZeus.Api.ViewModels.Rbac.DncMenu;
 using DncZeus.Api.ViewModels.Rbac.DncPermission;
 using DncZeus.Api.ViewModels.Rbac.DncRole;
 using DncZeus.Api.ViewModels.Rbac.DncUser;
+using DncZeus.Api.ViewModels.Refuse;
+using DncZeus.Api.ViewModels.User.Department;
+using DncZeus.Api.ViewModels.User.Position;
 
 namespace DncZeus.Api.Configurations
 {
@@ -57,6 +60,31 @@ namespace DncZeus.Api.Configurations
             CreateMap<PermissionCreateViewModel, DncPermission>();
             CreateMap<PermissionEditViewModel, DncPermission>();
             CreateMap<DncPermission, PermissionEditViewModel>();
+            #endregion
+
+            #region UerDepartment
+            CreateMap<UserDepartment, DepartmentJsonModel>();
+            CreateMap<UserDepartment, DepartmentCreateViewModel>();
+            CreateMap<DepartmentCreateViewModel, UserDepartment>().
+                ForMember(d => d.Monday, s => s.MapFrom(x => x.WorkTime)).
+                ForMember(d => d.Thursday, s => s.MapFrom(x => x.WorkTime)).
+                ForMember(d => d.Tuesday, s => s.MapFrom(x => x.WorkTime)).
+                ForMember(d => d.Wednesday, s => s.MapFrom(x => x.WorkTime)).
+                ForMember(d => d.Friday, s => s.MapFrom(x => x.WorkTime)).
+                ForMember(d => d.Saturday, s => s.MapFrom(x => x.WorkTime)).
+                ForMember(d => d.Sunday, s => s.MapFrom(x => x.WorkTime));
+            #endregion
+
+            #region UerPosition
+            CreateMap<UserPosition, PositionJsonModel>();
+            CreateMap<UserPosition, PositionCreateViewModel>();
+            CreateMap<PositionCreateViewModel, UserPosition>();
+            #endregion
+
+            #region ResumeInfo
+            CreateMap<ResumeInfo, ResumeJsonModel>();
+            CreateMap<ResumeInfo, ResumeCreateViewModel>();
+            CreateMap<ResumeCreateViewModel, ResumeInfo>();
             #endregion
         }
     }
