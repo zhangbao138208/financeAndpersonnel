@@ -7,19 +7,17 @@
 
 namespace DncZeus.Api.Models.Response
 {
-    /// <summary>
-    /// 请求响应实体
-    /// </summary>
-    public class ResponseModel
+    public class ResponseBase
     {
         /// <summary>
         /// 请求响应实体类
         /// </summary>
-        public ResponseModel()
+        public ResponseBase()
         {
             Code = 200;
             Message = "操作成功";
         }
+
         /// <summary>
         /// 响应代码
         /// </summary>
@@ -28,10 +26,7 @@ namespace DncZeus.Api.Models.Response
         /// 响应消息内容
         /// </summary>
         public string Message { get; set; }
-        /// <summary>
-        /// 返回的响应数据
-        /// </summary>
-        public object Data { get; set; }
+        
 
         /// <summary>
         /// 设置响应状态为成功
@@ -92,11 +87,37 @@ namespace DncZeus.Api.Models.Response
             Code = 401;
         }
 
+        
+    }
+    /// <summary>
+    /// 请求响应实体
+    /// </summary>
+    public class ResponseModel:ResponseBase
+    {
+        /// <summary>
+        /// 返回的响应数据
+        /// </summary>
+        public object Data { get; set; }
         /// <summary>
         /// 设置响应数据
         /// </summary>
         /// <param name="data"></param>
         public void SetData(object data)
+        {
+            Data = data;
+        }
+    }
+    public class ResponseModel<T> : ResponseBase
+    {
+        /// <summary>
+        /// 返回的响应数据
+        /// </summary>
+        public T Data { get; set; }
+        /// <summary>
+        /// 设置响应数据
+        /// </summary>
+        /// <param name="data"></param>
+        public void SetData(T data)
         {
             Data = data;
         }

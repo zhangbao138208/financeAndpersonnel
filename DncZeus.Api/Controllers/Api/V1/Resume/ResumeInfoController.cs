@@ -35,12 +35,40 @@ namespace DncZeus.Api.Controllers.Api.V1.Resume
         /// </summary>
         /// <returns></returns>
         [HttpPost]
-        public IActionResult List(ResumeRequestPload payload)
+        public ActionResult<ResponseResultModel<IEnumerable<ResumeJsonModel>>> List(ResumeRequestPload payload)
         {
             var response = ResponseModelFactory.CreateResultInstance;
             using (_dbContext)
             {
-                var query = _dbContext.ResumeInfo.AsQueryable();
+                var query = (from resume in _dbContext.ResumeInfo
+                join position in _dbContext.UserPosition on resume.PositionCode equals position.Code
+                into t1
+                from position in t1.DefaultIfEmpty()
+                join department in _dbContext.UserDepartment on resume.DepartmentCode equals department.Code
+                into t2
+                from departiment in t2.DefaultIfEmpty()
+                select new ResumeJsonModel{
+                    RealName=resume.RealName,
+                    Age=resume.Age,
+                    PositionCode=resume.PositionCode,
+                    PositionName=position.Name,
+                    DepartmentCode=resume.DepartmentCode,
+                    DepartmentName=departiment.Name,
+                    IsDeleted=resume.IsDeleted,
+                    LevelID=resume.LevelID,
+                    Email=resume.Email,
+                    Mobile=resume.Mobile,
+                    Code=resume.Code,
+                    Years=resume.Years,
+                    Status=resume.Status,
+                    CreatedOn=resume.CreatedOn.ToString(),
+                    CreatedByUserGuid=resume.CreatedByUserGuid,
+                    CreatedByUserName=resume.CreatedByUserName,
+                    ModifiedOn = resume.ModifiedOn.ToString(),
+                    ModifiedByUserGuid = resume.ModifiedByUserGuid,
+                    ModifiedByUserName = resume.ModifiedByUserName
+                });
+                //var query = _dbContext.ResumeInfo.AsQueryable();
                 if (!string.IsNullOrEmpty(payload.Kw))
                 {
                     query = query.Where(x => x.RealName.Contains(payload.Kw.Trim()) || x.Code.Contains(payload.Kw.Trim()));
@@ -56,11 +84,12 @@ namespace DncZeus.Api.Controllers.Api.V1.Resume
                 var s = query.ToString();
                 var list = query.Paged(payload.CurrentPage, payload.PageSize).OrderBy(r => r.LevelID).ToList();
                 var totalCount = query.Count();
-                var data = list.Select(_mapper.Map<ResumeInfo, ResumeJsonModel>).ToList();
-                data.ForEach(d=> {
-                    d.PositionName = _dbContext.UserPosition.Find(d.PositionCode)?.Name;
-                    d.DepartmentName = _dbContext.UserDepartment.Find(d.DepartmentCode)?.Name;
-                });
+                //var data = list.Select(_mapper.Map<ResumeInfo, ResumeJsonModel>).ToList();
+                var data = list.ToList();
+                //data.ForEach(d=> {
+                //    d.PositionName = _dbContext.UserPosition.Find(d.PositionCode)?.Name;
+                //    d.DepartmentName = _dbContext.UserDepartment.Find(d.DepartmentCode)?.Name;
+                //});
                 response.SetData(data, totalCount);
                 return Ok(response);
             }
@@ -73,7 +102,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Resume
         /// <returns></returns>
         [HttpPost]
         [ProducesResponseType(200)]
-        public IActionResult Create(ResumeCreateViewModel model)
+        public ActionResult<ResponseModel> Create(ResumeCreateViewModel model)
         {
             var response = ResponseModelFactory.CreateInstance;
             if (model.RealName.Trim().Length <= 0)
@@ -89,9 +118,6 @@ namespace DncZeus.Api.Controllers.Api.V1.Resume
                     return Ok(response);
                 }
                 var entity = _mapper.Map<ResumeCreateViewModel, ResumeInfo>(model);
-                //entity.User = _dbContext.DncUser.Find(model.UserId);
-                //entity.Department = _dbContext.UserDepartment.Find(model.DepartmentCode);
-                //entity.Position = _dbContext.UserPosition.Find(model.PositionCode);
                 entity.CreatedOn = DateTime.Now;
                 entity.Code = RandomHelper.GetRandomizer(8, true, false, true, true);
                 entity.CreatedByUserGuid = AuthContextService.CurrentUser.Guid;
@@ -112,15 +138,13 @@ namespace DncZeus.Api.Controllers.Api.V1.Resume
         /// <returns></returns>
         [HttpGet("{code}")]
         [ProducesResponseType(200)]
-        public IActionResult Edit(string code)
+        public ActionResult<ResponseModel<ResumeCreateViewModel>> Edit(string code)
         {
             using (_dbContext)
             {
                 var entity = _dbContext.ResumeInfo.Find(code);
                 var response = ResponseModelFactory.CreateInstance;
                 var resEntity = _mapper.Map<ResumeInfo, ResumeCreateViewModel>(entity);
-                //resEntity.PositionCode = entity.Position.Code
-                //resEntity.UserId = entity.User.Guid;
                 response.SetData(resEntity);
                 return Ok(response);
             }
@@ -132,9 +156,9 @@ namespace DncZeus.Api.Controllers.Api.V1.Resume
         /// </summary>
         /// <param name="model">角色视图实体</param>
         /// <returns></returns>
-        [HttpPost]
+        [HttpPut]
         [ProducesResponseType(200)]
-        public IActionResult Edit(ResumeCreateViewModel model)
+        public ActionResult<ResponseModel> Edit(ResumeCreateViewModel model)
         {
             var response = ResponseModelFactory.CreateInstance;
             if (ConfigurationManager.AppSettings.IsTrialVersion)
@@ -152,9 +176,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Resume
 
                 var entity = _mapper.Map<ResumeCreateViewModel, ResumeInfo>(model);
 
-                //entity.User = _dbContext.DncUser.Find(model.UserId);
-                //entity.Department = _dbContext.UserDepartment.Find(model.DepartmentCode);
-                //entity.Position = _dbContext.UserPosition.Find(model.PositionCode);
+                
 
                 entity.ModifiedOn = DateTime.Now;
                 entity.ModifiedByUserGuid = AuthContextService.CurrentUser.Guid;
@@ -171,9 +193,9 @@ namespace DncZeus.Api.Controllers.Api.V1.Resume
         /// </summary>
         /// <param name="ids">简历code,多个以逗号分隔</param>
         /// <returns></returns>
-        [HttpGet("{ids}")]
+        [HttpDelete("{ids}")]
         [ProducesResponseType(200)]
-        public IActionResult Delete(string ids)
+        public ActionResult<ResponseModel> Delete(string ids)
         {
             var response = ResponseModelFactory.CreateInstance;
             if (ConfigurationManager.AppSettings.IsTrialVersion)
@@ -190,9 +212,9 @@ namespace DncZeus.Api.Controllers.Api.V1.Resume
         /// </summary>
         /// <param name="ids">简历ID,多个以逗号分隔</param>
         /// <returns></returns>
-        [HttpGet("{ids}")]
+        [HttpPost("{ids}")]
         [ProducesResponseType(200)]
-        public IActionResult Recover(string ids)
+        public ActionResult<ResponseModel> Recover(string ids)
         {
             var response = UpdateIsDelete(CommonEnum.IsDeleted.No, ids);
             return Ok(response);
@@ -203,9 +225,9 @@ namespace DncZeus.Api.Controllers.Api.V1.Resume
         /// <param name="command"></param>
         /// <param name="ids">简历ID,多个以逗号分隔</param>
         /// <returns></returns>
-        [HttpGet]
+        [HttpPost]
         [ProducesResponseType(200)]
-        public IActionResult Batch(string command, string ids)
+        public ActionResult<ResponseModel> Batch(string command, string ids)
         {
             var response = ResponseModelFactory.CreateInstance;
             switch (command)

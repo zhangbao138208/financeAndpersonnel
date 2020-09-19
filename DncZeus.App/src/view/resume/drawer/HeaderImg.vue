@@ -1,19 +1,24 @@
 <template>
-  <div class="headerImg">
-    <Upload :before-upload="handleUpload"
+  <!-- <div class="headerImg"> -->
+  <Upload
+    :before-upload="handleUpload"
     :format="['jpg','jpeg','png','gif','svg']"
     accept="image/gif, image/jpeg, image/jpg, image/png, image/svg"
-    action="">
+    action
+    style="padding-left:66px;"
+  >
+    <div class="headerImg">
       <img :src="fields.imagePath" alt />
-    </Upload>
+    </div>
+  </Upload>
 
-    <!-- <input
+  <!-- <input
       @change="onFileChange"
       accept="image/gif, image/jpeg, image/jpg, image/png, image/svg"
       class="file-button"
       type="file"
-    />-->
-  </div>
+  />-->
+  <!-- </div> -->
 </template>
 <style></style>
 <script>
@@ -40,12 +45,11 @@ export default {
       pictureUrl,
     }
   },
-  created(){
+  created() {
     if (!this.fields.imagePath) {
-          //val.imagePath = pictureUrl
-          this.fields.imagePath=pictureUrl
-        }
-  
+      //val.imagePath = pictureUrl
+      this.fields.imagePath = pictureUrl
+    }
   },
   methods: {
     handleUpload(file) {
@@ -56,9 +60,9 @@ export default {
       // 　　　　　　})
       formData.append('file', file) //formData.append('data', data);   // 上传文件的同时， 也可以上传其他数据
       this.createImage(formData)
-       return false;
+      return false
     },
-    
+
     test() {
       var vm = this
       console.log(vm.message)

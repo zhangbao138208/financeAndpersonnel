@@ -26,7 +26,7 @@ export const loadDepartment = (data) => {
 export const editDepartment = (data) => {
     return axios.request({
         url: 'user/department/edit',
-        method: 'post',
+        method: 'put',
         data
     })
 }
@@ -35,7 +35,7 @@ export const editDepartment = (data) => {
 export const deleteDepartment = (ids) => {
     return axios.request({
         url: 'user/department/delete/' + ids,
-        method: 'get'
+        method: 'delete'
     })
 }
 
@@ -43,7 +43,7 @@ export const deleteDepartment = (ids) => {
 export const batchCommand = (data) => {
     return axios.request({
         url: 'user/department/batch',
-        method: 'get',
+        method: 'post',
         params: data
     })
 }

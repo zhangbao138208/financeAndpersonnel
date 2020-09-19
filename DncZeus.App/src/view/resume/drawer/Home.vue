@@ -214,6 +214,7 @@ export default {
       })
       loadDepartmentSimpleList().then((res) => {
         this.departments = res.data.data
+        console.log(this.departments)
       })
     },
     createImg() {

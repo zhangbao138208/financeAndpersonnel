@@ -129,5 +129,6 @@ namespace DncZeus.Api.ViewModels.Refuse
         public string ModifiedOn { get; set; }
         public Guid? ModifiedByUserGuid { get; set; }
         public string ModifiedByUserName { get; set; }
+        public IsDeleted IsDeleted { get; set; }
     }
 }

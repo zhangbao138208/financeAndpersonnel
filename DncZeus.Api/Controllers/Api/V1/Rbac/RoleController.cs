@@ -20,6 +20,7 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using System.Linq;
 using Microsoft.Data.SqlClient;
+using System.Collections.Generic;
 
 namespace DncZeus.Api.Controllers.Api.V1.Rbac
 {
@@ -50,7 +51,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// </summary>
         /// <returns></returns>
         [HttpPost]
-        public IActionResult List(RoleRequestPayload payload)
+        public ActionResult<ResponseResultModel<IEnumerable<RoleJsonModel>>> List(RoleRequestPayload payload)
         {
             var response = ResponseModelFactory.CreateResultInstance;
             using (_dbContext)
@@ -84,7 +85,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// <returns></returns>
         [HttpPost]
         [ProducesResponseType(200)]
-        public IActionResult Create(RoleCreateViewModel model)
+        public ActionResult<ResponseModel> Create(RoleCreateViewModel model)
         {
             var response = ResponseModelFactory.CreateInstance;
             if (model.Name.Trim().Length <= 0)
@@ -121,7 +122,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// <returns></returns>
         [HttpGet("{code}")]
         [ProducesResponseType(200)]
-        public IActionResult Edit(string code)
+        public ActionResult<ResponseModel<RoleCreateViewModel>> Edit(string code)
         {
             using (_dbContext)
             {
@@ -137,9 +138,9 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// </summary>
         /// <param name="model">角色视图实体</param>
         /// <returns></returns>
-        [HttpPost]
+        [HttpPut]
         [ProducesResponseType(200)]
-        public IActionResult Edit(RoleCreateViewModel model)
+        public ActionResult<ResponseModel> Edit(RoleCreateViewModel model)
         {
             var response = ResponseModelFactory.CreateInstance;
             if (ConfigurationManager.AppSettings.IsTrialVersion)
@@ -180,9 +181,9 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// </summary>
         /// <param name="ids">角色ID,多个以逗号分隔</param>
         /// <returns></returns>
-        [HttpGet("{ids}")]
+        [HttpDelete("{ids}")]
         [ProducesResponseType(200)]
-        public IActionResult Delete(string ids)
+        public ActionResult<ResponseModel> Delete(string ids)
         {
             var response = ResponseModelFactory.CreateInstance;
             if (ConfigurationManager.AppSettings.IsTrialVersion)
@@ -199,9 +200,9 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// </summary>
         /// <param name="ids">角色ID,多个以逗号分隔</param>
         /// <returns></returns>
-        [HttpGet("{ids}")]
+        [HttpPost("{ids}")]
         [ProducesResponseType(200)]
-        public IActionResult Recover(string ids)
+        public ActionResult<ResponseModel> Recover(string ids)
         {
             var response = UpdateIsDelete(CommonEnum.IsDeleted.No, ids);
             return Ok(response);
@@ -213,9 +214,9 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// <param name="command"></param>
         /// <param name="ids">角色ID,多个以逗号分隔</param>
         /// <returns></returns>
-        [HttpGet]
+        [HttpPost]
         [ProducesResponseType(200)]
-        public IActionResult Batch(string command, string ids)
+        public ActionResult<ResponseModel> Batch(string command, string ids)
         {
             var response = ResponseModelFactory.CreateInstance;
             switch (command)
@@ -254,7 +255,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// <param name="payload">角色分配权限的请求载体类</param>
         /// <returns></returns>
         [HttpPost("/api/v1/rbac/role/assign_permission")]
-        public IActionResult AssignPermission(RoleAssignPermissionPayload payload)
+        public ActionResult<ResponseModel> AssignPermission(RoleAssignPermissionPayload payload)
         {
             var response = ResponseModelFactory.CreateInstance;
             using (_dbContext)
@@ -326,7 +327,7 @@ WHERE URM.UserGuid={0}";
         /// </summary>
         /// <returns></returns>
         [HttpGet("/api/v1/rbac/role/find_simple_list")]
-        public IActionResult FindSimpleList()
+        public ActionResult<ResponseResultModel<IEnumerable<SimpleModel>>> FindSimpleList()
         {
             var response = ResponseModelFactory.CreateInstance;
             using (_dbContext)

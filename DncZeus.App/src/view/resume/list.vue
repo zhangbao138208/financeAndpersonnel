@@ -131,6 +131,8 @@
 <script>
 import Tables from '_c/tables'
 import Home from './drawer/Home'
+import Moment from 'moment'
+
 import {
   getResumeInfoList,
   createResumeInfo,
@@ -285,6 +287,8 @@ export default {
               ellipsis: true,
               tooltip: true,
               key: 'createdOn',
+              render: (h, params) => {
+                            return h('span',Moment(params.row.createdOn).format('YYYY-MM-DD'));}
             },
             { title: '创建者', key: 'createdByUserName' },
             {

@@ -1,50 +1,49 @@
 import axios from '@/libs/api.request'
 export const getResumeInfoList = (data) => {
-    return axios.request({
-      url: 'resume/resumeInfo/list',
-      method: 'post',
-      data
-    })
-  }
-  // create resumeInfo
+        return axios.request({
+            url: 'resume/resumeInfo/list',
+            method: 'post',
+            data
+        })
+    }
+    // create resumeInfo
 export const createResumeInfo = data => {
     return axios.request({
-      url: "resume/resumeInfo/create",
-      method: "post",
-      data
+        url: "resume/resumeInfo/create",
+        method: "post",
+        data
     });
-  };
-  //loadResumeInfo
+};
+//loadResumeInfo
 export const loadResumeInfo = (data) => {
     return axios.request({
-      url: 'resume/resumeInfo/edit/' + data.code,
-      method: 'get'
+        url: 'resume/resumeInfo/edit/' + data.code,
+        method: 'get'
     })
-  }
-  
-  // editResumeInfo
-  export const editResumeInfo = (data) => {
+}
+
+// editResumeInfo
+export const editResumeInfo = (data) => {
     return axios.request({
-      url: 'resume/resumeInfo/edit',
-      method: 'post',
-      data
+        url: 'resume/resumeInfo/edit',
+        method: 'put',
+        data
     })
-  }
-  
-  // delete resumeInfo
-  export const deleteResumeInfo = (ids) => {
+}
+
+// delete resumeInfo
+export const deleteResumeInfo = (ids) => {
     return axios.request({
-      url: 'resume/resumeInfo/delete/' + ids,
-      method: 'get'
+        url: 'resume/resumeInfo/delete/' + ids,
+        method: 'delete'
     })
-  }
-  
-  // batch command
-  export const batchCommand = (data) => {
+}
+
+// batch command
+export const batchCommand = (data) => {
     return axios.request({
-      url: 'resume/resumeInfo/batch',
-      method: 'get',
-      params: data
+        url: 'resume/resumeInfo/batch',
+        method: 'post',
+        params: data
     })
-  }
-  
+}

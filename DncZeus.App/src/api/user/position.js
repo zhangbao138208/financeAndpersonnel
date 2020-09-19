@@ -26,7 +26,7 @@ export const loadPosition = (data) => {
 export const editPosition = (data) => {
     return axios.request({
         url: 'user/position/edit',
-        method: 'post',
+        method: 'put',
         data
     })
 }
@@ -35,7 +35,7 @@ export const editPosition = (data) => {
 export const deletePosition = (ids) => {
     return axios.request({
         url: 'user/position/delete/' + ids,
-        method: 'get'
+        method: 'delete'
     })
 }
 
@@ -43,7 +43,7 @@ export const deletePosition = (ids) => {
 export const batchCommand = (data) => {
     return axios.request({
         url: 'user/position/batch',
-        method: 'get',
+        method: 'post',
         params: data
     })
 }

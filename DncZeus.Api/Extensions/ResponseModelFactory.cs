@@ -23,4 +23,15 @@ namespace DncZeus.Api.Extensions
         /// </summary>
         public static ResponseResultModel CreateResultInstance => new ResponseResultModel();
     }
+    public class ResponseModelFactory<T>
+    {
+        /// <summary>
+        /// 
+        /// </summary>
+        public static ResponseModel<T> CreateInstance => new ResponseModel<T>();
+        /// <summary>
+        /// 
+        /// </summary>
+        public static ResponseResultModel<T> CreateResultInstance => new ResponseResultModel<T>();
+    }
 }

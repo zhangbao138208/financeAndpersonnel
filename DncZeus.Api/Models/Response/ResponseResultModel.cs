@@ -16,6 +16,8 @@ namespace DncZeus.Api.Models.Response
         /// 
         /// </summary>
         public int TotalCount { get; set; }
+      
+
         /// <summary>
         /// 
         /// </summary>
@@ -26,5 +28,26 @@ namespace DncZeus.Api.Models.Response
             Data = data;
             TotalCount = totalCount;
         }
+        
+    }
+    public class ResponseResultModel<T> : ResponseModel<T>
+    {
+        /// <summary>
+        /// 
+        /// </summary>
+        public int TotalCount { get; set; }
+
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="data"></param>
+        /// <param name="totalCount"></param>
+        public void SetData(T data, int totalCount = 0)
+        {
+            Data = data;
+            TotalCount = totalCount;
+        }
+
     }
 }

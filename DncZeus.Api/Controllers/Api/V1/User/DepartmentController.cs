@@ -21,7 +21,7 @@ namespace DncZeus.Api.Controllers.Api.V1.User
     [Route("api/v1/User/[controller]/[action]")]
     [ApiController]
     [CustomAuthorize]
-    public class DepartmentController:ControllerBase
+    public class DepartmentController : ControllerBase
     {
         private readonly DncZeusDbContext _dbContext;
         private readonly IMapper _mapper;
@@ -36,7 +36,7 @@ namespace DncZeus.Api.Controllers.Api.V1.User
         /// </summary>
         /// <returns></returns>
         [HttpPost]
-        public IActionResult List(DepartmentRequestPaload payload)
+        public ActionResult<ResponseResultModel<IEnumerable<DepartmentJsonModel>>> List(DepartmentRequestPaload payload)
         {
             var response = ResponseModelFactory.CreateResultInstance;
             using (_dbContext)
@@ -54,7 +54,7 @@ namespace DncZeus.Api.Controllers.Api.V1.User
                 {
                     query = query.Where(x => x.Status == payload.Status);
                 }
-                var list = query.Paged(payload.CurrentPage, payload.PageSize).OrderBy(r=>r.SortID).ToList();
+                var list = query.Paged(payload.CurrentPage, payload.PageSize).OrderBy(r => r.SortID).ToList();
                 var totalCount = query.Count();
                 var data = list.Select(_mapper.Map<UserDepartment, DepartmentJsonModel>);
 
@@ -70,7 +70,7 @@ namespace DncZeus.Api.Controllers.Api.V1.User
         /// <returns></returns>
         [HttpPost]
         [ProducesResponseType(200)]
-        public IActionResult Create(DepartmentCreateViewModel model)
+        public ActionResult<ResponseModel> Create(DepartmentCreateViewModel model)
         {
             var response = ResponseModelFactory.CreateInstance;
             if (model.Name.Trim().Length <= 0)
@@ -86,7 +86,7 @@ namespace DncZeus.Api.Controllers.Api.V1.User
                     return Ok(response);
                 }
                 var entity = _mapper.Map<DepartmentCreateViewModel, UserDepartment>(model);
-                
+
                 entity.CreatedOn = DateTime.Now;
                 entity.Code = RandomHelper.GetRandomizer(8, true, false, true, true);
                 entity.CreatedByUserGuid = AuthContextService.CurrentUser.Guid;
@@ -135,14 +135,14 @@ namespace DncZeus.Api.Controllers.Api.V1.User
         /// <returns></returns>
         [HttpGet("{code}")]
         [ProducesResponseType(200)]
-        public IActionResult Edit(string code)
+        public ActionResult<ResponseModel<DepartmentCreateViewModel>> Edit(string code)
         {
             using (_dbContext)
             {
                 var entity = _dbContext.UserDepartment.FirstOrDefault(x => x.Code == code);
                 var response = ResponseModelFactory.CreateInstance;
                 var resEntity = _mapper.Map<UserDepartment, DepartmentCreateViewModel>(entity);
-                List<string> restDays=new List<string>();
+                List<string> restDays = new List<string>();
 
                 if (string.IsNullOrEmpty(entity.Monday))
                 {
@@ -217,9 +217,9 @@ namespace DncZeus.Api.Controllers.Api.V1.User
         /// </summary>
         /// <param name="model">角色视图实体</param>
         /// <returns></returns>
-        [HttpPost]
+        [HttpPut]
         [ProducesResponseType(200)]
-        public IActionResult Edit(DepartmentCreateViewModel model)
+        public ActionResult<ResponseModel> Edit(DepartmentCreateViewModel model)
         {
             var response = ResponseModelFactory.CreateInstance;
             if (ConfigurationManager.AppSettings.IsTrialVersion)
@@ -292,9 +292,9 @@ namespace DncZeus.Api.Controllers.Api.V1.User
         /// </summary>
         /// <param name="ids">部门code,多个以逗号分隔</param>
         /// <returns></returns>
-        [HttpGet("{ids}")]
+        [HttpDelete("{ids}")]
         [ProducesResponseType(200)]
-        public IActionResult Delete(string ids)
+        public ActionResult<ResponseModel> Delete(string ids)
         {
             var response = ResponseModelFactory.CreateInstance;
             if (ConfigurationManager.AppSettings.IsTrialVersion)
@@ -311,9 +311,9 @@ namespace DncZeus.Api.Controllers.Api.V1.User
         /// </summary>
         /// <param name="ids">部门ID,多个以逗号分隔</param>
         /// <returns></returns>
-        [HttpGet("{ids}")]
+        [HttpPost("{ids}")]
         [ProducesResponseType(200)]
-        public IActionResult Recover(string ids)
+        public ActionResult<ResponseModel> Recover(string ids)
         {
             var response = UpdateIsDelete(CommonEnum.IsDeleted.No, ids);
             return Ok(response);
@@ -324,9 +324,9 @@ namespace DncZeus.Api.Controllers.Api.V1.User
         /// <param name="command"></param>
         /// <param name="ids">部门ID,多个以逗号分隔</param>
         /// <returns></returns>
-        [HttpGet]
+        [HttpPost]
         [ProducesResponseType(200)]
-        public IActionResult Batch(string command, string ids)
+        public ActionResult<ResponseModel> Batch(string command, string ids)
         {
             var response = ResponseModelFactory.CreateInstance;
             switch (command)
@@ -363,7 +363,7 @@ namespace DncZeus.Api.Controllers.Api.V1.User
         /// </summary>
         /// <returns></returns>
         [HttpGet("/api/v1/user/department/find_simple_list")]
-        public IActionResult FindSimpleList()
+        public ActionResult<ResponseResultModel<IEnumerable<SimpleModel>>> FindSimpleList()
         {
             var response = ResponseModelFactory.CreateInstance;
             using (_dbContext)

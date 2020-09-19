@@ -7,7 +7,6 @@ using DncZeus.Api.Extensions.CustomException;
 using DncZeus.Api.Models.Response;
 using DncZeus.Api.RequestPayload.User.Position;
 using DncZeus.Api.Utils;
-using DncZeus.Api.ViewModels.User.Department;
 using DncZeus.Api.ViewModels.User.Position;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
@@ -15,7 +14,6 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 
 namespace DncZeus.Api.Controllers.Api.V1.User
 {
@@ -37,7 +35,7 @@ namespace DncZeus.Api.Controllers.Api.V1.User
         /// </summary>
         /// <returns></returns>
         [HttpPost]
-        public IActionResult List(PositionRequestPaload payload)
+        public ActionResult<ResponseResultModel<IEnumerable<PositionJsonModel>>> List(PositionRequestPaload payload)
         {
             var response = ResponseModelFactory.CreateResultInstance;
             using (_dbContext)
@@ -71,7 +69,7 @@ namespace DncZeus.Api.Controllers.Api.V1.User
         /// <returns></returns>
         [HttpPost]
         [ProducesResponseType(200)]
-        public IActionResult Create(PositionCreateViewModel model)
+        public ActionResult<ResponseModel> Create(PositionCreateViewModel model)
         {
             var response = ResponseModelFactory.CreateInstance;
             if (model.Name.Trim().Length <= 0)
@@ -108,7 +106,7 @@ namespace DncZeus.Api.Controllers.Api.V1.User
         /// <returns></returns>
         [HttpGet("{code}")]
         [ProducesResponseType(200)]
-        public IActionResult Edit(string code)
+        public ActionResult<ResponseModel<PositionCreateViewModel>> Edit(string code)
         {
             using (_dbContext)
             {
@@ -126,9 +124,9 @@ namespace DncZeus.Api.Controllers.Api.V1.User
         /// </summary>
         /// <param name="model">角色视图实体</param>
         /// <returns></returns>
-        [HttpPost]
+        [HttpPut]
         [ProducesResponseType(200)]
-        public IActionResult Edit(PositionCreateViewModel model)
+        public ActionResult<ResponseModel> Edit(PositionCreateViewModel model)
         {
             var response = ResponseModelFactory.CreateInstance;
             if (ConfigurationManager.AppSettings.IsTrialVersion)
@@ -164,9 +162,9 @@ namespace DncZeus.Api.Controllers.Api.V1.User
         /// </summary>
         /// <param name="ids">职位code,多个以逗号分隔</param>
         /// <returns></returns>
-        [HttpGet("{ids}")]
+        [HttpDelete("{ids}")]
         [ProducesResponseType(200)]
-        public IActionResult Delete(string ids)
+        public ActionResult<ResponseModel> Delete(string ids)
         {
             var response = ResponseModelFactory.CreateInstance;
             if (ConfigurationManager.AppSettings.IsTrialVersion)
@@ -183,9 +181,9 @@ namespace DncZeus.Api.Controllers.Api.V1.User
         /// </summary>
         /// <param name="ids">职位ID,多个以逗号分隔</param>
         /// <returns></returns>
-        [HttpGet("{ids}")]
+        [HttpPost("{ids}")]
         [ProducesResponseType(200)]
-        public IActionResult Recover(string ids)
+        public ActionResult<ResponseModel> Recover(string ids)
         {
             var response = UpdateIsDelete(CommonEnum.IsDeleted.No, ids);
             return Ok(response);
@@ -196,9 +194,9 @@ namespace DncZeus.Api.Controllers.Api.V1.User
         /// <param name="command"></param>
         /// <param name="ids">职位ID,多个以逗号分隔</param>
         /// <returns></returns>
-        [HttpGet]
+        [HttpPost]
         [ProducesResponseType(200)]
-        public IActionResult Batch(string command, string ids)
+        public ActionResult<ResponseModel> Batch(string command, string ids)
         {
             var response = ResponseModelFactory.CreateInstance;
             switch (command)
@@ -235,7 +233,7 @@ namespace DncZeus.Api.Controllers.Api.V1.User
         /// </summary>
         /// <returns></returns>
         [HttpGet("/api/v1/user/position/find_simple_list")]
-        public IActionResult FindSimpleList()
+        public ActionResult<ResponseResultModel<IEnumerable<SimpleModel>>> FindSimpleList()
         {
             var response = ResponseModelFactory.CreateInstance;
             using (_dbContext)
