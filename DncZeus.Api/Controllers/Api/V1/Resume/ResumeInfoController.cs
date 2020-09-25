@@ -81,7 +81,6 @@ namespace DncZeus.Api.Controllers.Api.V1.Resume
                 {
                     query = query.Where(x => x.Status == payload.Status);
                 }
-                var s = query.ToString();
                 var list = query.Paged(payload.CurrentPage, payload.PageSize).OrderBy(r => r.LevelID).ToList();
                 var totalCount = query.Count();
                 //var data = list.Select(_mapper.Map<ResumeInfo, ResumeJsonModel>).ToList();

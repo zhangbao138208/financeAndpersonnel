@@ -51,7 +51,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// </summary>
         /// <returns></returns>
         [HttpPost]
-        public IActionResult List(MenuRequestPayload payload)
+        public ActionResult<ResponseResultModel<IEnumerable<MenuJsonModel>>> List(MenuRequestPayload payload)
         {
             using (_dbContext)
             {
@@ -88,7 +88,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// <returns></returns>
         [HttpPost]
         [ProducesResponseType(200)]
-        public IActionResult Create(MenuCreateViewModel model)
+        public ActionResult<ResponseModel> Create(MenuCreateViewModel model)
         {
             using (_dbContext)
             {
@@ -114,7 +114,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// <returns></returns>
         [HttpGet("{guid}")]
         [ProducesResponseType(200)]
-        public IActionResult Edit(Guid guid)
+        public ActionResult<MenuEditRetModel> Edit(Guid guid)
         {
             using (_dbContext)
             {
@@ -140,9 +140,9 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// </summary>
         /// <param name="model">菜单视图实体</param>
         /// <returns></returns>
-        [HttpPost]
+        [HttpPut]
         [ProducesResponseType(200)]
-        public IActionResult Edit(MenuEditViewModel model)
+        public ActionResult<ResponseModel> Edit(MenuEditViewModel model)
         {
             using (_dbContext)
             {
@@ -181,7 +181,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// </summary>
         /// <returns></returns>
         [HttpGet("{selected?}")]
-        public IActionResult Tree(string selected)
+        public ActionResult<MenuTree> Tree(string selected)
         {
             var response = ResponseModelFactory.CreateInstance;
             var tree = LoadMenuTree(selected?.ToString());
@@ -194,7 +194,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// </summary>
         /// <param name="ids">菜单ID,多个以逗号分隔</param>
         /// <returns></returns>
-        [HttpGet("{ids}")]
+        [HttpDelete("{ids}")]
         [ProducesResponseType(200)]
         public IActionResult Delete(string ids)
         {
@@ -213,7 +213,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// </summary>
         /// <param name="ids">菜单ID,多个以逗号分隔</param>
         /// <returns></returns>
-        [HttpGet("{ids}")]
+        [HttpPost("{ids}")]
         [ProducesResponseType(200)]
         public IActionResult Recover(string ids)
         {
@@ -227,7 +227,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// <param name="command"></param>
         /// <param name="ids">菜单ID,多个以逗号分隔</param>
         /// <returns></returns>
-        [HttpGet]
+        [HttpPost]
         [ProducesResponseType(200)]
         public IActionResult Batch(string command, string ids)
         {

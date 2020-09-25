@@ -65,6 +65,15 @@ namespace DncZeus.Api.Entities
         /// 简历
         /// </summary>
         public DbSet<ResumeInfo> ResumeInfo { get; set; }
+        /// <summary>
+        /// 工资
+        /// </summary>
+        public DbSet<WageInfo> WageInfo { get; set; }
+
+        /// <summary>
+        /// 财务账号
+        /// </summary>
+        public DbSet<FinanceAccount> FinanceAccount { get; set; }
 
         #region DbQuery
         /// <summary>

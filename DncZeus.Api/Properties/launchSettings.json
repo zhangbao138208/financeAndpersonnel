@@ -20,7 +20,7 @@
     "DncZeus.Api": {
       "commandName": "Project",
       "launchBrowser": true,
-      "launchUrl": "api/values",
+      "launchUrl": "swagger/index.html",
       "applicationUrl": "http://localhost:54321",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"

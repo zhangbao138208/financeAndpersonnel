@@ -380,6 +380,64 @@ namespace DncZeus.Api.Migrations
                     b.ToTable("DncUserRoleMapping");
                 });
 
+            modelBuilder.Entity("DncZeus.Api.Entities.FinanceAccount", b =>
+                {
+                    b.Property<string>("Code")
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Account")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("CreatedByUserGuid")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CreatedByUserName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DepartmentCode")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Holder")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("IsDeleted")
+                        .HasColumnType("int");
+
+                    b.Property<Guid?>("ModifiedByUserGuid")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ModifiedByUserName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("ModifiedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Owner")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Title")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Type")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Code");
+
+                    b.ToTable("FinanceAccount");
+                });
+
             modelBuilder.Entity("DncZeus.Api.Entities.QueryModels.DncPermission.DncPermissionWithAssignProperty", b =>
                 {
                     b.Property<string>("ActionCode")
@@ -707,6 +765,103 @@ namespace DncZeus.Api.Migrations
                     b.HasKey("Code");
 
                     b.ToTable("UserPosition");
+                });
+
+            modelBuilder.Entity("DncZeus.Api.Entities.WageInfo", b =>
+                {
+                    b.Property<string>("Code")
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<decimal?>("AccumulationFund")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Additions")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal?>("BaseWage")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("Bonus")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("Commission")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid>("CreatedByUserGuid")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CreatedByUserName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Deductions")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("DepartmentCode")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("EndDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal?>("IncomeTax")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("IsDeleted")
+                        .HasColumnType("int");
+
+                    b.Property<Guid?>("ModifiedByUserGuid")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ModifiedByUserName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("ModifiedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("OTDays")
+                        .HasColumnType("int");
+
+                    b.Property<decimal?>("OTWage")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("PerformanceWage")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("PositionCode")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("RealName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal?>("ReissueWage")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("SocialSecurity")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime?>("StartDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<decimal?>("Subsidy")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("TotalWage")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid>("UserGuid")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int?>("WorkDays")
+                        .HasColumnType("int");
+
+                    b.HasKey("Code");
+
+                    b.ToTable("WageInfo");
                 });
 
             modelBuilder.Entity("DncZeus.Api.Entities.DncPermission", b =>

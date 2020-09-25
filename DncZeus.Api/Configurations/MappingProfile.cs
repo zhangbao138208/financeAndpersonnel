@@ -7,6 +7,7 @@
 
 using AutoMapper;
 using DncZeus.Api.Entities;
+using DncZeus.Api.ViewModels.Finance.Account;
 using DncZeus.Api.ViewModels.Rbac.DncIcon;
 using DncZeus.Api.ViewModels.Rbac.DncMenu;
 using DncZeus.Api.ViewModels.Rbac.DncPermission;
@@ -15,6 +16,7 @@ using DncZeus.Api.ViewModels.Rbac.DncUser;
 using DncZeus.Api.ViewModels.Refuse;
 using DncZeus.Api.ViewModels.User.Department;
 using DncZeus.Api.ViewModels.User.Position;
+using DncZeus.Api.ViewModels.Wage;
 
 namespace DncZeus.Api.Configurations
 {
@@ -86,6 +88,18 @@ namespace DncZeus.Api.Configurations
             CreateMap<ResumeInfo, ResumeJsonModel>();
             CreateMap<ResumeInfo, ResumeCreateViewModel>();
             CreateMap<ResumeCreateViewModel, ResumeInfo>();
+            #endregion
+
+            #region WageInfo
+            CreateMap<WageInfo, WageJsonModel>();
+            CreateMap<WageInfo, WageCreateViewModel>();
+            CreateMap<WageCreateViewModel, WageInfo>();
+            #endregion
+
+            #region FinanceAccount
+            CreateMap<FinanceAccount, AccountJsonModel>();
+            CreateMap<FinanceAccount, AccountCreateViewModel>();
+            CreateMap<AccountCreateViewModel, FinanceAccount>();
             #endregion
         }
     }

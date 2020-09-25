@@ -16,6 +16,9 @@ import '@/assets/icons/iconfont.css'
 import TreeTable from 'tree-table-vue'
 import Moment from 'moment'
 
+import Blob from './excel/Blob'
+import Export2Excel from './excel/Export2Excel.js'
+
 // 定义全局时间戳过滤器
 Vue.filter('formatDate', function(value) {
     return Moment(value).format('YYYY-MM-DD')
@@ -26,6 +29,9 @@ import 'muse-ui/dist/muse-ui.css';
 //import '../static/css/theme-carbon.css' // 使用 carbon 主题(可更改)
 
 Vue.use(MuseUI);
+
+import '@/directive/echartResizeHelper.js';
+
 
 // 实际打包时应该不引入mock
 /* eslint-disable */

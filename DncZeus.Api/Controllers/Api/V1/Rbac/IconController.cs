@@ -20,6 +20,7 @@ using System;
 using System.Data.SqlClient;
 using System.Linq;
 using Microsoft.Data.SqlClient;
+using System.Collections.Generic;
 
 namespace DncZeus.Api.Controllers.Api.V1.Rbac
 {
@@ -51,7 +52,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// </summary>
         /// <returns></returns>
         [HttpPost]
-        public IActionResult List(IconRequestPayload payload)
+        public ActionResult<ResponseResultModel<IEnumerable<IconJsonModel>>> List(IconRequestPayload payload)
         {
             using (_dbContext)
             {
@@ -82,7 +83,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// </summary>
         /// <returns></returns>
         [HttpGet("/api/v1/rbac/icon/find_list_by_kw/{kw}")]
-        public IActionResult FindByKeyword(string kw)
+        public ActionResult<KeyWordModel> FindByKeyword(string kw)
         {
             var response = ResponseModelFactory.CreateResultInstance;
             if (string.IsNullOrEmpty(kw))
@@ -110,7 +111,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// <returns></returns>
         [HttpPost]
         [ProducesResponseType(200)]
-        public IActionResult Create(IconCreateViewModel model)
+        public ActionResult<ResponseModel> Create(IconCreateViewModel model)
         {
             var response = ResponseModelFactory.CreateInstance;
             if (model.Code.Trim().Length <= 0)
@@ -144,7 +145,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// <returns></returns>
         [HttpGet("{id}")]
         [ProducesResponseType(200)]
-        public IActionResult Edit(int id)
+        public ActionResult<ResponseModel<IconCreateViewModel>> Edit(int id)
         {
             using (_dbContext)
             {
@@ -160,9 +161,9 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// </summary>
         /// <param name="model">图标视图实体</param>
         /// <returns></returns>
-        [HttpPost]
+        [HttpPut]
         [ProducesResponseType(200)]
-        public IActionResult Edit(IconCreateViewModel model)
+        public ActionResult<ResponseModel> Edit(IconCreateViewModel model)
         {
             var response = ResponseModelFactory.CreateInstance;
             if (model.Code.Trim().Length <= 0)
@@ -199,9 +200,9 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// </summary>
         /// <param name="ids">图标ID,多个以逗号分隔</param>
         /// <returns></returns>
-        [HttpGet("{ids}")]
+        [HttpDelete("{ids}")]
         [ProducesResponseType(200)]
-        public IActionResult Delete(string ids)
+        public ActionResult<ResponseModel> Delete(string ids)
         {
 
             var response = ResponseModelFactory.CreateInstance;
@@ -219,9 +220,9 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// </summary>
         /// <param name="ids">图标ID,多个以逗号分隔</param>
         /// <returns></returns>
-        [HttpGet("{ids}")]
+        [HttpPost("{ids}")]
         [ProducesResponseType(200)]
-        public IActionResult Recover(string ids)
+        public ActionResult<ResponseModel> Recover(string ids)
         {
             var response = ResponseModelFactory.CreateInstance;
             if (ConfigurationManager.AppSettings.IsTrialVersion)
@@ -239,9 +240,9 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// <param name="command"></param>
         /// <param name="ids">图标ID,多个以逗号分隔</param>
         /// <returns></returns>
-        [HttpGet]
+        [HttpPost]
         [ProducesResponseType(200)]
-        public IActionResult Batch(string command, string ids)
+        public ActionResult<ResponseModel> Batch(string command, string ids)
         {
             var response = ResponseModelFactory.CreateInstance;
             switch (command)
@@ -285,7 +286,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// <returns></returns>
         [HttpPost]
         [ProducesResponseType(200)]
-        public IActionResult Import(IconImportViewModel model)
+        public ActionResult<ResponseModel> Import(IconImportViewModel model)
         {
             var response = ResponseModelFactory.CreateInstance;
             if (ConfigurationManager.AppSettings.IsTrialVersion)

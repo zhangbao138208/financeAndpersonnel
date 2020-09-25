@@ -10,6 +10,7 @@ using DncZeus.Api.Auth;
 using DncZeus.Api.Entities;
 using DncZeus.Api.Extensions.AuthContext;
 using DncZeus.Api.Extensions.CustomException;
+using DncZeus.Api.Services;
 using DncZeus.Api.Utils;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -47,10 +48,11 @@ namespace DncZeus.Api
         /// <param name="services"></param>
         public void ConfigureServices(IServiceCollection services)
         {
+            TelegramService telegramService = new TelegramService();
             services.AddCors(o =>
                 o.AddPolicy("CorsPolicy",
                     builder => builder
-                        .WithOrigins("http://localhost:9000")
+                        .WithOrigins("http://localhost:9000", "http://localhost:7501")
                         .AllowAnyHeader()
                         .AllowAnyMethod()
                         //.AllowAnyOrigin()
@@ -59,6 +61,7 @@ namespace DncZeus.Api
 
             services.AddMemoryCache();
             services.AddHttpContextAccessor();
+            
             services.AddSingleton<IActionContextAccessor, ActionContextAccessor>();
             var appSettingsSection = Configuration.GetSection("AppSettings");
             services.Configure<AppAuthenticationSettings>(appSettingsSection);
@@ -107,6 +110,8 @@ namespace DncZeus.Api
             {
                 config.AddLog4Net();
             });
+
+            services.AddScoped<TelegramService>();
         }
 
         /// <summary>
@@ -122,6 +127,7 @@ namespace DncZeus.Api
                 //app.UseDeveloperExceptionPage();
             }
             CeyhConfiguration.Instance(app.ApplicationServices.GetService<IConfiguration>());
+
 
             app.UseDeveloperExceptionPage();
             //app.UseExceptionHandler("/error/500");

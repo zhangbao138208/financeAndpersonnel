@@ -12,6 +12,7 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using System.Linq;
 using Microsoft.Data.SqlClient;
+using System.Collections.Generic;
 
 /******************************************
  * AUTHOR:          Rector
@@ -49,7 +50,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// </summary>
         /// <returns></returns>
         [HttpPost]
-        public IActionResult List(UserRequestPayload payload)
+        public ActionResult<ResponseResultModel<IEnumerable<UserJsonModel>>> List(UserRequestPayload payload)
         {
             using (_dbContext)
             {
@@ -87,7 +88,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// <returns></returns>
         [HttpPost]
         [ProducesResponseType(200)]
-        public IActionResult Create(UserCreateViewModel model)
+        public ActionResult<ResponseModel> Create(UserCreateViewModel model)
         {
             var response = ResponseModelFactory.CreateInstance;
             if (model.LoginName.Trim().Length <= 0)
@@ -121,7 +122,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// <returns></returns>
         [HttpGet("{guid}")]
         [ProducesResponseType(200)]
-        public IActionResult Edit(Guid guid)
+        public ActionResult<ResponseModel<UserEditViewModel>> Edit(Guid guid)
         {
             using (_dbContext)
             {
@@ -137,9 +138,9 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// </summary>
         /// <param name="model">用户视图实体</param>
         /// <returns></returns>
-        [HttpPost]
+        [HttpPut]
         [ProducesResponseType(200)]
-        public IActionResult Edit(UserEditViewModel model)
+        public ActionResult<ResponseModel> Edit(UserEditViewModel model)
         {
             var response = ResponseModelFactory.CreateInstance;
             if (ConfigurationManager.AppSettings.IsTrialVersion)
@@ -176,9 +177,9 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// </summary>
         /// <param name="ids">用户GUID,多个以逗号分隔</param>
         /// <returns></returns>
-        [HttpGet("{ids}")]
+        [HttpDelete("{ids}")]
         [ProducesResponseType(200)]
-        public IActionResult Delete(string ids)
+        public ActionResult<ResponseModel> Delete(string ids)
         {
             var response = ResponseModelFactory.CreateInstance;
             if (ConfigurationManager.AppSettings.IsTrialVersion)
@@ -195,9 +196,9 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// </summary>
         /// <param name="ids">用户GUID,多个以逗号分隔</param>
         /// <returns></returns>
-        [HttpGet("{ids}")]
+        [HttpPost("{ids}")]
         [ProducesResponseType(200)]
-        public IActionResult Recover(string ids)
+        public ActionResult<ResponseModel> Recover(string ids)
         {
             var response = UpdateIsDelete(CommonEnum.IsDeleted.No, ids);
             return Ok(response);
@@ -209,9 +210,9 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// <param name="command"></param>
         /// <param name="ids">用户ID,多个以逗号分隔</param>
         /// <returns></returns>
-        [HttpGet]
+        [HttpPost]
         [ProducesResponseType(200)]
-        public IActionResult Batch(string command, string ids)
+        public ActionResult<ResponseModel> Batch(string command, string ids)
         {
             var response = ResponseModelFactory.CreateInstance;
             switch (command)
@@ -251,7 +252,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// <param name="model"></param>
         /// <returns></returns>
         [HttpPost("/api/v1/rbac/user/save_roles")]
-        public IActionResult SaveRoles(SaveUserRolesViewModel model)
+        public ActionResult<ResponseModel> SaveRoles(SaveUserRolesViewModel model)
         {
             var response = ResponseModelFactory.CreateInstance;
             var roles = model.AssignedRoles.Select(x => new DncUserRoleMapping

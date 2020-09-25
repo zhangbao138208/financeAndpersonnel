@@ -7,6 +7,7 @@ using DncZeus.Api.Extensions.AuthContext;
 using DncZeus.Api.Extensions.CustomException;
 using DncZeus.Api.Models.Response;
 using DncZeus.Api.RequestPayload.User.Department;
+using DncZeus.Api.Services;
 using DncZeus.Api.Utils;
 using DncZeus.Api.ViewModels.User.Department;
 using Microsoft.AspNetCore.Mvc;
@@ -25,11 +26,12 @@ namespace DncZeus.Api.Controllers.Api.V1.User
     {
         private readonly DncZeusDbContext _dbContext;
         private readonly IMapper _mapper;
-
+        
         public DepartmentController(DncZeusDbContext dbContext, IMapper mapper)
         {
             _dbContext = dbContext;
             _mapper = mapper;
+           
         }
         /// <summary>
         /// 

@@ -52,7 +52,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// </summary>
         /// <returns></returns>
         [HttpPost]
-        public IActionResult List(PermissionRequestPayload payload)
+        public ActionResult<ResponseResultModel<IEnumerable<PermissionJsonModel>>> List(PermissionRequestPayload payload)
         {
             var response = ResponseModelFactory.CreateResultInstance;
             using (_dbContext)
@@ -96,7 +96,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// <returns></returns>
         [HttpPost]
         [ProducesResponseType(200)]
-        public IActionResult Create(PermissionCreateViewModel model)
+        public ActionResult<ResponseModel> Create(PermissionCreateViewModel model)
         {
             var response = ResponseModelFactory.CreateInstance;
             if (model.Name.Trim().Length <= 0)
@@ -131,7 +131,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// <returns></returns>
         [HttpGet("{code}")]
         [ProducesResponseType(200)]
-        public IActionResult Edit(string code)
+        public ActionResult<PermissionEditViewModel> Edit(string code)
         {
             using (_dbContext)
             {
@@ -150,9 +150,9 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// </summary>
         /// <param name="model">权限视图实体</param>
         /// <returns></returns>
-        [HttpPost]
+        [HttpPut]
         [ProducesResponseType(200)]
-        public IActionResult Edit(PermissionEditViewModel model)
+        public ActionResult<ResponseModel> Edit(PermissionEditViewModel model)
         {
             var response = ResponseModelFactory.CreateInstance;
             if (ConfigurationManager.AppSettings.IsTrialVersion)
@@ -193,9 +193,9 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// </summary>
         /// <param name="ids">权限ID,多个以逗号分隔</param>
         /// <returns></returns>
-        [HttpGet("{ids}")]
+        [HttpDelete("{ids}")]
         [ProducesResponseType(200)]
-        public IActionResult Delete(string ids)
+        public ActionResult<ResponseModel> Delete(string ids)
         {
             var response = ResponseModelFactory.CreateInstance;
             if (ConfigurationManager.AppSettings.IsTrialVersion)
@@ -212,9 +212,9 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// </summary>
         /// <param name="ids">权限ID,多个以逗号分隔</param>
         /// <returns></returns>
-        [HttpGet("{ids}")]
+        [HttpPost("{ids}")]
         [ProducesResponseType(200)]
-        public IActionResult Recover(string ids)
+        public ActionResult<ResponseModel> Recover(string ids)
         {
             var response = UpdateIsDelete(IsDeleted.No, ids);
             return Ok(response);
@@ -226,9 +226,9 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// <param name="command"></param>
         /// <param name="ids">权限ID,多个以逗号分隔</param>
         /// <returns></returns>
-        [HttpGet]
+        [HttpPost]
         [ProducesResponseType(200)]
-        public IActionResult Batch(string command, string ids)
+        public ActionResult<ResponseModel> Batch(string command, string ids)
         {
             var response = ResponseModelFactory.CreateInstance;
             switch (command)
@@ -267,7 +267,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// <param name="code">角色编码</param>
         /// <returns></returns>
         [HttpGet("/api/v1/rbac/permission/permission_tree/{code}")]
-        public IActionResult PermissionTree(string code)
+        public ActionResult<PermissionTreeModel> PermissionTree(string code)
         {
             var response = ResponseModelFactory.CreateInstance;
             using (_dbContext)

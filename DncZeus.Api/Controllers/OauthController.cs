@@ -13,6 +13,7 @@ using System.Linq;
 using System.Security.Claims;
 using DncZeus.Api.Auth;
 using static DncZeus.Api.Entities.Enums.CommonEnum;
+using DncZeus.Api.Models;
 
 namespace DncZeus.Api.Controllers
 {
@@ -34,21 +35,24 @@ namespace DncZeus.Api.Controllers
             _appSettings = appSettings.Value;
             _dbContext = dbContext;
         }
-
+       
         /// <summary>
         /// 
         /// </summary>
         /// <param name="username"></param>
         /// <param name="password"></param>
         /// <returns></returns>
-        [HttpGet]
-        public IActionResult Auth(string username, string password)
+        [HttpPost]
+        public IActionResult Auth( AuthModel model)
         {
+            var username = model.userName;
+            var password = model.password;
             var response = ResponseModelFactory.CreateInstance;
             DncUser user;
             using (_dbContext)
             {
                 user = _dbContext.DncUser.FirstOrDefault(x => x.LoginName == username.Trim());
+                
                 if (user == null || user.IsDeleted == IsDeleted.Yes)
                 {
                     response.SetFailed("用户不存在");
