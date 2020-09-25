@@ -14,6 +14,8 @@ using DncZeus.Api.ViewModels.Rbac.DncPermission;
 using DncZeus.Api.ViewModels.Rbac.DncRole;
 using DncZeus.Api.ViewModels.Rbac.DncUser;
 using DncZeus.Api.ViewModels.Refuse;
+using DncZeus.Api.ViewModels.System.Dictionary;
+using DncZeus.Api.ViewModels.System.DicType;
 using DncZeus.Api.ViewModels.User.Department;
 using DncZeus.Api.ViewModels.User.Position;
 using DncZeus.Api.ViewModels.Wage;
@@ -100,6 +102,18 @@ namespace DncZeus.Api.Configurations
             CreateMap<FinanceAccount, AccountJsonModel>();
             CreateMap<FinanceAccount, AccountCreateViewModel>();
             CreateMap<AccountCreateViewModel, FinanceAccount>();
+            #endregion
+
+            #region SystemDictionary
+            CreateMap<SystemDictionary, DictionaryJsonModel>();
+            CreateMap<SystemDictionary, DictionaryCreateViewModel>();
+            CreateMap<DictionaryCreateViewModel, SystemDictionary>();
+            #endregion
+
+            #region SystemDicType
+            CreateMap<SystemDicType, DicTypeJsonModel>();
+            CreateMap<SystemDicType, DicTypeCreateViewModel>();
+            CreateMap<DicTypeCreateViewModel, SystemDicType>();
             #endregion
         }
     }
