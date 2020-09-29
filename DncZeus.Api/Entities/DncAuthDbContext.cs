@@ -74,6 +74,18 @@ namespace DncZeus.Api.Entities
         /// 财务账号
         /// </summary>
         public DbSet<FinanceAccount> FinanceAccount { get; set; }
+        /// <summary>
+        /// 财务信息
+        /// </summary>
+        public DbSet<FinanceInfo> FinanceInfo { get; set; }
+        /// <summary>
+        /// 字典
+        /// </summary>
+        public DbSet<SystemDictionary> SystemDictionary { get; set; }
+        /// <summary>
+        /// 字典类型
+        /// </summary>
+        public DbSet<SystemDicType> SystemDicType { get; set; }
 
         #region DbQuery
         /// <summary>
@@ -154,6 +166,17 @@ namespace DncZeus.Api.Entities
                 entity.HasOne(x => x.DncPermission)
                     .WithMany(x => x.Roles)
                     .HasForeignKey(x => x.PermissionCode)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            modelBuilder.Entity<SystemDictionary>(entity =>
+            {
+                entity.HasIndex(x => x.Code)
+                    .IsUnique();
+
+                entity.HasOne(x => x.systemDicType)
+                    .WithMany(x => x.SystemDictionarys)
+                    .HasForeignKey(x => x.TypeCode)
                     .OnDelete(DeleteBehavior.Restrict);
             });
 

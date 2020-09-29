@@ -68,6 +68,14 @@ class HttpRequest {
                 break;
             case 401:
                 message = "接口服务错误,原因:未授权的访问(没有权限或者登录已超时)";
+                Modal.error({
+                    title: "错误提示",
+                    content: message,
+                    duration: 15,
+                    closable: false,
+                    onOk: () => { window.location.href = window.location.href; }
+                });
+                //router.push("/login")
                 break;
             case 500:
                 message = "接口服务错误,原因:[" + error.response.statusText + "]";
@@ -80,7 +88,8 @@ class HttpRequest {
             title: "错误提示",
             content: message,
             duration: 15,
-            closable: false
+            closable: false,
+            //onOk: () => {}
         });
         iView.LoadingBar.finish();
     }

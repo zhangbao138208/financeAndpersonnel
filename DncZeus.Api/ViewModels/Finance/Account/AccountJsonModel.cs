@@ -15,6 +15,7 @@ namespace DncZeus.Api.ViewModels.Finance.Account
         public string Holder { get; set; }
         public string DepartmentCode { get; set; }
         public string Type { get; set; }
+        public string TypeName { get; set; }
         public string Name { get; set; }
         public string Account { get; set; }
         public string Owner { get; set; }

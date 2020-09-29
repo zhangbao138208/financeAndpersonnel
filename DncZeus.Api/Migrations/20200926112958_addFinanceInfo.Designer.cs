@@ -4,14 +4,16 @@ using DncZeus.Api.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace DncZeus.Api.Migrations
 {
     [DbContext(typeof(DncZeusDbContext))]
-    partial class DncZeusDbContextModelSnapshot : ModelSnapshot
+    [Migration("20200926112958_addFinanceInfo")]
+    partial class addFinanceInfo
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -443,8 +445,8 @@ namespace DncZeus.Api.Migrations
                     b.Property<string>("Code")
                         .HasColumnType("nvarchar(50)");
 
-                    b.Property<decimal>("Amount")
-                        .HasColumnType("decimal(18,2)");
+                    b.Property<string>("Amount")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<Guid>("CreatedByUserGuid")
                         .HasColumnType("uniqueidentifier");

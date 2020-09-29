@@ -13,10 +13,6 @@ namespace DncZeus.Api.ViewModels.System.Dictionary
         /// 展示用
         /// </summary>
         public string Name { get; set; }
-        /// <summary>
-        /// 显示颜色
-        /// </summary>
-        public string Color { get; set; }
         [Required(ErrorMessage = "{0}字段是必须的")]
         /// <summary>
         /// 使用值

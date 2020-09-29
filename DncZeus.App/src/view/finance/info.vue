@@ -8,9 +8,9 @@
         :border="false"
         size="small"
         search-place="top"
-        v-model="stores.account.data"
-        :totalCount="stores.account.query.totalCount"
-        :columns="stores.account.columns"
+        v-model="stores.financeinfo.data"
+        :totalCount="stores.financeinfo.query.totalCount"
+        :columns="stores.financeinfo.columns"
         @on-delete="handleDelete"
         @on-edit="handleEdit"
         @on-select="handleSelect"
@@ -30,19 +30,19 @@
                       type="text"
                       search
                       :clearable="true"
-                      v-model="stores.account.query.kw"
+                      v-model="stores.financeinfo.query.kw"
                       placeholder="输入关键字搜索..."
-                      @on-search="handleSearchAccount()"
+                      @on-search="handleSearchFinanceInfo()"
                     >
                       <Select
                         slot="prepend"
-                        v-model="stores.account.query.isDeleted"
-                        @on-change="handleSearchAccount"
+                        v-model="stores.financeinfo.query.isDeleted"
+                        @on-change="handleSearchFinanceInfo"
                         placeholder="删除状态"
                         style="width: 60px"
                       >
                         <Option
-                          v-for="item in stores.account.sources
+                          v-for="item in stores.financeinfo.sources
                             .isDeletedSources"
                           :value="item.value"
                           :key="item.value"
@@ -51,16 +51,17 @@
                       </Select>
                       <Select
                         slot="prepend"
-                        v-model="stores.account.query.status"
-                        @on-change="handleSearchAccount"
-                        placeholder="财务账号状态"
+                        v-model="stores.financeinfo.query.status"
+                        @on-change="handleSearchFinanceInfo"
+                        placeholder="状态"
                         style="width: 60px"
                       >
                         <Option
-                          v-for="item in stores.account.sources.statusSources"
+                          v-for="item in stores.financeinfo.sources
+                            .statusSources"
                           :value="item.value"
                           :key="item.value"
-                          >{{ item.text }}</Option
+                          >{{ item.name }}</Option
                         >
                       </Select>
                     </Input>
@@ -103,8 +104,8 @@
                   icon="md-create"
                   type="primary"
                   @click="handleShowCreateWindow"
-                  title="新增财务账号"
-                  >新增财务账号</Button
+                  title="新增财务管理"
+                  >新增财务管理</Button
                 >
               </Col>
             </Row>
@@ -122,24 +123,25 @@
     >
       <Form
         :model="formModel.fields"
-        ref="formAccount"
+        ref="formFinanceInfo"
         :rules="formModel.rules"
-        label-account="left"
+        label-financeinfo="left"
       >
-        <FormItem label="财务账号名称" prop="name" label-account="left">
-          <Input
-            v-model="formModel.fields.name"
-            placeholder="请输入财务账号名称"
-          />
+        <FormItem label="标题" prop="title" label-financeinfo="left">
+          <Input v-model="formModel.fields.title" placeholder="标题" />
         </FormItem>
-        <FormItem label="类型" prop="type" label-account="left">
+        <FormItem label="金额" prop="amount" label-financeinfo="left">
+          <InputNumber :min="0" v-model="formModel.fields.amount"></InputNumber>
+        </FormItem>
+
+        <FormItem label="类型" prop="type" label-financeinfo="left">
           <mu-select v-model="formModel.fields.type">
             <mu-option
               :key="payType.value"
               :label="payType.name"
               :value="payType.value"
               avatar
-              v-for="(payType, index) in payTypes"
+              v-for="(payType, index) in types"
             >
               <mu-list-item-action avatar>
                 <mu-avatar :size="36" color="primary">{{
@@ -152,29 +154,100 @@
             </mu-option>
           </mu-select>
         </FormItem>
-        <FormItem label="账号" prop="account" label-account="left">
-          <Input v-model="formModel.fields.account" placeholder="请输入账号" />
+        <FormItem label="账号" prop="financeAccount" label-financeinfo="left">
+          <mu-select v-model="formModel.fields.financeAccount">
+            <mu-option
+              :key="financeAccount.code"
+              :label="financeAccount.name"
+              :value="financeAccount.code"
+              avatar
+              v-for="(financeAccount, index) in financeAccounts"
+            >
+              <mu-list-item-action avatar>
+                <mu-avatar :size="36" color="primary">{{
+                  financeAccount.name.substring(0, 1)
+                }}</mu-avatar>
+              </mu-list-item-action>
+              <mu-list-item-content>
+                <mu-list-item-title>{{
+                  financeAccount.name
+                }}</mu-list-item-title>
+              </mu-list-item-content>
+            </mu-option>
+          </mu-select>
         </FormItem>
-        <FormItem label="开户人" prop="holder" label-account="left">
-          <Input v-model="formModel.fields.holder" placeholder="请输入开户人" />
+        <FormItem label="部门" prop="financeAccount" label-financeinfo="left">
+          <mu-select v-model="formModel.fields.departmentCode">
+            <mu-option
+              :key="department.code"
+              :label="department.name"
+              :value="department.code"
+              avatar
+              v-for="(department, index) in departments"
+            >
+              <mu-list-item-action avatar>
+                <mu-avatar :size="36" color="primary">{{
+                  department.name.substring(0, 1)
+                }}</mu-avatar>
+              </mu-list-item-action>
+              <mu-list-item-content>
+                <mu-list-item-title>{{ department.name }}</mu-list-item-title>
+              </mu-list-item-content>
+            </mu-option>
+          </mu-select>
         </FormItem>
-        <FormItem label="描述" prop="description" label-account="left">
+        <FormItem label="状态" label-financeinfo="left">
+          <mu-select v-model="formModel.fields.infoStatus">
+            <mu-option
+              :key="status.value"
+              :label="status.name"
+              :value="status.value"
+              avatar
+              v-for="(status, index) in stores.financeinfo.sources
+                .statusFormSources"
+            >
+              <mu-list-item-action avatar>
+                <mu-avatar :size="36" color="primary">{{
+                  status.name.substring(0, 1)
+                }}</mu-avatar>
+              </mu-list-item-action>
+              <mu-list-item-content>
+                <mu-list-item-title>{{ status.name }}</mu-list-item-title>
+              </mu-list-item-content>
+            </mu-option>
+          </mu-select>
+        </FormItem>
+        <FormItem label="经手人" prop="handleName" label-financeinfo="left">
+          <Input v-model="formModel.fields.handleName" placeholder="经手人" />
+        </FormItem>
+        <FormItem label="经手时间" prop="handleDate" label-financeinfo="left">
+          <DatePicker
+            format="yyyy-MM-dd"
+            type="date"
+            v-model="formModel.fields.handleDate"
+          ></DatePicker>
+        </FormItem>
+        <FormItem label="描述" prop="description" label-financeinfo="left">
           <Input
             type="textarea"
             v-model="formModel.fields.description"
             placeholder="请输入描述"
           />
         </FormItem>
-        <FormItem label="财务账号状态" label-account="left">
-          <i-switch
-            size="large"
-            v-model="formModel.fields.status"
-            :true-value="1"
-            :false-value="0"
-          >
-            <span slot="open">正常</span>
-            <span slot="close">禁用</span>
-          </i-switch>
+        <FormItem label="附件" prop="filePath" label-financeinfo="left">
+          <Upload multiple type="drag" action="" :before-upload="beforeUpload">
+            <div style="padding: 20px 0">
+              <Icon
+                type="ios-cloud-upload"
+                size="52"
+                style="color: #3399ff"
+              ></Icon>
+              <p>点击或拖动文件以上传</p>
+            </div>
+            <div>
+              {{ formModel.fileName }}
+            </div>
+          </Upload>
         </FormItem>
       </Form>
       <div class="demo-drawer-footer">
@@ -199,25 +272,28 @@
 import Tables from '_c/tables'
 
 import {
-  getAccountList,
-  createAccount,
-  loadAccount,
-  editAccount,
-  deleteAccount,
+  getFinanceInfoList,
+  createFinanceInfo,
+  loadFinanceInfo,
+  editFinanceInfo,
+  deleteFinanceInfo,
   batchCommand,
-} from '@/api/finance/account'
-import {
-  loadDictionarySimpleList
-} from '@/api/system/dictionary'
+} from '@/api/finance/financeInfo'
+import { loadAccountSimpleList } from '@/api/finance/account'
+import { loadDepartmentSimpleList } from '@/api/user/department'
+import { loadDictionarySimpleList } from '@/api/system/dictionary'
+import { upload } from '@/api/common'
+
 export default {
-  name: 'finance_account_page',
+  name: 'finance_financeinfo_page',
   components: {
     Tables,
   },
   data() {
-    
     return {
-      payTypes:[],
+      types: [],
+      financeAccounts: [],
+      departments: [],
       commands: {
         delete: { name: 'delete', title: '删除' },
         recover: { name: 'recover', title: '恢复' },
@@ -225,17 +301,23 @@ export default {
         normal: { name: 'normal', title: '启用' },
       },
       formModel: {
+        fileName: '',
         opened: false,
-        title: '创建财务账号',
+        title: '创建财务管理',
         mode: 'create',
         selection: [],
         fields: {
           code: '',
           name: '',
-          account: '',
+          financeAccount: '',
+          departmentCode: '',
           type: '',
-          holder: '',
+          handleName: '',
+          handleDate: '',
+          infoStatus: '',
           description: '',
+          filePath: '',
+          amount: 0,
           isLocked: 0,
           status: 1,
           isDeleted: 0,
@@ -246,11 +328,11 @@ export default {
             {
               type: 'string',
               required: true,
-              message: '请输入财务账号名称',
+              message: '请输入财务管理名称',
               min: 2,
             },
           ],
-          account: [
+          financeinfo: [
             {
               type: 'string',
               required: true,
@@ -277,7 +359,7 @@ export default {
         },
       },
       stores: {
-        account: {
+        financeinfo: {
           query: {
             totalCount: 0,
             pageSize: 20,
@@ -298,32 +380,32 @@ export default {
               { value: 0, text: '正常' },
               { value: 1, text: '已删' },
             ],
-            statusSources: [
-              { value: -1, text: '全部' },
-              { value: 0, text: '禁用' },
-              { value: 1, text: '正常' },
-            ],
-            statusFormSources: [
-              { value: 0, text: '禁用' },
-              { value: 1, text: '正常' },
-            ],
+            statusSources: [{ value: '', name: '全部' }],
+            statusFormSources: [],
           },
           columns: [
             { type: 'selection', width: 50, key: 'handle' },
-            { title: '财务账号名称', key: 'name', width: 200, sortable: true },
+            { title: '类型', key: 'typeName', width: 100 },
+
+            { title: '标题', key: 'title', width: 150 },
+            { title: '金额', key: 'amount', width: 100 },
             {
               title: '状态',
-              key: 'status',
+              key: 'infoStatus',
               align: 'center',
               width: 120,
               render: (h, params) => {
-                let status = params.row.status
+                let status = params.row.infoStatus
                 let statusColor = 'success'
-                let statusText = '正常'
+                let statusText = params.row.infoStatusName
                 switch (status) {
+                  case '0':
                   case 0:
-                    statusText = '禁用'
                     statusColor = 'default'
+                    break
+                  case '-1':
+                  case -1:
+                    statusColor = 'error'
                     break
                 }
                 return h(
@@ -361,9 +443,44 @@ export default {
                 )
               },
             },
-            { title: '类型', key: 'typeName', width: 100 },
-            { title: '账号', key: 'account', width: 100 },
-            { title: '开户人', key: 'holder', width: 100 },
+
+            { title: '部门', key: 'departmentName', width: 100 },
+            { title: '账号', key: 'financeAccountName', width: 100 },
+            { title: '开户人', key: 'handleName', width: 100 },
+            {
+              title: '开户时间',
+              key: 'handleDate',
+              width: 100,
+              ellipsis: true,
+              tooltip: true,
+            },
+            {
+              title: '附件',
+              key: 'filePath',
+              ellipsis: true,
+              tooltip: true,
+              width: 150,
+              render: (h, params) => {
+                let downloadUrl = params.row.filePath
+
+                let index = downloadUrl.indexOf('uploads')
+                let a = downloadUrl.substr(index).split('/')
+                var title = '下载'
+                if (!!a[a.length - 1]) {
+                  title = a[a.length - 1]
+                }
+                console.log(downloadUrl)
+                return h(
+                  'a',
+                  {
+                    attrs: {
+                      href: downloadUrl,
+                    },
+                  },
+                  title //整个的信息即气泡内文字
+                )
+              },
+            },
             { title: '描述', key: 'description', width: 100 },
             {
               title: '创建时间',
@@ -372,10 +489,11 @@ export default {
               tooltip: true,
               key: 'createdOn',
             },
-            { title: '创建者', key: 'createdByUserName' },
+            { title: '创建者', width: 100, key: 'createdByUserName' },
             {
               title: '操作',
               align: 'center',
+              fixed: 'right',
               key: 'handle',
               width: 150,
               className: 'table-command-column',
@@ -385,6 +503,9 @@ export default {
                   return h(
                     'Poptip',
                     {
+                      style:{
+                        zIndex:500,
+                      },
                       props: {
                         confirm: true,
                         title: '你确定要删除吗?',
@@ -477,17 +598,28 @@ export default {
         height: 'calc(100% - 55px)',
         overflow: 'auto',
         paddingBottom: '53px',
-        account: 'static',
+        financeinfo: 'static',
       },
     }
+  },
+  watch: {
+    formModel: {
+      handler: function (newVal, old) {
+        let s = newVal.fields.filePath
+        let index = s.indexOf('uploads')
+        let a = s.substr(index).split('/')
+        this.formModel.fileName = a[a.length - 1]
+      },
+      deep: true,
+    },
   },
   computed: {
     formTitle() {
       if (this.formModel.mode === 'create') {
-        return '创建财务账号'
+        return '创建财务管理'
       }
       if (this.formModel.mode === 'edit') {
-        return '编辑财务账号'
+        return '编辑财务管理'
       }
       return ''
     },
@@ -498,16 +630,47 @@ export default {
       return this.formModel.selection.map((x) => x.code)
     },
   },
- methods: {
+  methods: {
     initData() {
-      loadDictionarySimpleList("finance_account_type").then((res) => {
-        this.payTypes = res.data.data
-       })
+      loadDictionarySimpleList('finance_manager_type').then((res) => {
+        this.types = res.data.data
+      })
+      loadDepartmentSimpleList().then((res) => {
+        this.departments = res.data.data
+      })
+      loadAccountSimpleList().then((res) => {
+        this.financeAccounts = res.data.data
+      })
+      loadDictionarySimpleList('finance_manager_status').then((res) => {
+        this.stores.financeinfo.sources.statusSources = [
+          ...this.stores.financeinfo.sources.statusSources,
+          ...res.data.data,
+        ]
+        this.stores.financeinfo.sources.statusFormSources = res.data.data
+      })
     },
-    loadAccountList() {
-      getAccountList(this.stores.account.query).then((res) => {
-        this.stores.account.data = res.data.data
-        this.stores.account.query.totalCount = res.data.totalCount
+    loadFinanceInfoList() {
+      getFinanceInfoList(this.stores.financeinfo.query).then((res) => {
+        this.stores.financeinfo.data = res.data.data
+        this.stores.financeinfo.query.totalCount = res.data.totalCount
+      })
+    },
+    beforeUpload(file) {
+      let formData = new FormData()
+      formData.append('file', file)
+      upload(formData).then((res) => {
+        if (res.data.code == 200) {
+          this.formModel.fields.filePath = res.data.data.hostUrl
+          //   let index =res.data.data.hostUrl.indexOf('uploads')
+          //   let s=res.data.data.hostUrl.substr(index).split('/')
+          //   console.log(s)
+          //   this.formModel.fileName = res.data.data.name
+          //   console.log(res.data)
+          // return true
+        } else {
+          this.$Message.error(res.data.message)
+        }
+        return false
       })
     },
     handleOpenFormWindow() {
@@ -525,60 +688,60 @@ export default {
     },
     handleEdit(params) {
       this.handleSwitchFormModeToEdit()
-      this.handleResetFormAccount()
-      this.doLoadAccount(params.row.code)
+      this.handleResetFormFinanceInfo()
+      this.doLoadFinanceInfo(params.row.code)
     },
     handleSelect(selection, row) {},
     handleSelectionChange(selection) {
       this.formModel.selection = selection
     },
     handleRefresh() {
-      this.loadAccountList()
+      this.loadFinanceInfoList()
     },
     handleShowCreateWindow() {
       this.handleSwitchFormModeToCreate()
       this.handleOpenFormWindow()
-      this.handleResetFormAccount()
+      this.handleResetFormFinanceInfo()
     },
     handleSubmitDePartment() {
-      let valid = this.validateAccountForm()
+      let valid = this.validateFinanceInfoForm()
       if (valid) {
         if (this.formModel.mode === 'create') {
-          this.doCreateAccount()
+          this.doCreateFinanceInfo()
         }
         if (this.formModel.mode === 'edit') {
-          this.doEditAccount()
+          this.doEditFinanceInfo()
         }
       }
     },
-    handleResetFormAccount() {
-      this.$refs['formAccount'].resetFields()
+    handleResetFormFinanceInfo() {
+      this.$refs['formFinanceInfo'].resetFields()
     },
-    doCreateAccount() {
-      createAccount(this.formModel.fields).then((res) => {
+    doCreateFinanceInfo() {
+      createFinanceInfo(this.formModel.fields).then((res) => {
         if (res.data.code === 200) {
           this.$Message.success(res.data.message)
-          this.loadAccountList()
+          this.loadFinanceInfoList()
         } else {
           this.$Message.warning(res.data.message)
         }
         this.handleCloseFormWindow()
       })
     },
-    doEditAccount() {
-      editAccount(this.formModel.fields).then((res) => {
+    doEditFinanceInfo() {
+      editFinanceInfo(this.formModel.fields).then((res) => {
         if (res.data.code === 200) {
           this.$Message.success(res.data.message)
-          this.loadAccountList()
+          this.loadFinanceInfoList()
         } else {
           this.$Message.warning(res.data.message)
         }
         this.handleCloseFormWindow()
       })
     },
-    validateAccountForm() {
+    validateFinanceInfoForm() {
       let _valid = false
-      this.$refs['formAccount'].validate((valid) => {
+      this.$refs['formFinanceInfo'].validate((valid) => {
         if (!valid) {
           this.$Message.error('请完善表单信息')
           _valid = false
@@ -588,8 +751,8 @@ export default {
       })
       return _valid
     },
-    doLoadAccount(code) {
-      loadAccount({ code: code }).then((res) => {
+    doLoadFinanceInfo(code) {
+      loadFinanceInfo({ code: code }).then((res) => {
         this.formModel.fields = res.data.data
         console.log(this.formModel.fields)
       })
@@ -602,10 +765,10 @@ export default {
         this.$Message.warning('请选择至少一条数据')
         return
       }
-      deleteAccount(ids).then((res) => {
+      deleteFinanceInfo(ids).then((res) => {
         if (res.data.code === 200) {
           this.$Message.success(res.data.message)
-          this.loadAccountList()
+          this.loadFinanceInfoList()
         } else {
           this.$Message.warning(res.data.message)
         }
@@ -635,7 +798,7 @@ export default {
       }).then((res) => {
         if (res.data.code === 200) {
           this.$Message.success(res.data.message)
-          this.loadAccountList()
+          this.loadFinanceInfoList()
           this.formModel.selection = []
         } else {
           this.$Message.warning(res.data.message)
@@ -643,8 +806,8 @@ export default {
         this.$Modal.remove()
       })
     },
-    handleSearchAccount() {
-      this.loadAccountList()
+    handleSearchFinanceInfo() {
+      this.loadFinanceInfoList()
     },
     rowClsRender(row, index) {
       if (row.isDeleted) {
@@ -653,17 +816,17 @@ export default {
       return ''
     },
     handlePageChanged(page) {
-      this.stores.account.query.currentPage = page
-      this.loadAccountList()
+      this.stores.financeinfo.query.currentPage = page
+      this.loadFinanceInfoList()
     },
     handlePageSizeChanged(pageSize) {
-      this.stores.account.query.pageSize = pageSize
-      this.loadAccountList()
+      this.stores.financeinfo.query.pageSize = pageSize
+      this.loadFinanceInfoList()
     },
   },
   mounted() {
     this.initData()
-    this.loadAccountList()
+    this.loadFinanceInfoList()
   },
 }
 </script>

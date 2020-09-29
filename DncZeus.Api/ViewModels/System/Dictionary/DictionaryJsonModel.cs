@@ -4,14 +4,11 @@
     {
         public string Code { get; set; }
         public string TypeCode { get; set; }
+        public string TypeName { get; set; }
         /// <summary>
         /// 展示用
         /// </summary>
         public string Name { get; set; }
-        /// <summary>
-        /// 显示颜色
-        /// </summary>
-        public string Color { get; set; }
         /// <summary>
         /// 使用值
         /// </summary>

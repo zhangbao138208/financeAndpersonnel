@@ -44,7 +44,9 @@ namespace DncZeus.Api.Auth
                     ValidateIssuerSigningKey = true,
                     IssuerSigningKey = new SymmetricSecurityKey(key),
                     ValidateIssuer = false,
-                    ValidateAudience = false
+                    ValidateAudience = false,
+                    //是否验证失效时间
+                    ValidateLifetime = true,
                 };
             });
         }
@@ -56,7 +58,8 @@ namespace DncZeus.Api.Auth
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = claimsIdentity,
-                Expires = DateTime.UtcNow.AddDays(7),
+                // Expires = DateTime.UtcNow.AddDays(7),
+                Expires = DateTime.Now.AddMinutes(5),
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
             };
             var token = tokenHandler.CreateToken(tokenDescriptor);

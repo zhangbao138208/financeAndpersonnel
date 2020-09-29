@@ -2,102 +2,110 @@
   <div>
     <Card>
       <tables
+        ref="tables"
+        editable
+        searchable
         :border="false"
-        :columns="stores.resumeInfo.columns"
-        :row-class-name="rowClsRender"
-        :totalCount="stores.resumeInfo.query.totalCount"
+        size="small"
+        search-place="top"
+        v-model="stores.dictionary.data"
+        :totalCount="stores.dictionary.query.totalCount"
+        :columns="stores.dictionary.columns"
         @on-delete="handleDelete"
         @on-edit="handleEdit"
-        @on-page-change="handlePageChanged"
-        @on-page-size-change="handlePageSizeChanged"
-        @on-refresh="handleRefresh"
         @on-select="handleSelect"
         @on-selection-change="handleSelectionChange"
-        editable
-        ref="tables"
-        search-place="top"
-        searchable
-        size="small"
-        v-model="stores.resumeInfo.data"
+        @on-refresh="handleRefresh"
+        :row-class-name="rowClsRender"
+        @on-page-change="handlePageChanged"
+        @on-page-size-change="handlePageSizeChanged"
       >
         <div slot="search">
           <section class="dnc-toolbar-wrap">
             <Row :gutter="16">
               <Col span="16">
-                <Form @submit.native.prevent inline>
+                <Form inline @submit.native.prevent>
                   <FormItem>
                     <Input
-                      :clearable="true"
-                      @on-search="handleSearchResumeInfo()"
-                      placeholder="输入关键字搜索..."
-                      search
                       type="text"
-                      v-model="stores.resumeInfo.query.kw"
+                      search
+                      :clearable="true"
+                      v-model="stores.dictionary.query.kw"
+                      placeholder="输入关键字搜索..."
+                      @on-search="handleSearchDictionary()"
                     >
-                      <Select
-                        @on-change="handleSearchResumeInfo"
+                      <!-- <Select
+                        slot="prepend"
+                        v-model="stores.dictionary.query.isDeleted"
+                        @on-change="handleSearchDictionary"
                         placeholder="删除状态"
-                        slot="prepend"
-                        style="width:60px;"
-                        v-model="stores.resumeInfo.query.isDeleted"
+                        style="width: 60px"
                       >
                         <Option
-                          :key="item.value"
+                          v-for="item in stores.dictionary.sources
+                            .isDeletedSources"
                           :value="item.value"
-                          v-for="item in stores.resumeInfo.sources.isDeletedSources"
-                        >{{item.text}}</Option>
+                          :key="item.value"
+                          >{{ item.text }}</Option
+                        >
                       </Select>
                       <Select
-                        @on-change="handleSearchResumeInfo"
-                        placeholder="简历状态"
                         slot="prepend"
-                        style="width:60px;"
-                        v-model="stores.resumeInfo.query.status"
+                        v-model="stores.dictionary.query.status"
+                        @on-change="handleSearchDictionary"
+                        placeholder="字典表类型状态"
+                        style="width: 60px"
                       >
                         <Option
-                          :key="item.value"
+                          v-for="item in stores.dictionary.sources.statusSources"
                           :value="item.value"
-                          v-for="item in stores.resumeInfo.sources.statusSources"
-                        >{{item.text}}</Option>
-                      </Select>
+                          :key="item.value"
+                          >{{ item.text }}</Option
+                        >
+                      </Select> -->
                     </Input>
                   </FormItem>
                 </Form>
               </Col>
-              <Col class="dnc-toolbar-btns" span="8">
+              <Col span="8" class="dnc-toolbar-btns">
                 <ButtonGroup class="mr3">
                   <Button
-                    @click="handleBatchCommand('delete')"
                     class="txt-danger"
                     icon="md-trash"
                     title="删除"
+                    @click="handleBatchCommand('delete')"
                   ></Button>
-                  <Button
-                    @click="handleBatchCommand('recover')"
+                  <!-- <Button
                     class="txt-success"
                     icon="md-redo"
                     title="恢复"
+                    @click="handleBatchCommand('recover')"
                   ></Button>
                   <Button
-                    @click="handleBatchCommand('forbidden')"
                     class="txt-danger"
                     icon="md-hand"
                     title="禁用"
+                    @click="handleBatchCommand('forbidden')"
                   ></Button>
                   <Button
-                    @click="handleBatchCommand('normal')"
                     class="txt-success"
                     icon="md-checkmark"
                     title="启用"
+                    @click="handleBatchCommand('normal')"
+                  ></Button> -->
+                  <Button
+                    icon="md-refresh"
+                    title="刷新"
+                    @click="handleRefresh"
                   ></Button>
-                  <Button @click="handleRefresh" icon="md-refresh" title="刷新"></Button>
                 </ButtonGroup>
                 <Button
-                  @click="handleShowCreateWindow"
                   icon="md-create"
-                  title="新增简历"
                   type="primary"
-                >新增简历</Button>
+                  @click="handleShowCreateWindow"
+                  title="新增字典表类型"
+                  >新增字典表类型</Button
+                >
               </Col>
             </Row>
           </section>
@@ -105,24 +113,70 @@
       </tables>
     </Card>
     <Drawer
-     :mask-closable="false"
-      :mask="true"
-      :styles="styles"
       :title="formTitle"
       v-model="formModel.opened"
-      width="984"
+      width="400"
+      :mask-closable="false"
+      :mask="true"
+      :styles="styles"
     >
       <Form
         :model="formModel.fields"
+        ref="formDictionary"
         :rules="formModel.rules"
-        label-position="left"
-        ref="formResumeInfo"
+        label-dictionary="left"
       >
-        <Home :fields="formModel.fields" @getChildFields="_getChildFields" v-if="formModel.opened"></Home>
+        <FormItem label="字典类型" prop="typeCode">
+          <mu-select v-model="formModel.fields.typeCode">
+            <mu-option
+              :key="dicType.code"
+              :label="dicType.name"
+              :value="dicType.code"
+              avatar
+              v-for="(dicType, index) in dicTypes"
+            >
+              <mu-list-item-action avatar>
+                <mu-avatar :size="36" color="primary">{{
+                  dicType.name.substring(0, 1)
+                }}</mu-avatar>
+              </mu-list-item-action>
+              <mu-list-item-content>
+                <mu-list-item-title>{{ dicType.name }}</mu-list-item-title>
+              </mu-list-item-content>
+            </mu-option>
+          </mu-select>
+        </FormItem>
+        <FormItem label="字典名称" prop="name" label-dictionary="left">
+          <Input v-model="formModel.fields.name" placeholder="请输入字典名称" />
+        </FormItem>
+        <FormItem label="字典值" prop="value" label-dictionary="left">
+          <Input v-model="formModel.fields.value" placeholder="请输入字典值" />
+        </FormItem>
+        <FormItem label="固定" label-position="left">
+          <i-switch
+            size="large"
+            v-model="formModel.fields.fixed"
+            :true-value="1"
+            :false-value="0"
+          >
+            <span slot="open">固定</span>
+            <span slot="close">不固定</span>
+          </i-switch>
+        </FormItem>
       </Form>
       <div class="demo-drawer-footer">
-        <Button @click="handleSubmitResume" icon="md-checkmark-circle" type="primary">保 存</Button>
-        <Button @click="formModel.opened = false" icon="md-close" style="margin-left: 8px">取 消</Button>
+        <Button
+          icon="md-checkmark-circle"
+          type="primary"
+          @click="handleSubmitDePartment"
+          >保 存</Button
+        >
+        <Button
+          style="margin-left: 8px"
+          icon="md-close"
+          @click="formModel.opened = false"
+          >取 消</Button
+        >
       </div>
     </Drawer>
   </div>
@@ -130,25 +184,23 @@
 
 <script>
 import Tables from '_c/tables'
-import Home from './drawer/Home'
-import Moment from 'moment'
-
+import { loadDicTypeSimpleList } from '@/api/system/dicType'
 import {
-  getResumeInfoList,
-  createResumeInfo,
-  loadResumeInfo,
-  editResumeInfo,
-  deleteResumeInfo,
+  getDictionaryList,
+  createDictionary,
+  loadDictionary,
+  editDictionary,
+  deleteDictionary,
   batchCommand,
-} from '@/api/resume/resumeInfo'
+} from '@/api/system/dictionary'
 export default {
-  name: 'resume_list_page',
+  name: 'system_dictionary_page',
   components: {
     Tables,
-    Home,
   },
   data() {
     return {
+      dicTypes: [],
       commands: {
         delete: { name: 'delete', title: '删除' },
         recover: { name: 'recover', title: '恢复' },
@@ -157,43 +209,45 @@ export default {
       },
       formModel: {
         opened: false,
-        title: '创建简历',
+        title: '创建字典表类型',
         mode: 'create',
         selection: [],
         fields: {
           code: '',
-          realName: '',
-          departmentCode: '',
-          positionCode: '',
-          educationBackgrounds: '',
-          interests: '',
-          age: '',
-          address: '',
-          skills: '',
-          works: '',
-          awards: '',
-          email: '',
-          selfEvaluations: '',
-          tel: '',
-          mobile: '',
-          imagePath: '',
-          status: 1,
-          isDeleted: 0,
+          name: '',
+          typeCode: '',
+          value: '',
+          fixed: false,
         },
-        
         rules: {
-          realName: [
+          name: [
             {
               type: 'string',
               required: true,
-              message: '请输入简历名称',
+              message: '请输入字典名称',
               min: 2,
+            },
+          ],
+          typeCode: [
+            {
+              type: 'string',
+              required: true,
+              message: '请选择字典类型',
+              min: 2,
+            },
+          ],
+          value: [
+            {
+              type: 'string',
+              required: true,
+              message: '请输入字典值',
+              min: 1,
             },
           ],
         },
       },
       stores: {
-        resumeInfo: {
+        dictionary: {
           query: {
             totalCount: 0,
             pageSize: 20,
@@ -226,76 +280,16 @@ export default {
           },
           columns: [
             { type: 'selection', width: 50, key: 'handle' },
-            { title: '真实姓名', key: 'realName', width: 200, sortable: true },
-            {
-              title: '状态',
-              key: 'status',
-              align: 'center',
-              width: 120,
-              render: (h, params) => {
-                let status = params.row.status
-                let statusColor = 'success'
-                let statusText = '正常'
-                switch (status) {
-                  case 0:
-                    statusText = '禁用'
-                    statusColor = 'default'
-                    break
-                }
-                return h(
-                  'Tooltip',
-                  {
-                    props: {
-                      placement: 'top',
-                      transfer: true,
-                      delay: 500,
-                    },
-                  },
-                  [
-                    //这个中括号表示是Tooltip标签的子标签
-                    h(
-                      'Tag',
-                      {
-                        props: {
-                          //type: "dot",
-                          color: statusColor,
-                        },
-                      },
-                      statusText
-                    ), //表格列显示文字
-                    h(
-                      'p',
-                      {
-                        slot: 'content',
-                        style: {
-                          whiteSpace: 'normal',
-                        },
-                      },
-                      statusText //整个的信息即气泡内文字
-                    ),
-                  ]
-                )
-              },
-            },
-            { title: '职位', key: 'positionName', width: 100 },
-            { title: '部门', key: 'departmentName', width: 100 },
-            { title: '手机号', key: 'mobile', width: 100 },
-            { title: '邮箱', key: 'email', width: 200 },
-            {
-              title: '创建时间',
-              width: 150,
-              ellipsis: true,
-              tooltip: true,
-              key: 'createdOn',
-              render: (h, params) => {
-                            return h('span',Moment(params.row.createdOn).format('YYYY-MM-DD'));}
-            },
-            { title: '创建者', key: 'createdByUserName' },
+            { title: '名称', key: 'name', width: 300 },
+
+            { title: '值', key: 'value', width: 300 },
+            { title: '字典类型', key: 'typeName', width: 300 },
+
             {
               title: '操作',
               align: 'center',
               key: 'handle',
-              width: 150,
+              //   width: 150,
               className: 'table-command-column',
               options: ['edit'],
               button: [
@@ -395,17 +389,17 @@ export default {
         height: 'calc(100% - 55px)',
         overflow: 'auto',
         paddingBottom: '53px',
-        resumeInfo: 'static',
+        dictionary: 'static',
       },
     }
   },
   computed: {
     formTitle() {
       if (this.formModel.mode === 'create') {
-        return '创建简历'
+        return '创建字典表类型'
       }
       if (this.formModel.mode === 'edit') {
-        return '编辑简历'
+        return '编辑字典表类型'
       }
       return ''
     },
@@ -417,13 +411,15 @@ export default {
     },
   },
   methods: {
-    _getChildFields(fields) {
-      this.formModel.fields = fields
+    initData() {
+      loadDicTypeSimpleList().then((res) => {
+        this.dicTypes = res.data.data
+      })
     },
-    loadResumeInfoList() {
-      getResumeInfoList(this.stores.resumeInfo.query).then((res) => {
-        this.stores.resumeInfo.data = res.data.data
-        this.stores.resumeInfo.query.totalCount = res.data.totalCount
+    loadDictionaryList() {
+      getDictionaryList(this.stores.dictionary.query).then((res) => {
+        this.stores.dictionary.data = res.data.data
+        this.stores.dictionary.query.totalCount = res.data.totalCount
       })
     },
     handleOpenFormWindow() {
@@ -440,68 +436,61 @@ export default {
       this.handleOpenFormWindow()
     },
     handleEdit(params) {
-      Object.keys(this.formModel.fields).forEach(key=>this.formModel.fields[key]='');
-      this.formModel.fields.isDeleted=0;
-      this.formModel.fields.status=1;
       this.handleSwitchFormModeToEdit()
-      this.handleResetFormResumeInfo()
-      this.doLoadResumeInfo(params.row.code)
+      this.handleResetFormDictionary()
+      this.doLoadDictionary(params.row.code)
     },
     handleSelect(selection, row) {},
     handleSelectionChange(selection) {
       this.formModel.selection = selection
     },
     handleRefresh() {
-      this.loadResumeInfoList()
+      this.loadDictionaryList()
     },
     handleShowCreateWindow() {
-      Object.keys(this.formModel.fields).forEach(key=>this.formModel.fields[key]='');
-      this.formModel.fields.isDeleted=0;
-      this.formModel.fields.status=1;
       this.handleSwitchFormModeToCreate()
       this.handleOpenFormWindow()
-      this.handleResetFormResumeInfo()
+      this.handleResetFormDictionary()
     },
-    handleSubmitResume() {
-      //let valid = this.validateResumeInfoForm()
-      let valid = true
+    handleSubmitDePartment() {
+      let valid = this.validateDictionaryForm()
       if (valid) {
         if (this.formModel.mode === 'create') {
-          this.doCreateResumeInfo()
+          this.doCreateDictionary()
         }
         if (this.formModel.mode === 'edit') {
-          this.doEditResumeInfo()
+          this.doEditDictionary()
         }
       }
     },
-    handleResetFormResumeInfo() {
-      this.$refs['formResumeInfo'].resetFields()
+    handleResetFormDictionary() {
+      this.$refs['formDictionary'].resetFields()
     },
-    doCreateResumeInfo() {
-      createResumeInfo(this.formModel.fields).then((res) => {
+    doCreateDictionary() {
+      createDictionary(this.formModel.fields).then((res) => {
         if (res.data.code === 200) {
           this.$Message.success(res.data.message)
-          this.loadResumeInfoList()
+          this.loadDictionaryList()
         } else {
           this.$Message.warning(res.data.message)
         }
         this.handleCloseFormWindow()
       })
     },
-    doEditResumeInfo() {
-      editResumeInfo(this.formModel.fields).then((res) => {
+    doEditDictionary() {
+      editDictionary(this.formModel.fields).then((res) => {
         if (res.data.code === 200) {
           this.$Message.success(res.data.message)
-          this.loadResumeInfoList()
+          this.loadDictionaryList()
         } else {
           this.$Message.warning(res.data.message)
         }
         this.handleCloseFormWindow()
       })
     },
-    validateResumeInfoForm() {
+    validateDictionaryForm() {
       let _valid = false
-      this.$refs['formResumeInfo'].validate((valid) => {
+      this.$refs['formDictionary'].validate((valid) => {
         if (!valid) {
           this.$Message.error('请完善表单信息')
           _valid = false
@@ -511,9 +500,10 @@ export default {
       })
       return _valid
     },
-    doLoadResumeInfo(code) {
-      loadResumeInfo({ code: code }).then((res) => {
+    doLoadDictionary(code) {
+      loadDictionary({ code: code }).then((res) => {
         this.formModel.fields = res.data.data
+        console.log(this.formModel.fields)
       })
     },
     handleDelete(params) {
@@ -524,10 +514,10 @@ export default {
         this.$Message.warning('请选择至少一条数据')
         return
       }
-      deleteResumeInfo(ids).then((res) => {
+      deleteDictionary(ids).then((res) => {
         if (res.data.code === 200) {
           this.$Message.success(res.data.message)
-          this.loadResumeInfoList()
+          this.loadDictionaryList()
         } else {
           this.$Message.warning(res.data.message)
         }
@@ -557,7 +547,7 @@ export default {
       }).then((res) => {
         if (res.data.code === 200) {
           this.$Message.success(res.data.message)
-          this.loadResumeInfoList()
+          this.loadDictionaryList()
           this.formModel.selection = []
         } else {
           this.$Message.warning(res.data.message)
@@ -565,8 +555,8 @@ export default {
         this.$Modal.remove()
       })
     },
-    handleSearchResumeInfo() {
-      this.loadResumeInfoList()
+    handleSearchDictionary() {
+      this.loadDictionaryList()
     },
     rowClsRender(row, index) {
       if (row.isDeleted) {
@@ -575,20 +565,17 @@ export default {
       return ''
     },
     handlePageChanged(page) {
-      this.stores.resumeInfo.query.currentPage = page
-      this.loadResumeInfoList()
+      this.stores.dictionary.query.currentPage = page
+      this.loadDictionaryList()
     },
     handlePageSizeChanged(pageSize) {
-      this.stores.resumeInfo.query.pageSize = pageSize
-      this.loadResumeInfoList()
+      this.stores.dictionary.query.pageSize = pageSize
+      this.loadDictionaryList()
     },
   },
   mounted() {
-    // setInterval(() => {
-    //   let a=this.formModel.fields.age
-    //   this.formModel.fields.age=parseInt(a)+1
-    // }, 3000);
-    this.loadResumeInfoList()
+    this.initData()
+    this.loadDictionaryList()
   },
 }
 </script>

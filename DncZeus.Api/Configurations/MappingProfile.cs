@@ -8,6 +8,7 @@
 using AutoMapper;
 using DncZeus.Api.Entities;
 using DncZeus.Api.ViewModels.Finance.Account;
+using DncZeus.Api.ViewModels.Finance.FinanceInfo;
 using DncZeus.Api.ViewModels.Rbac.DncIcon;
 using DncZeus.Api.ViewModels.Rbac.DncMenu;
 using DncZeus.Api.ViewModels.Rbac.DncPermission;
@@ -102,6 +103,12 @@ namespace DncZeus.Api.Configurations
             CreateMap<FinanceAccount, AccountJsonModel>();
             CreateMap<FinanceAccount, AccountCreateViewModel>();
             CreateMap<AccountCreateViewModel, FinanceAccount>();
+            #endregion
+
+            #region FinanceInfo
+            CreateMap<FinanceInfo, FinanceInfoJsonModel>();
+            CreateMap<FinanceInfo, FinanceInfoCreateViewModel>();
+            CreateMap<FinanceInfoCreateViewModel, FinanceInfo>();
             #endregion
 
             #region SystemDictionary

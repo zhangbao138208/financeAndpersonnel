@@ -27,7 +27,7 @@ namespace DncZeus.Api.Utils
         /// 
         /// 格式: ".gif,.exe" 或更多
         /// </summary>
-        public string FileType = ".jpg,.gif,.png,.bmp,.ico,.jpeg,.flV,.f4v,.webm,.vob,.dat,.mkv,.swf,.lavt,.cpk,.dirac,.ram,.at,.fli,.flc,.mod,.div,.dv,.divx,.mpg,.mpeg,.mpe,.ts,.wmv,.avi,.asf,.rm,.rmvb,.m4v,.mov,.3gp,.3g2,.mp4";
+        public string FileType = ".jpg,.gif,.png,.bmp,.ico,.jpeg,.flV,.f4v,.webm,.vob,.dat,.mkv,.swf,.lavt,.cpk,.dirac,.ram,.at,.fli,.flc,.mod,.div,.dv,.divx,.mpg,.mpeg,.mpe,.ts,.wmv,.avi,.asf,.rm,.rmvb,.m4v,.mov,.3gp,.3g2,.mp4,.xls,.xlsx,.zip,.rar";
 
         /// <summary>
         /// 上传错误

@@ -109,7 +109,7 @@
       v-model="formModel.opened"
       width="400"
       :mask-closable="false"
-      :mask="false"
+      :mask="true"
       :styles="styles"
     >
       <Form :model="formModel.fields" ref="formPosition" :rules="formModel.rules" label-position="left">

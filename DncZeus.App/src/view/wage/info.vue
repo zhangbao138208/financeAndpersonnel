@@ -137,7 +137,7 @@
                     @click="downloadDemoExcel"
                     class="txt-success"
                     icon="md-arrow-down"
-                    title="导入模板下载"
+                    title="【导入模板】下载"
                   ></Button>
                   <Button
                     @click="ExportWithParms"
@@ -171,6 +171,7 @@
       @on-ok="workInfo"
       title="薪资导出"
       v-model="infoDialog"
+      
       width="647"
     >
       <mu-row gutter>
@@ -248,8 +249,8 @@
       </mu-row>
     </Modal>
     <Drawer
-      :mask="false"
       :mask-closable="false"
+      :mask="true"
       :styles="styles"
       :title="formTitle"
       v-model="formModel.opened"

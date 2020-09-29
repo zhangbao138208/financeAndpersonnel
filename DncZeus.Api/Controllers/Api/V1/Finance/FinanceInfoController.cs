@@ -6,66 +6,106 @@ using DncZeus.Api.Extensions.AuthContext;
 using DncZeus.Api.Extensions.CustomException;
 using DncZeus.Api.Models.Response;
 using DncZeus.Api.RequestPayload.Finance.Account;
+using DncZeus.Api.RequestPayload.Finance.FinanceInfo;
 using DncZeus.Api.Services;
 using DncZeus.Api.Utils;
 using DncZeus.Api.ViewModels.Finance.Account;
+using DncZeus.Api.ViewModels.Finance.FinanceInfo;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 
 namespace DncZeus.Api.Controllers.Api.V1.Finance
 {
     [Route("api/v1/finance/[controller]/[action]")]
     [ApiController]
     [CustomAuthorize]
-    public class AccountController:ControllerBase
+    public class FinanceInfoController:ControllerBase
     {
         private readonly DncZeusDbContext _dbContext;
         private readonly IMapper _mapper;
         private readonly DictionaryService _dictionaryService;
 
-        public AccountController(DncZeusDbContext dbContext, IMapper mapper, DictionaryService dictionaryService)
+        public FinanceInfoController(DncZeusDbContext dbContext, IMapper mapper, DictionaryService dictionaryService)
         {
             _dbContext = dbContext;
             _mapper = mapper;
             _dictionaryService = dictionaryService;
         }
+
         /// <summary>
-        /// 财务账号列表
+        /// 财务管理列表
         /// </summary>
         /// <returns></returns>
         [HttpPost]
-        public  ActionResult<ResponseResultModel<IEnumerable<AccountJsonModel>>> List(AccountRequestPayload payload)
+        public ActionResult<ResponseResultModel<IEnumerable<FinanceInfoJsonModel>>> List(FinanceInfoRequestPayload payload)
         {
             var response = ResponseModelFactory.CreateResultInstance;
             using (_dbContext)
             {
-                var query = _dbContext.FinanceAccount.AsQueryable();
+                var query = (
+                    from f in _dbContext.FinanceInfo
+                    join account in _dbContext.FinanceAccount
+                            on f.FinanceAccount equals account.Code
+                            into t1
+                    from account in t1.DefaultIfEmpty()
+                    join department in _dbContext.UserDepartment 
+                             on f.DepartmentCode equals department.Code
+                             into t2
+                             from departiment in t2.DefaultIfEmpty()
+                             select new FinanceInfoJsonModel
+                             {
+                                 Title=f.Title,
+                                 IsDeleted=f.IsDeleted,
+                                 User=f.User,
+                                 FinanceAccount=f.FinanceAccount,
+                                 FinanceAccountName=account.Name,
+                                 FilePath =f.FilePath,
+                                 ImagePath=f.ImagePath,
+                                 InfoStatus=f.InfoStatus,
+                                 Amount=f.Amount,
+                                 HandleDate=f.HandleDate,
+                                 HandleName=f.HandleName,
+                                 Description=f.Description,
+                                 Note=f.Note,
+                                 Type=f.Type,
+                                 DepartmentCode = f.DepartmentCode,
+                                 DepartmentName = departiment.Name,
+                                 Code = f.Code,
+                                 CreatedOn = f.CreatedOn.ToString(),
+                                 CreatedByUserGuid = f.CreatedByUserGuid,
+                                 CreatedByUserName = f.CreatedByUserName,
+                                 ModifiedOn = f.ModifiedOn.ToString(),
+                                 ModifiedByUserGuid = f.ModifiedByUserGuid,
+                                 ModifiedByUserName = f.ModifiedByUserName
+                             });
                 if (!string.IsNullOrEmpty(payload.Kw))
                 {
-                    query = query.Where(x => x.Name.Contains(payload.Kw.Trim()) || x.Code.Contains(payload.Kw.Trim()));
+                    query = query.Where(x => x.Title.Contains(payload.Kw.Trim()) || x.Code.Contains(payload.Kw.Trim()));
                 }
                 if (payload.IsDeleted > CommonEnum.IsDeleted.All)
                 {
                     query = query.Where(x => x.IsDeleted == payload.IsDeleted);
                 }
-                if (payload.Status > CommonEnum.Status.All)
+                if (!string.IsNullOrWhiteSpace(payload.Status))
                 {
-                    query = query.Where(x => x.Status == payload.Status);
+                    query = query.Where(x => x.InfoStatus == payload.Status);
                 }
                 var list = query.Paged(payload.CurrentPage, payload.PageSize).ToList();
                 var totalCount = query.Count();
-                var data = list.Select(_mapper.Map<FinanceAccount, AccountJsonModel>).ToList();
-
-                data.ForEach( r=> {
-                    var dic =  _dictionaryService.GetSYSDictionary("finance_account_type", r.Type);
+                //var data = list.Select(_mapper.Map<FinanceInfo, FinanceInfoJsonModel>).ToList();
+                var data = list;
+                data.ForEach(r => {
+                    var dic = _dictionaryService.GetSYSDictionary("finance_manager_type", r.Type);
                     r.TypeName = dic?.Name;
+                    var dic1 = _dictionaryService.GetSYSDictionary("finance_manager_status", r.InfoStatus);
+                    r.InfoStatusName = dic1?.Name;
+                    // r.InfoStatusName = dic?.Name;
                 });
-                
+
 
                 response.SetData(data, totalCount);
                 return Ok(response);
@@ -73,35 +113,30 @@ namespace DncZeus.Api.Controllers.Api.V1.Finance
         }
 
         /// <summary>
-        /// 创建财务账号
+        /// 创建财务管理
         /// </summary>
-        /// <param name="model">财务账号视图实体</param>
+        /// <param name="model">财务管理视图实体</param>
         /// <returns></returns>
         [HttpPost]
         [ProducesResponseType(200)]
-        public ActionResult<ResponseModel> Create(AccountCreateViewModel model)
+        public ActionResult<ResponseModel> Create(FinanceInfoCreateViewModel model)
         {
             var response = ResponseModelFactory.CreateInstance;
-            if (model.Name.Trim().Length <= 0)
+            if (model.Title.Trim().Length <= 0)
             {
-                response.SetFailed("请输入财务账号名称");
+                response.SetFailed("请输入财务管理名称");
                 return Ok(response);
             }
             using (_dbContext)
             {
-                if (_dbContext.DncRole.Count(x => x.Name == model.Name) > 0)
-                {
-                    response.SetFailed("财务账号已存在");
-                    return Ok(response);
-                }
-                var entity = _mapper.Map<AccountCreateViewModel, FinanceAccount>(model);
+                var entity = _mapper.Map<FinanceInfoCreateViewModel, FinanceInfo>(model);
 
                 entity.CreatedOn = DateTime.Now;
                 entity.Code = RandomHelper.GetRandomizer(8, true, false, true, true);
                 entity.CreatedByUserGuid = AuthContextService.CurrentUser.Guid;
                 entity.CreatedByUserName = AuthContextService.CurrentUser.DisplayName;
 
-                _dbContext.FinanceAccount.Add(entity);
+                _dbContext.FinanceInfo.Add(entity);
                 _dbContext.SaveChanges();
 
                 response.SetSuccess();
@@ -110,19 +145,19 @@ namespace DncZeus.Api.Controllers.Api.V1.Finance
         }
 
         /// <summary>
-        /// 编辑财务账号
+        /// 编辑财务管理
         /// </summary>
-        /// <param name="code">财务账号惟一编码</param>
+        /// <param name="code">财务管理惟一编码</param>
         /// <returns></returns>
         [HttpGet("{code}")]
         [ProducesResponseType(200)]
-        public ActionResult<ResponseModel<AccountCreateViewModel>> Edit(string code)
+        public ActionResult<ResponseModel<FinanceInfoCreateViewModel>> Edit(string code)
         {
             using (_dbContext)
             {
-                var entity = _dbContext.FinanceAccount.FirstOrDefault(x => x.Code == code);
+                var entity = _dbContext.FinanceInfo.FirstOrDefault(x => x.Code == code);
                 var response = ResponseModelFactory.CreateInstance;
-                var resEntity = _mapper.Map<FinanceAccount, AccountCreateViewModel>(entity);
+                var resEntity = _mapper.Map<FinanceInfo, FinanceInfoCreateViewModel>(entity);
                 response.SetData(resEntity);
                 return Ok(response);
             }
@@ -130,13 +165,13 @@ namespace DncZeus.Api.Controllers.Api.V1.Finance
 
 
         /// <summary>
-        /// 保存编辑后的财务账号信息
+        /// 保存编辑后的财务管理信息
         /// </summary>
-        /// <param name="model">财务账号视图实体</param>
+        /// <param name="model">财务管理视图实体</param>
         /// <returns></returns>
         [HttpPut]
         [ProducesResponseType(200)]
-        public ActionResult<ResponseModel> Edit(AccountCreateViewModel model)
+        public ActionResult<ResponseModel> Edit(FinanceInfoCreateViewModel model)
         {
             var response = ResponseModelFactory.CreateInstance;
             if (ConfigurationManager.AppSettings.IsTrialVersion)
@@ -146,19 +181,13 @@ namespace DncZeus.Api.Controllers.Api.V1.Finance
             }
             using (_dbContext)
             {
-                if (_dbContext.FinanceAccount.Count(x => x.Name == model.Name && x.Code != model.Code) > 0)
-                {
-                    response.SetFailed("财务账号已存在");
-                    return Ok(response);
-                }
+                //if (_dbContext.FinanceInfo.Count(x => x.Name == model.Name && x.Code != model.Code) > 0)
+                //{
+                //    response.SetFailed("财务管理已存在");
+                //    return Ok(response);
+                //}
 
-                var entity = _dbContext.FinanceAccount.Find(model.Code);
-                entity.Name = model.Name;
-                entity.Status = model.Status;
-                entity.Account = model.Account;
-                entity.Type = model.Type;
-                entity.Holder = model.Holder;
-                entity.Description = model.Description;
+                var entity = _mapper.Map<FinanceInfoCreateViewModel, FinanceInfo>(model);
 
                 entity.ModifiedOn = DateTime.Now;
                 entity.ModifiedByUserGuid = AuthContextService.CurrentUser.Guid;
@@ -171,9 +200,9 @@ namespace DncZeus.Api.Controllers.Api.V1.Finance
         }
 
         /// <summary>
-        /// 删除财务账号
+        /// 删除财务管理
         /// </summary>
-        /// <param name="ids">财务账号code,多个以逗号分隔</param>
+        /// <param name="ids">财务管理code,多个以逗号分隔</param>
         /// <returns></returns>
         [HttpDelete("{ids}")]
         [ProducesResponseType(200)]
@@ -190,9 +219,9 @@ namespace DncZeus.Api.Controllers.Api.V1.Finance
         }
 
         /// <summary>
-        /// 恢复财务账号
+        /// 恢复财务管理
         /// </summary>
-        /// <param name="ids">财务账号ID,多个以逗号分隔</param>
+        /// <param name="ids">财务管理ID,多个以逗号分隔</param>
         /// <returns></returns>
         [HttpPost("{ids}")]
         [ProducesResponseType(200)]
@@ -205,7 +234,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Finance
         /// 批量操作
         /// </summary>
         /// <param name="command"></param>
-        /// <param name="ids">财务账号ID,多个以逗号分隔</param>
+        /// <param name="ids">财务管理ID,多个以逗号分隔</param>
         /// <returns></returns>
         [HttpPost]
         [ProducesResponseType(200)]
@@ -241,30 +270,14 @@ namespace DncZeus.Api.Controllers.Api.V1.Finance
             }
             return Ok(response);
         }
-        /// <summary>
-        /// 查询所有财务账号列表(只包含主要的字段信息:name,code)
-        /// </summary>
-        /// <returns></returns>
-        [HttpGet("/api/v1/finance/account/find_simple_list")]
-        public ActionResult<ResponseResultModel<IEnumerable<SimpleModel>>> FindSimpleList()
-        {
-            var response = ResponseModelFactory.CreateInstance;
-            using (_dbContext)
-            {
-                var roles = _dbContext.FinanceAccount.
-                    Where(x => x.IsDeleted == CommonEnum.IsDeleted.No && x.Status == CommonEnum.Status.Normal).
-                    Select(x => new { x.Name, x.Code }).ToList();
-                response.SetData(roles);
-            }
-            return Ok(response);
-        }
+        
         #region 私有方法
 
         /// <summary>
-        /// 删除财务账号
+        /// 删除财务管理
         /// </summary>
         /// <param name="isDeleted"></param>
-        /// <param name="ids">财务账号ID字符串,多个以逗号隔开</param>
+        /// <param name="ids">财务管理ID字符串,多个以逗号隔开</param>
         /// <returns></returns>
         private ResponseModel UpdateIsDelete(CommonEnum.IsDeleted isDeleted, string ids)
         {
@@ -272,7 +285,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Finance
             {
                 var parameters = ids.Split(",").Select((id, index) => new SqlParameter(string.Format("@p{0}", index), id)).ToList();
                 var parameterNames = string.Join(", ", parameters.Select(p => p.ParameterName));
-                var sql = string.Format("UPDATE FinanceAccount SET IsDeleted=@IsDeleted WHERE Code IN ({0})", parameterNames);
+                var sql = string.Format("UPDATE FinanceInfo SET IsDeleted=@IsDeleted WHERE Code IN ({0})", parameterNames);
                 parameters.Add(new SqlParameter("@IsDeleted", (int)isDeleted));
                 _dbContext.Database.ExecuteSqlCommand(sql, parameters);
                 var response = ResponseModelFactory.CreateInstance;
@@ -281,10 +294,10 @@ namespace DncZeus.Api.Controllers.Api.V1.Finance
         }
 
         /// <summary>
-        /// 删除财务账号
+        /// 删除财务管理
         /// </summary>
-        /// <param name="status">财务账号状态</param>
-        /// <param name="ids">财务账号ID字符串,多个以逗号隔开</param>
+        /// <param name="status">财务管理状态</param>
+        /// <param name="ids">财务管理ID字符串,多个以逗号隔开</param>
         /// <returns></returns>
         private ResponseModel UpdateStatus(UserStatus status, string ids)
         {
@@ -292,7 +305,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Finance
             {
                 var parameters = ids.Split(",").Select((id, index) => new SqlParameter(string.Format("@p{0}", index), id)).ToList();
                 var parameterNames = string.Join(", ", parameters.Select(p => p.ParameterName));
-                var sql = string.Format("UPDATE FinanceAccount SET Status=@Status WHERE Code IN ({0})", parameterNames);
+                var sql = string.Format("UPDATE FinanceInfo SET InfoStatus=@Status WHERE Code IN ({0})", parameterNames);
                 parameters.Add(new SqlParameter("@Status", (int)status));
                 _dbContext.Database.ExecuteSqlCommand(sql, parameters);
                 var response = ResponseModelFactory.CreateInstance;

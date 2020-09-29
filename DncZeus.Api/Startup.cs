@@ -7,6 +7,7 @@
 
 using AutoMapper;
 using DncZeus.Api.Auth;
+using DncZeus.Api.Cache;
 using DncZeus.Api.Entities;
 using DncZeus.Api.Extensions.AuthContext;
 using DncZeus.Api.Extensions.CustomException;
@@ -24,6 +25,8 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.WebEncoders;
 using Microsoft.OpenApi.Models;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 using System;
 using System.IO;
 using System.Reflection;
@@ -75,17 +78,6 @@ namespace DncZeus.Api
                 options.TextEncoderSettings = new TextEncoderSettings(UnicodeRanges.BasicLatin, UnicodeRanges.CjkUnifiedIdeographs)
             );
 
-            //services
-            //    .AddMvc(config =>
-            //    {
-            //        //config.Filters.Add(new ValidateModelAttribute());
-            //    })
-            //    .AddJsonOptions(options =>
-            //    {
-            //        options.SerializerSettings.ContractResolver = new CamelCasePropertyNamesContractResolver();
-            //    })
-            //    .SetCompatibilityVersion(CompatibilityVersion.Latest);
-
             services.AddControllers().AddNewtonsoftJson();
 
             services.AddDbContext<DncZeusDbContext>(options =>
@@ -111,7 +103,18 @@ namespace DncZeus.Api
                 config.AddLog4Net();
             });
 
+
+            services.AddMvc().AddNewtonsoftJson(options =>
+            {
+                //忽略循环引用
+                options.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
+                //不使用驼峰样式的key
+               // options.SerializerSettings.ContractResolver = new DefaultContractResolver();
+            });
+
             services.AddScoped<TelegramService>();
+            services.AddScoped<CacheData>();
+            services.AddScoped<DictionaryService>();
         }
 
         /// <summary>
@@ -151,22 +154,6 @@ namespace DncZeus.Api
                 ep.MapControllerRoute(name: "apiDefault", pattern: "api/{controller=Home}/{action=Index}/{id?}");
                 ep.MapControllerRoute(name: "default", pattern: "{controller=Home}/{action=Index}/{id?}");
             });
-
-            //app.UseMvc(routes =>
-            //{
-
-            //    routes.MapRoute(
-            //         name: "areaRoute",
-            //         template: "{area:exists}/{controller=Home}/{action=Index}/{id?}");
-
-            //    routes.MapRoute(
-            //        name: "apiDefault",
-            //        template: "api/{controller=Home}/{action=Index}/{id?}");
-
-            //    routes.MapRoute(
-            //        name: "default",
-            //        template: "{controller=Home}/{action=Index}/{id?}");
-            //});
 
             app.UseSwagger(o =>
             {

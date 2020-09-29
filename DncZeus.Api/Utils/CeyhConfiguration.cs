@@ -1,9 +1,5 @@
 ﻿using DncZeus.Api.Models;
 using Microsoft.Extensions.Configuration;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace DncZeus.Api.Utils
 {
@@ -28,8 +24,21 @@ namespace DncZeus.Api.Utils
         /// 文件
         /// </summary>
         public static UploadFileSettings TheUploadFileSettings => _Configuration.GetSection("UploadFileSettings").Get<UploadFileSettings>();
+        #region 缓存配置
+
+        /// <summary>
+        /// 缓存类型，默认系统缓存
+        /// </summary>
+       // public static string TheCacheType => _Configuration.GetValue<string>("CacheType", "MemoryCache");
+        public static string TheCacheType => _Configuration.GetValue<string>("CacheType", "Redis");
+
+        /// <summary>
+        /// Redis  Settings
+        /// </summary>
+        public static RedisSettings TheRedisSettings => _Configuration.GetSection("Redis").Get<RedisSettings>();
+
+        #endregion
 
 
-       
     }
 }

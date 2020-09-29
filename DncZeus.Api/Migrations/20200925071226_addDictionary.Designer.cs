@@ -4,14 +4,16 @@ using DncZeus.Api.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace DncZeus.Api.Migrations
 {
     [DbContext(typeof(DncZeusDbContext))]
-    partial class DncZeusDbContextModelSnapshot : ModelSnapshot
+    [Migration("20200925071226_addDictionary")]
+    partial class addDictionary
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -438,79 +440,6 @@ namespace DncZeus.Api.Migrations
                     b.ToTable("FinanceAccount");
                 });
 
-            modelBuilder.Entity("DncZeus.Api.Entities.FinanceInfo", b =>
-                {
-                    b.Property<string>("Code")
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<decimal>("Amount")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<Guid>("CreatedByUserGuid")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("CreatedByUserName")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("CreatedOn")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("DepartmentCode")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("FilePath")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("FinanceAccount")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("HandleDate")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("HandleName")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ImagePath")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("InfoStatus")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("IsDeleted")
-                        .HasColumnType("int");
-
-                    b.Property<Guid?>("ModifiedByUserGuid")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("ModifiedByUserName")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("ModifiedOn")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Note")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Title")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Type")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("User")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Code");
-
-                    b.ToTable("FinanceInfo");
-                });
-
             modelBuilder.Entity("DncZeus.Api.Entities.QueryModels.DncPermission.DncPermissionWithAssignProperty", b =>
                 {
                     b.Property<string>("ActionCode")
@@ -712,6 +641,9 @@ namespace DncZeus.Api.Migrations
                     b.Property<string>("Code")
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<string>("Color")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<bool>("Fixed")
                         .HasColumnType("bit");
 
@@ -719,17 +651,12 @@ namespace DncZeus.Api.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("TypeCode")
-                        .HasColumnType("nvarchar(50)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Value")
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Code");
-
-                    b.HasIndex("Code")
-                        .IsUnique();
-
-                    b.HasIndex("TypeCode");
 
                     b.ToTable("SystemDictionary");
                 });
@@ -1017,14 +944,6 @@ namespace DncZeus.Api.Migrations
                         .HasForeignKey("UserGuid")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
-                });
-
-            modelBuilder.Entity("DncZeus.Api.Entities.SystemDictionary", b =>
-                {
-                    b.HasOne("DncZeus.Api.Entities.SystemDicType", "systemDicType")
-                        .WithMany("SystemDictionarys")
-                        .HasForeignKey("TypeCode")
-                        .OnDelete(DeleteBehavior.Restrict);
                 });
 #pragma warning restore 612, 618
         }

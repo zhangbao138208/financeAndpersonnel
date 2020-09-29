@@ -60,17 +60,22 @@ namespace DncZeus.Api.Controllers.Api.V1
                         else
                         {
                             result.HostUrl = $"{CeyhConfiguration.TheUploadFileSettings.HostUrl}{ result.Url}";
+
                         }
 
                     }
                     else
                     {
-                        result.Msg = $"上传失败，{upload.Message}";
+                        //result.Msg = $"上传失败，{upload.Message}";
+                        response.SetError($"上传失败，{upload.Message}");
+                        return Ok(response);
                     }
                 }
                 else
                 {
-                    result.Msg = "未能获取到文件";
+                    //result.Msg = "未能获取到文件";
+                    response.SetError($"未能获取到文件");
+                    return Ok(response);
                 }
                 response.SetData(result);
                 return Ok(response);
@@ -78,7 +83,7 @@ namespace DncZeus.Api.Controllers.Api.V1
 
             catch (Exception ex)
             {
-                response.SetData($"消息[{ex.Message}]内容");
+                response.SetError($"消息[{ex.Message}]内容");
                 return Ok(response);
             }
 
