@@ -31,12 +31,12 @@ namespace DncZeus.Api.Entities
         /// <summary>
         /// 角色实体
         /// </summary>
-        public DncRole DncRole { get; set; }
+        public virtual DncRole DncRole { get; set; }
 
         /// <summary>
         /// 权限实体
         /// </summary>
-        public DncPermission DncPermission { get; set; }
+        public virtual DncPermission DncPermission { get; set; }
         /// <summary>
         /// 创建时间
         /// </summary>

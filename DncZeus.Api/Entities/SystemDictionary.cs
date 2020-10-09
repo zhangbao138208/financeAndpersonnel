@@ -10,7 +10,7 @@ namespace DncZeus.Api.Entities
         [Key]
         [Column(TypeName = "nvarchar(50)")]
         public string Code { get; set; }
-        public SystemDicType systemDicType { get; set; }
+        public virtual SystemDicType systemDicType { get; set; }
         public string TypeCode { get; set; }
         /// <summary>
         /// 展示用

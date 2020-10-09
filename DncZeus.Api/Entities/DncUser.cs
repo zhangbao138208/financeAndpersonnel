@@ -36,11 +36,11 @@ namespace DncZeus.Api.Entities
         /// <summary>
         /// 部门
         /// </summary>
-        public UserDepartment Department { get; set; }
+        public virtual UserDepartment Department { get; set; }
         /// <summary>
         /// 职位
         /// </summary>
-        public UserDepartment Position { get; set; }
+        public virtual UserDepartment Position { get; set; }
         /// <summary>
         /// 纸飞机机器人令牌
         /// </summary>
@@ -86,7 +86,7 @@ namespace DncZeus.Api.Entities
         /// <summary>
         /// 用户的角色集合
         /// </summary>
-        public ICollection<DncUserRoleMapping> UserRoles { get; set; }
+        public virtual ICollection<DncUserRoleMapping> UserRoles { get; set; }
     }
 
     /// <summary>

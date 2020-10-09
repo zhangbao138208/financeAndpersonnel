@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DncZeus.Api.Migrations
 {
     [DbContext(typeof(DncZeusDbContext))]
-    [Migration("20201009045606_mysqlInit")]
+    [Migration("20201009052015_mysqlInit")]
     partial class mysqlInit
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -45,7 +45,7 @@ namespace DncZeus.Api.Migrations
                         .HasColumnType("nvarchar(60)");
 
                     b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(255)");
 
                     b.Property<int>("IsDeleted")
                         .HasColumnType("int");
@@ -96,7 +96,7 @@ namespace DncZeus.Api.Migrations
                         .HasColumnType("datetime(6)");
 
                     b.Property<string>("Description")
-                        .HasColumnType("nvarchar(800)");
+                        .HasColumnType("nvarchar(255)");
 
                     b.Property<int?>("HideInMenu")
                         .HasColumnType("int");
@@ -168,7 +168,7 @@ namespace DncZeus.Api.Migrations
                         .HasColumnType("datetime(6)");
 
                     b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(255)");
 
                     b.Property<string>("Icon")
                         .HasColumnType("longtext CHARACTER SET utf8mb4");
@@ -252,7 +252,7 @@ namespace DncZeus.Api.Migrations
                         .HasColumnType("datetime(6)");
 
                     b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(255)");
 
                     b.Property<bool>("IsBuiltin")
                         .HasColumnType("tinyint(1)");

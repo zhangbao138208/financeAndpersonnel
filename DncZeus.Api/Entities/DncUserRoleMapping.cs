@@ -21,7 +21,7 @@ namespace DncZeus.Api.Entities
         /// <summary>
         /// 用户实体
         /// </summary>
-        public DncUser DncUser { get; set; }
+        public virtual DncUser DncUser { get; set; }
 
         /// <summary>
         /// 角色编码
@@ -30,7 +30,7 @@ namespace DncZeus.Api.Entities
         /// <summary>
         /// 角色实体
         /// </summary>
-        public DncRole DncRole { get; set; }
+        public virtual DncRole DncRole { get; set; }
         /// <summary>
         /// 创建时间
         /// </summary>

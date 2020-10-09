@@ -55,7 +55,7 @@ namespace DncZeus.Api.Entities
         /// <summary>
         /// 描述信息
         /// </summary>
-        [Column(TypeName = "nvarchar(max)")]
+        [Column(TypeName = "nvarchar(255)")]
         public string Description { get; set; }
         /// <summary>
         /// 状态
@@ -97,11 +97,11 @@ namespace DncZeus.Api.Entities
         /// <summary>
         /// 关联的菜单
         /// </summary>
-        public DncMenu Menu { get; set; }
+        public virtual DncMenu Menu { get; set; }
         /// <summary>
         /// 权限所属的角色集合
         /// </summary>
-        public ICollection<DncRolePermissionMapping> Roles { get; set; }
+        public virtual ICollection<DncRolePermissionMapping> Roles { get; set; }
 
      
     }

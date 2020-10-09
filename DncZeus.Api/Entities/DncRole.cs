@@ -41,7 +41,7 @@ namespace DncZeus.Api.Entities
         /// <summary>
         /// 
         /// </summary>
-        [Column(TypeName = "nvarchar(max)")]
+        [Column(TypeName = "nvarchar(255)")]
         public string Description { get; set; }
         /// <summary>
         /// 
@@ -87,10 +87,10 @@ namespace DncZeus.Api.Entities
         /// <summary>
         /// 角色拥有的用户集合
         /// </summary>
-        public ICollection<DncUserRoleMapping> UserRoles { get; set; }
+        public virtual ICollection<DncUserRoleMapping> UserRoles { get; set; }
         /// <summary>
         /// 角色拥有的权限集合
         /// </summary>
-        public ICollection<DncRolePermissionMapping> Permissions { get; set; }
+        public virtual ICollection<DncRolePermissionMapping> Permissions { get; set; }
     }
 }
