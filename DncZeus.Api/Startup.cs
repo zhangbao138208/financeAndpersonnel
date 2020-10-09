@@ -13,6 +13,7 @@ using DncZeus.Api.Extensions.AuthContext;
 using DncZeus.Api.Extensions.CustomException;
 using DncZeus.Api.Services;
 using DncZeus.Api.Utils;
+using DncZeus.Api.Utils.Encryption;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -32,6 +33,7 @@ using System.IO;
 using System.Reflection;
 using System.Text.Encodings.Web;
 using System.Text.Unicode;
+using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
 
 
 namespace DncZeus.Api
@@ -51,7 +53,6 @@ namespace DncZeus.Api
         /// <param name="services"></param>
         public void ConfigureServices(IServiceCollection services)
         {
-            TelegramService telegramService = new TelegramService();
             services.AddCors(o =>
                 o.AddPolicy("CorsPolicy",
                     builder => builder
@@ -80,13 +81,16 @@ namespace DncZeus.Api
 
             services.AddControllers().AddNewtonsoftJson();
 
+            //services.AddDbContext<DncZeusDbContext>(options =>
+            //    options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
             services.AddDbContext<DncZeusDbContext>(options =>
-                options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection"))
-                // 如果使用SQL Server 2008数据库，请添加UseRowNumberForPaging的选项
-                // 参考资料:https://github.com/aspnet/EntityFrameworkCore/issues/4616 
-                // 【重要说明】:2020-03-23更新，微软官方最新的Entity Framework Core已不再支持UseRowNumberForPaging()，请尽量使用SQL Server 2012 +版本
-                //options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection"),b=>b.UseRowNumberForPaging())
-                );
+                    options
+                    //.UseLazyLoadingProxies()//启用懒加载
+                           .UseMySql(Configuration.GetConnectionString("MYSQLConnection"), mysqlOptions => // 启用读写分离后，默认读库，否则默认写库
+                            {
+                               mysqlOptions.ServerVersion(new Version(5, 7, 17), ServerType.MySql);
+                           }));
+          
 
             services.AddSwaggerGen(c =>
             {
@@ -112,9 +116,11 @@ namespace DncZeus.Api
                // options.SerializerSettings.ContractResolver = new DefaultContractResolver();
             });
 
-            services.AddScoped<TelegramService>();
+            
             services.AddScoped<CacheData>();
             services.AddScoped<DictionaryService>();
+            services.AddScoped<TelegramService>();
+            services.AddScoped<RSAHelper>();
         }
 
         /// <summary>

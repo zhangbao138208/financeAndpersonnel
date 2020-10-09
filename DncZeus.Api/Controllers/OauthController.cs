@@ -14,6 +14,11 @@ using System.Security.Claims;
 using DncZeus.Api.Auth;
 using static DncZeus.Api.Entities.Enums.CommonEnum;
 using DncZeus.Api.Models;
+using DncZeus.Api.Utils.Encryption;
+using System.Text;
+using DncZeus.Api.Utils;
+using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 
 namespace DncZeus.Api.Controllers
 {
@@ -26,39 +31,41 @@ namespace DncZeus.Api.Controllers
     {
         private readonly AppAuthenticationSettings _appSettings;
         private readonly DncZeusDbContext _dbContext;
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="appSettings"></param>
-        public OauthController(IOptions<AppAuthenticationSettings> appSettings, DncZeusDbContext dbContext)
+        private readonly RSAHelper _rSAHelper;
+        public OauthController(IOptions<AppAuthenticationSettings> appSettings, DncZeusDbContext dbContext, RSAHelper rSAHelper)
         {
             _appSettings = appSettings.Value;
             _dbContext = dbContext;
+            _rSAHelper = rSAHelper;
         }
        
         /// <summary>
-        /// 
+        /// 登录认证
         /// </summary>
-        /// <param name="username"></param>
-        /// <param name="password"></param>
+        /// <param name="model"></param>
         /// <returns></returns>
         [HttpPost]
-        public IActionResult Auth( AuthModel model)
+        public async Task<IActionResult> Auth( AuthModel model)
         {
             var username = model.userName;
             var password = model.password;
             var response = ResponseModelFactory.CreateInstance;
             DncUser user;
+            //RSAHelper rSAHelper = new RSAHelper
+            //       (RSAType.RSA, Encoding.UTF8, CeyhConfiguration.TheRSASetting.Private, CeyhConfiguration.TheRSASetting.Public);
             using (_dbContext)
             {
-                user = _dbContext.DncUser.FirstOrDefault(x => x.LoginName == username.Trim());
+                user = await _dbContext.DncUser.FirstOrDefaultAsync(x => x.LoginName == username.Trim());
                 
                 if (user == null || user.IsDeleted == IsDeleted.Yes)
                 {
                     response.SetFailed("用户不存在");
                     return Ok(response);
                 }
-                if (user.Password != password.Trim())
+                var userP= _rSAHelper.Decrypt(user.Password);
+                var modelP= _rSAHelper.Decrypt(password.Trim());
+                //var s1 = rSAHelper.Decrypt(password.Trim());
+                if (userP != modelP)
                 {
                     response.SetFailed("密码不正确");
                     return Ok(response);

@@ -21,6 +21,7 @@ using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Linq;
 using Microsoft.Data.SqlClient;
+using System.Threading.Tasks;
 
 namespace DncZeus.Api.Controllers.Api.V1.Rbac
 {
@@ -47,11 +48,12 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         }
 
         /// <summary>
-        /// 
+        /// 菜单列表
         /// </summary>
         /// <returns></returns>
         [HttpPost]
-        public ActionResult<ResponseResultModel<IEnumerable<MenuJsonModel>>> List(MenuRequestPayload payload)
+        public async Task<ActionResult<ResponseResultModel<IEnumerable<MenuJsonModel>>>>
+            List(MenuRequestPayload payload)
         {
             using (_dbContext)
             {
@@ -72,7 +74,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
                 {
                     query = query.Where(x => x.ParentGuid == payload.ParentGuid);
                 }
-                var list = query.Paged(payload.CurrentPage, payload.PageSize).ToList();
+                var list = await query.Paged(payload.CurrentPage, payload.PageSize).ToListAsync();
                 var totalCount = query.Count();
                 var data = list.Select(_mapper.Map<DncMenu, MenuJsonModel>);
                 var response = ResponseModelFactory.CreateResultInstance;
@@ -88,7 +90,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// <returns></returns>
         [HttpPost]
         [ProducesResponseType(200)]
-        public ActionResult<ResponseModel> Create(MenuCreateViewModel model)
+        public async Task<ActionResult<ResponseModel>> Create(MenuCreateViewModel model)
         {
             using (_dbContext)
             {
@@ -100,7 +102,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
                 entity.IsDeleted = CommonEnum.IsDeleted.No;
                 entity.Icon = string.IsNullOrEmpty(entity.Icon) ? "md-menu" : entity.Icon;
                 _dbContext.DncMenu.Add(entity);
-                _dbContext.SaveChanges();
+                await _dbContext.SaveChangesAsync();
                 var response = ResponseModelFactory.CreateInstance;
                 response.SetSuccess();
                 return Ok(response);
@@ -114,22 +116,14 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// <returns></returns>
         [HttpGet("{guid}")]
         [ProducesResponseType(200)]
-        public ActionResult<MenuEditRetModel> Edit(Guid guid)
+        public async Task<ActionResult<MenuEditRetModel>> Edit(Guid guid)
         {
             using (_dbContext)
             {
-                var entity = _dbContext.DncMenu.FirstOrDefault(x => x.Guid == guid);
+                var entity = await _dbContext.DncMenu.FirstOrDefaultAsync(x => x.Guid == guid);
                 var response = ResponseModelFactory.CreateInstance;
                 var model = _mapper.Map<DncMenu, MenuEditViewModel>(entity);
-                //if (model.ParentGuid.HasValue)
-                //{
-                //    var parent = _dbContext.DncMenu.FirstOrDefault(x => x.Guid == entity.ParentGuid);
-                //    if (parent != null)
-                //    {
-                //        model.ParentName = parent.Name;
-                //    }
-                //}
-                var tree = LoadMenuTree(model.ParentGuid.ToString());
+                var tree = await LoadMenuTreeAsync(model.ParentGuid.ToString());
                 response.SetData(new { model, tree });
                 return Ok(response);
             }
@@ -142,11 +136,11 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// <returns></returns>
         [HttpPut]
         [ProducesResponseType(200)]
-        public ActionResult<ResponseModel> Edit(MenuEditViewModel model)
+        public async Task<ActionResult<ResponseModel>> Edit(MenuEditViewModel model)
         {
             using (_dbContext)
             {
-                var entity = _dbContext.DncMenu.FirstOrDefault(x => x.Guid == model.Guid);
+                var entity = await _dbContext.DncMenu.FirstOrDefaultAsync(x => x.Guid == model.Guid);
                 entity.Name = model.Name;
                 entity.Icon = string.IsNullOrEmpty(model.Icon) ? "md-menu" : model.Icon;
                 entity.Level = 1;
@@ -169,7 +163,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
                     entity.Status = model.Status;
                     entity.IsDefaultRouter = model.IsDefaultRouter;
                 }
-                _dbContext.SaveChanges();
+                await _dbContext.SaveChangesAsync();
                 var response = ResponseModelFactory.CreateInstance;
                 response.SetSuccess();
                 return Ok(response);
@@ -181,10 +175,10 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// </summary>
         /// <returns></returns>
         [HttpGet("{selected?}")]
-        public ActionResult<MenuTree> Tree(string selected)
+        public async Task<ActionResult<MenuTree>> Tree(string selected)
         {
             var response = ResponseModelFactory.CreateInstance;
-            var tree = LoadMenuTree(selected?.ToString());
+            var tree = await LoadMenuTreeAsync(selected?.ToString());
             response.SetData(tree);
             return Ok(response);
         }
@@ -196,7 +190,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// <returns></returns>
         [HttpDelete("{ids}")]
         [ProducesResponseType(200)]
-        public IActionResult Delete(string ids)
+        public async Task<ActionResult<ResponseModel>> Delete(string ids)
         {
             var response = ResponseModelFactory.CreateInstance;
             if (ConfigurationManager.AppSettings.IsTrialVersion)
@@ -204,7 +198,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
                 response.SetIsTrial();
                 return Ok(response);
             }
-            response = UpdateIsDelete(CommonEnum.IsDeleted.Yes, ids);
+            response = await UpdateIsDeleteAsync(CommonEnum.IsDeleted.Yes, ids);
             return Ok(response);
         }
 
@@ -215,9 +209,9 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// <returns></returns>
         [HttpPost("{ids}")]
         [ProducesResponseType(200)]
-        public IActionResult Recover(string ids)
+        public async Task<ActionResult<ResponseModel>> Recover(string ids)
         {
-            var response = UpdateIsDelete(CommonEnum.IsDeleted.No, ids);
+            var response = await UpdateIsDeleteAsync(CommonEnum.IsDeleted.No, ids);
             return Ok(response);
         }
 
@@ -229,7 +223,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// <returns></returns>
         [HttpPost]
         [ProducesResponseType(200)]
-        public IActionResult Batch(string command, string ids)
+        public async Task<ActionResult<ResponseModel>> Batch(string command, string ids)
         {
             var response = ResponseModelFactory.CreateInstance;
             switch (command)
@@ -240,10 +234,10 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
                         response.SetIsTrial();
                         return Ok(response);
                     }
-                    response = UpdateIsDelete(CommonEnum.IsDeleted.Yes, ids);
+                    response = await UpdateIsDeleteAsync(CommonEnum.IsDeleted.Yes, ids);
                     break;
                 case "recover":
-                    response = UpdateIsDelete(CommonEnum.IsDeleted.No, ids);
+                    response =await UpdateIsDeleteAsync(CommonEnum.IsDeleted.No, ids);
                     break;
                 case "forbidden":
                     if (ConfigurationManager.AppSettings.IsTrialVersion)
@@ -251,10 +245,10 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
                         response.SetIsTrial();
                         return Ok(response);
                     }
-                    response = UpdateStatus(UserStatus.Forbidden, ids);
+                    response =await UpdateStatusAsync(UserStatus.Forbidden, ids);
                     break;
                 case "normal":
-                    response = UpdateStatus(UserStatus.Normal, ids);
+                    response =await UpdateStatusAsync(UserStatus.Normal, ids);
                     break;
                 default:
                     break;
@@ -268,7 +262,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// <param name="isDeleted"></param>
         /// <param name="ids">菜单ID字符串,多个以逗号隔开</param>
         /// <returns></returns>
-        private ResponseModel UpdateIsDelete(CommonEnum.IsDeleted isDeleted, string ids)
+        private async Task<ResponseModel> UpdateIsDeleteAsync(CommonEnum.IsDeleted isDeleted, string ids)
         {
             using (_dbContext)
             {
@@ -276,7 +270,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
                 var parameterNames = string.Join(", ", parameters.Select(p => p.ParameterName));
                 var sql = string.Format("UPDATE DncMenu SET IsDeleted=@IsDeleted WHERE Guid IN ({0})", parameterNames);
                 parameters.Add(new SqlParameter("@IsDeleted", (int)isDeleted));
-                _dbContext.Database.ExecuteSqlCommand(sql, parameters);
+                await _dbContext.Database.ExecuteSqlCommandAsync(sql, parameters);
                 var response = ResponseModelFactory.CreateInstance;
                 return response;
             }
@@ -288,7 +282,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// <param name="status">菜单状态</param>
         /// <param name="ids">菜单ID字符串,多个以逗号隔开</param>
         /// <returns></returns>
-        private ResponseModel UpdateStatus(UserStatus status, string ids)
+        private async Task<ResponseModel> UpdateStatusAsync(UserStatus status, string ids)
         {
             using (_dbContext)
             {
@@ -296,15 +290,19 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
                 var parameterNames = string.Join(", ", parameters.Select(p => p.ParameterName));
                 var sql = string.Format("UPDATE DncMenu SET Status=@Status WHERE Guid IN ({0})", parameterNames);
                 parameters.Add(new SqlParameter("@Status", (int)status));
-                _dbContext.Database.ExecuteSqlCommand(sql, parameters);
+                await _dbContext.Database.ExecuteSqlCommandAsync(sql, parameters);
                 var response = ResponseModelFactory.CreateInstance;
                 return response;
             }
         }
 
-        private List<MenuTree> LoadMenuTree(string selectedGuid = null)
+        private async Task<List<MenuTree>> LoadMenuTreeAsync(string selectedGuid = null)
         {
-            var temp = _dbContext.DncMenu.Where(x => x.IsDeleted == CommonEnum.IsDeleted.No && x.Status == CommonEnum.Status.Normal).ToList().Select(x => new MenuTree
+            var list = await  _dbContext.DncMenu.
+                Where(x => x.IsDeleted ==
+                CommonEnum.IsDeleted.No && x.Status == CommonEnum.Status.Normal).
+                ToListAsync();
+            var temp = list.Select(x => new MenuTree
             {
                 Guid = x.Guid.ToString(),
                 ParentGuid = x.ParentGuid,

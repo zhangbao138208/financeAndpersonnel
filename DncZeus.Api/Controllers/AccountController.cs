@@ -15,6 +15,7 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using static DncZeus.Api.Entities.Enums.CommonEnum;
 
 namespace DncZeus.Api.Controllers
@@ -41,15 +42,16 @@ namespace DncZeus.Api.Controllers
         /// </summary>
         /// <returns></returns>
         [HttpGet]
-        public IActionResult Profile()
+        public async Task<IActionResult> Profile()
         {
             var response = ResponseModelFactory.CreateInstance;
             using (_dbContext)
             {
                 var guid = AuthContextService.CurrentUser.Guid;
-                var user = _dbContext.DncUser.FirstOrDefaultAsync(x => x.Guid == guid).Result;
+                var user = await _dbContext.DncUser.FirstOrDefaultAsync(x => x.Guid == guid);
 
-                var menus = _dbContext.DncMenu.Where(x => x.IsDeleted == IsDeleted.No && x.Status == Status.Normal).ToList();
+                var menus = await  _dbContext.DncMenu.
+                    Where(x => x.IsDeleted == IsDeleted.No && x.Status == Status.Normal).ToListAsync();
 
                 //查询当前登录用户拥有的权限集合(非超级管理员)
                 var sqlPermission = @"SELECT P.Code AS PermissionCode,P.ActionCode AS PermissionActionCode,P.Name AS PermissionName,P.Type AS PermissionType,M.Name AS MenuName,M.Guid AS MenuGuid,M.Alias AS MenuAlias,M.IsDefaultRouter FROM DncRolePermissionMapping AS RPM 
@@ -63,7 +65,8 @@ WHERE P.IsDeleted=0 AND P.Status=1 AND EXISTS (SELECT 1 FROM DncUserRoleMapping 
 INNER JOIN DncMenu AS M ON M.Guid = P.MenuGuid
 WHERE P.IsDeleted=0 AND P.Status=1";
                 }
-                var permissions = _dbContext.DncPermissionWithMenu.FromSqlRaw(sqlPermission, user.Guid).ToList();
+                var permissions = await _dbContext.
+                    DncPermissionWithMenu.FromSqlRaw(sqlPermission, user.Guid).ToListAsync();
 
                 var pagePermissions = permissions.GroupBy(x => x.MenuAlias).ToDictionary(g => g.Key, g => g.Select(x => x.PermissionActionCode).Distinct());
                 response.SetData(new
@@ -109,7 +112,7 @@ WHERE P.IsDeleted=0 AND P.Status=1";
         /// </summary>
         /// <returns></returns>
         [HttpGet]
-        public IActionResult Menu()
+        public async Task<IActionResult> Menu()
         {
             var strSql = @"SELECT M.* FROM DncRolePermissionMapping AS RPM 
 LEFT JOIN DncPermission AS P ON P.Code = RPM.PermissionCode
@@ -121,8 +124,8 @@ WHERE P.IsDeleted=0 AND P.Status=1 AND P.Type=0 AND M.IsDeleted=0 AND M.Status=1
                 //如果是超级管理员
                 strSql = @"SELECT * FROM DncMenu WHERE IsDeleted=0 AND Status=1";
             }
-            var menus = _dbContext.DncMenu.FromSqlRaw(strSql, AuthContextService.CurrentUser.Guid).ToList();
-            var rootMenus = _dbContext.DncMenu.Where(x => x.IsDeleted == IsDeleted.No && x.Status == Status.Normal && x.ParentGuid == Guid.Empty).ToList();
+            var menus = await _dbContext.DncMenu.FromSqlRaw(strSql, AuthContextService.CurrentUser.Guid).ToListAsync();
+            var rootMenus =await  _dbContext.DncMenu.Where(x => x.IsDeleted == IsDeleted.No && x.Status == Status.Normal && x.ParentGuid == Guid.Empty).ToListAsync();
             foreach (var root in rootMenus)
             {
                 if (menus.Exists(x => x.Guid == root.Guid))
@@ -133,6 +136,7 @@ WHERE P.IsDeleted=0 AND P.Status=1 AND P.Type=0 AND M.IsDeleted=0 AND M.Status=1
             }
             menus = menus.OrderBy(x => x.Sort).ThenBy(x=>x.CreatedOn).ToList();
             var menu = MenuItemHelper.LoadMenuTree(menus, "0");
+            menu = menu.Where(m => m.Children.Count > 0).ToList();
             return Ok(menu);
         }
     }

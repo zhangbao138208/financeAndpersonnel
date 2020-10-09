@@ -38,27 +38,31 @@
                         @on-change="handleSearchResumeInfo"
                         placeholder="删除状态"
                         slot="prepend"
-                        style="width:60px;"
+                        style="width: 60px"
                         v-model="stores.resumeInfo.query.isDeleted"
                       >
                         <Option
                           :key="item.value"
                           :value="item.value"
-                          v-for="item in stores.resumeInfo.sources.isDeletedSources"
-                        >{{item.text}}</Option>
+                          v-for="item in stores.resumeInfo.sources
+                            .isDeletedSources"
+                          >{{ item.text }}</Option
+                        >
                       </Select>
                       <Select
                         @on-change="handleSearchResumeInfo"
                         placeholder="简历状态"
                         slot="prepend"
-                        style="width:60px;"
+                        style="width: 60px"
                         v-model="stores.resumeInfo.query.status"
                       >
                         <Option
                           :key="item.value"
                           :value="item.value"
-                          v-for="item in stores.resumeInfo.sources.statusSources"
-                        >{{item.text}}</Option>
+                          v-for="item in stores.resumeInfo.sources
+                            .statusSources"
+                          >{{ item.text }}</Option
+                        >
                       </Select>
                     </Input>
                   </FormItem>
@@ -90,14 +94,19 @@
                     icon="md-checkmark"
                     title="启用"
                   ></Button>
-                  <Button @click="handleRefresh" icon="md-refresh" title="刷新"></Button>
+                  <Button
+                    @click="handleRefresh"
+                    icon="md-refresh"
+                    title="刷新"
+                  ></Button>
                 </ButtonGroup>
                 <Button
                   @click="handleShowCreateWindow"
                   icon="md-create"
                   title="新增简历"
                   type="primary"
-                >新增简历</Button>
+                  >新增简历</Button
+                >
               </Col>
             </Row>
           </section>
@@ -105,7 +114,7 @@
       </tables>
     </Card>
     <Drawer
-     :mask-closable="false"
+      :mask-closable="false"
       :mask="true"
       :styles="styles"
       :title="formTitle"
@@ -118,11 +127,25 @@
         label-position="left"
         ref="formResumeInfo"
       >
-        <Home :fields="formModel.fields" @getChildFields="_getChildFields" v-if="formModel.opened"></Home>
+        <Home
+          :fields="formModel.fields"
+          @getChildFields="_getChildFields"
+          v-if="formModel.opened"
+        ></Home>
       </Form>
       <div class="demo-drawer-footer">
-        <Button @click="handleSubmitResume" icon="md-checkmark-circle" type="primary">保 存</Button>
-        <Button @click="formModel.opened = false" icon="md-close" style="margin-left: 8px">取 消</Button>
+        <Button
+          @click="handleSubmitResume"
+          icon="md-checkmark-circle"
+          type="primary"
+          >保 存</Button
+        >
+        <Button
+          @click="formModel.opened = false"
+          icon="md-close"
+          style="margin-left: 8px"
+          >取 消</Button
+        >
       </div>
     </Drawer>
   </div>
@@ -180,7 +203,7 @@ export default {
           status: 1,
           isDeleted: 0,
         },
-        
+
         rules: {
           realName: [
             {
@@ -288,7 +311,11 @@ export default {
               tooltip: true,
               key: 'createdOn',
               render: (h, params) => {
-                            return h('span',Moment(params.row.createdOn).format('YYYY-MM-DD'));}
+                return h(
+                  'span',
+                  Moment(params.row.createdOn).format('YYYY-MM-DD')
+                )
+              },
             },
             { title: '创建者', key: 'createdByUserName' },
             {
@@ -440,9 +467,11 @@ export default {
       this.handleOpenFormWindow()
     },
     handleEdit(params) {
-      Object.keys(this.formModel.fields).forEach(key=>this.formModel.fields[key]='');
-      this.formModel.fields.isDeleted=0;
-      this.formModel.fields.status=1;
+      Object.keys(this.formModel.fields).forEach(
+        (key) => (this.formModel.fields[key] = '')
+      )
+      this.formModel.fields.isDeleted = 0
+      this.formModel.fields.status = 1
       this.handleSwitchFormModeToEdit()
       this.handleResetFormResumeInfo()
       this.doLoadResumeInfo(params.row.code)
@@ -455,9 +484,11 @@ export default {
       this.loadResumeInfoList()
     },
     handleShowCreateWindow() {
-      Object.keys(this.formModel.fields).forEach(key=>this.formModel.fields[key]='');
-      this.formModel.fields.isDeleted=0;
-      this.formModel.fields.status=1;
+      Object.keys(this.formModel.fields).forEach(
+        (key) => (this.formModel.fields[key] = '')
+      )
+      this.formModel.fields.isDeleted = 0
+      this.formModel.fields.status = 1
       this.handleSwitchFormModeToCreate()
       this.handleOpenFormWindow()
       this.handleResetFormResumeInfo()

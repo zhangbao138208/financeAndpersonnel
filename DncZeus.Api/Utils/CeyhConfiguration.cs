@@ -24,6 +24,11 @@ namespace DncZeus.Api.Utils
         /// 文件
         /// </summary>
         public static UploadFileSettings TheUploadFileSettings => _Configuration.GetSection("UploadFileSettings").Get<UploadFileSettings>();
+
+        /// <summary>
+        /// RSA
+        /// </summary>
+        public static RSASetting TheRSASetting => _Configuration.GetSection("RSASetting").Get<RSASetting>();
         #region 缓存配置
 
         /// <summary>

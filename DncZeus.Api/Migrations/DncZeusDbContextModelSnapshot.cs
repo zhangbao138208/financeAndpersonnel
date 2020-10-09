@@ -323,6 +323,9 @@ namespace DncZeus.Api.Migrations
                     b.Property<DateTime>("CreatedOn")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("DepartmentCode")
+                        .HasColumnType("nvarchar(50)");
+
                     b.Property<string>("Description")
                         .HasColumnType("nvarchar(800)");
 
@@ -351,13 +354,26 @@ namespace DncZeus.Api.Migrations
                     b.Property<string>("Password")
                         .HasColumnType("nvarchar(255)");
 
+                    b.Property<string>("PositionCode")
+                        .HasColumnType("nvarchar(50)");
+
                     b.Property<int>("Status")
                         .HasColumnType("int");
+
+                    b.Property<string>("TelegramBotToken")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("TelegramChatId")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("UserType")
                         .HasColumnType("int");
 
                     b.HasKey("Guid");
+
+                    b.HasIndex("DepartmentCode");
+
+                    b.HasIndex("PositionCode");
 
                     b.ToTable("DncUser");
                 });
@@ -444,7 +460,7 @@ namespace DncZeus.Api.Migrations
                         .HasColumnType("nvarchar(50)");
 
                     b.Property<decimal>("Amount")
-                        .HasColumnType("decimal(18,2)");
+                        .HasColumnType("decimal(18,4)");
 
                     b.Property<Guid>("CreatedByUserGuid")
                         .HasColumnType("uniqueidentifier");
@@ -889,19 +905,19 @@ namespace DncZeus.Api.Migrations
                         .HasColumnType("nvarchar(50)");
 
                     b.Property<decimal?>("AccumulationFund")
-                        .HasColumnType("decimal(18,2)");
+                        .HasColumnType("decimal(18,4)");
 
                     b.Property<string>("Additions")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<decimal?>("BaseWage")
-                        .HasColumnType("decimal(18,2)");
+                        .HasColumnType("decimal(18,4)");
 
                     b.Property<decimal?>("Bonus")
-                        .HasColumnType("decimal(18,2)");
+                        .HasColumnType("decimal(18,4)");
 
                     b.Property<decimal?>("Commission")
-                        .HasColumnType("decimal(18,2)");
+                        .HasColumnType("decimal(18,4)");
 
                     b.Property<Guid>("CreatedByUserGuid")
                         .HasColumnType("uniqueidentifier");
@@ -922,7 +938,7 @@ namespace DncZeus.Api.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<decimal?>("IncomeTax")
-                        .HasColumnType("decimal(18,2)");
+                        .HasColumnType("decimal(18,4)");
 
                     b.Property<int>("IsDeleted")
                         .HasColumnType("int");
@@ -940,10 +956,10 @@ namespace DncZeus.Api.Migrations
                         .HasColumnType("int");
 
                     b.Property<decimal?>("OTWage")
-                        .HasColumnType("decimal(18,2)");
+                        .HasColumnType("decimal(18,4)");
 
                     b.Property<decimal?>("PerformanceWage")
-                        .HasColumnType("decimal(18,2)");
+                        .HasColumnType("decimal(18,4)");
 
                     b.Property<string>("PositionCode")
                         .HasColumnType("nvarchar(max)");
@@ -952,10 +968,10 @@ namespace DncZeus.Api.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<decimal?>("ReissueWage")
-                        .HasColumnType("decimal(18,2)");
+                        .HasColumnType("decimal(18,4)");
 
                     b.Property<decimal?>("SocialSecurity")
-                        .HasColumnType("decimal(18,2)");
+                        .HasColumnType("decimal(18,4)");
 
                     b.Property<DateTime?>("StartDate")
                         .HasColumnType("datetime2");
@@ -964,10 +980,10 @@ namespace DncZeus.Api.Migrations
                         .HasColumnType("int");
 
                     b.Property<decimal?>("Subsidy")
-                        .HasColumnType("decimal(18,2)");
+                        .HasColumnType("decimal(18,4)");
 
                     b.Property<decimal?>("TotalWage")
-                        .HasColumnType("decimal(18,2)");
+                        .HasColumnType("decimal(18,4)");
 
                     b.Property<Guid>("UserGuid")
                         .HasColumnType("uniqueidentifier");
@@ -978,6 +994,201 @@ namespace DncZeus.Api.Migrations
                     b.HasKey("Code");
 
                     b.ToTable("WageInfo");
+                });
+
+            modelBuilder.Entity("DncZeus.Api.Entities.WorkflowList", b =>
+                {
+                    b.Property<string>("Code")
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("CurrentStepCode")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("DepartmentCode")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("EndDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("NextStepCode")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("NotifyUser")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Number")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("TemplateCode")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Title")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Type")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("User")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Code");
+
+                    b.ToTable("WorkflowList");
+                });
+
+            modelBuilder.Entity("DncZeus.Api.Entities.WorkflowReceiver", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+
+                    b.Property<DateTime>("CheckDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("CreateDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("CreateUser")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsCheck")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Note")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Status")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("StepCode")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("TemplateCode")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Type")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("User")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("WorkflowCode")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("WorkflowReceiver");
+                });
+
+            modelBuilder.Entity("DncZeus.Api.Entities.WorkflowStep", b =>
+                {
+                    b.Property<string>("Code")
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<Guid>("CreatedByUserGuid")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CreatedByUserName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsCounterSign")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("IsDeleted")
+                        .HasColumnType("int");
+
+                    b.Property<Guid?>("ModifiedByUserGuid")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ModifiedByUserName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("ModifiedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("SortID")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<string>("TemplateCode")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Title")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("UserList")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Code");
+
+                    b.ToTable("WorkflowStep");
+                });
+
+            modelBuilder.Entity("DncZeus.Api.Entities.WorkflowTemplate", b =>
+                {
+                    b.Property<string>("Code")
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<Guid>("CreatedByUserGuid")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CreatedByUserName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("IsDeleted")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsStepFree")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid?>("ModifiedByUserGuid")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ModifiedByUserName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("ModifiedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ParentCode")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("Visible")
+                        .HasColumnType("bit");
+
+                    b.HasKey("Code");
+
+                    b.ToTable("WorkflowTemplate");
                 });
 
             modelBuilder.Entity("DncZeus.Api.Entities.DncPermission", b =>
@@ -1002,6 +1213,17 @@ namespace DncZeus.Api.Migrations
                         .HasForeignKey("RoleCode")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("DncZeus.Api.Entities.DncUser", b =>
+                {
+                    b.HasOne("DncZeus.Api.Entities.UserDepartment", "Department")
+                        .WithMany()
+                        .HasForeignKey("DepartmentCode");
+
+                    b.HasOne("DncZeus.Api.Entities.UserDepartment", "Position")
+                        .WithMany()
+                        .HasForeignKey("PositionCode");
                 });
 
             modelBuilder.Entity("DncZeus.Api.Entities.DncUserRoleMapping", b =>

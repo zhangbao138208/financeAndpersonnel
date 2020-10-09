@@ -20,6 +20,10 @@ using DncZeus.Api.ViewModels.System.DicType;
 using DncZeus.Api.ViewModels.User.Department;
 using DncZeus.Api.ViewModels.User.Position;
 using DncZeus.Api.ViewModels.Wage;
+using DncZeus.Api.ViewModels.Workflow.List;
+using DncZeus.Api.ViewModels.Workflow.Receiver;
+using DncZeus.Api.ViewModels.Workflow.Step;
+using DncZeus.Api.ViewModels.Workflow.Template;
 
 namespace DncZeus.Api.Configurations
 {
@@ -121,6 +125,36 @@ namespace DncZeus.Api.Configurations
             CreateMap<SystemDicType, DicTypeJsonModel>();
             CreateMap<SystemDicType, DicTypeCreateViewModel>();
             CreateMap<DicTypeCreateViewModel, SystemDicType>();
+            #endregion
+
+            #region WorkflowTemplate
+            CreateMap<WorkflowTemplate, TemplateJsonModel>();
+            CreateMap<WorkflowTemplate, TemplateCreateViewModel>();
+            CreateMap<TemplateEditViewModel, WorkflowTemplate>();
+            CreateMap<WorkflowTemplate, TemplateEditViewModel>();
+            CreateMap<TemplateCreateViewModel, WorkflowTemplate>();
+            #endregion
+
+            #region WorkflowStep
+            CreateMap<WorkflowStep, StepJsonModel>();
+            CreateMap<WorkflowStep, StepCreateViewModel>();
+            CreateMap<StepCreateViewModel, WorkflowStep>();
+            #endregion
+
+            #region WorkflowList
+            CreateMap<WorkflowList, WorkflowListJsonModel>();
+            CreateMap<WorkflowList, WorkflowListCreateViewModel>();
+            CreateMap<WorkflowListCreateViewModel, WorkflowList>();
+            #endregion
+
+            #region WorkflowReceiver
+            CreateMap<WorkflowReceiver, ReceiverJsonModel>();
+            CreateMap<WorkflowReceiver, ReceiverCreateViewModel>();
+            CreateMap<ReceiverCreateViewModel, WorkflowReceiver>();
+            CreateMap<WorkflowReceiver, ReceiverEditViewModel>();
+            CreateMap<ReceiverEditViewModel, WorkflowReceiver>();
+            CreateMap<WorkflowReceiver, ReceiverReadOnlyModel>();
+            CreateMap<ReceiverReadOnlyModel, WorkflowReceiver>();
             #endregion
         }
     }

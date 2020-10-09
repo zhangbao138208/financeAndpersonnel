@@ -1,0 +1,42 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+
+namespace DncZeus.Api.ViewModels.Workflow.Receiver
+{
+    public class ReceiverEditViewModel
+    {
+        public int Id { get; set; }
+        public string WorkflowCode { get; set; }
+        public string WorkflowName { get; set; }
+        public string TemplateCode { get; set; }
+        public string TemplateName { get; set; }
+        public string StepCode { get; set; }
+        public string StepName { get; set; }
+
+        public string NextStepCode { get; set; }
+        public string NextStepName { get; set; }
+        /// <summary>
+        /// 审批人
+        /// </summary>
+        public List<NextUser> NextUsers { get; set; }
+
+        public Guid User { get; set; }
+        public string UserName { get; set; }
+        public string ListType { get; set; }
+        public string ListTypeName { get; set; }
+        public List<ReceiverStatus> Statuses { get; set; }
+        public string Description { get; set; }
+        public string EndDate { get; set; }
+    }
+    public class NextUser
+    {
+        public Guid User { get; set; }
+        public string UserName { get; set; }
+    }
+    public class ReceiverStatus{
+        public string Name { get; set; }
+        public string Vaue { get; set; }
+    }
+}

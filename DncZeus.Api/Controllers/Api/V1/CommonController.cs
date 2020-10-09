@@ -89,6 +89,75 @@ namespace DncZeus.Api.Controllers.Api.V1
 
         }
 
+        [AllowAnonymous]
+        [HttpPost]
+        [Route("EditorUpload")]
+        public async Task<IActionResult> EditorUpload()
+        {
+            var response = ResponseModelFactory.CreateResultInstance;
+
+            try
+            {
+                var result = new UploadJsonModel();
+                if (Request.Form.Files.Count > 0)
+                {
+                    var upload = new UploadFile();
+                    var appointFileName = string.Empty;
+                    if (Request.Form.Keys.Contains("appointFileName"))
+                    {
+                        appointFileName = Request.Form["appointFileName"].ToString();
+                    }
+                    foreach (var file in Request.Form.Files)
+                    {
+                        upload.Save(file, appointFileName: appointFileName);
+                    }
+
+                    if (!upload.Error)
+                    {
+                        result.Msg = "上传成功";
+                        result.Url = upload.FileInfo["filepath"].ToString();
+                        result.Name = upload.FileInfo["Name"].ToString();
+
+                        if (string.IsNullOrWhiteSpace(CeyhConfiguration.TheUploadFileSettings.HostUrl))
+                        {
+                            result.HostUrl = $"{Net.GetOrigin}{ result.Url}";
+                        }
+                        else
+                        {
+                            result.HostUrl = $"{CeyhConfiguration.TheUploadFileSettings.HostUrl}{ result.Url}";
+
+                        }
+
+                    }
+                    else
+                    {
+                        //result.Msg = $"上传失败，{upload.Message}";
+                        // response.SetError($"上传失败，{upload.Message}");
+                        return Ok(new { error = 1, message = $"上传失败，{upload.Message}" });
+                    }
+                }
+                else
+                {
+                    //result.Msg = "未能获取到文件";
+                    //response.SetError($"未能获取到文件");
+                    //return Ok(response);
+                    return Ok(new { error = 1, message = "未能获取到文件" });
+
+                }
+                //response.SetData(result);
+                //return Ok(response);
+                return Ok(new { error = 0, url = result.HostUrl });
+            }
+
+            catch (Exception ex)
+            {
+                //response.SetError($"消息[{ex.Message}]内容");
+                //return Ok(response);
+                return Ok(new { error = 1, message = $"消息[{ex.Message}]内容" });
+            }
+
+        }
+
         #endregion
     }
 }

@@ -172,6 +172,18 @@
             </FormItem>
           </Col>
         </Row>
+         <Row :gutter="16">
+          <Col span="12">
+            <FormItem label="纸飞机机器人令牌" >
+              <Input  v-model="formModel.fields.telegramBotToken" placeholder="请输入纸飞机机器人令牌"/>
+            </FormItem>
+          </Col>
+          <Col span="12">
+             <FormItem label="纸飞机广播群ID" >
+              <Input  v-model="formModel.fields.telegramChatId" placeholder="请输入纸飞机广播群ID"/>
+            </FormItem>
+          </Col>
+        </Row>
         <Row :gutter="16">
           <Col span="12">
             <FormItem label="用户状态" label-position="left">
@@ -270,7 +282,9 @@ export default {
           createdByUserName: "",
           modifiedOn: null,
           modifiedByUserGuid: "",
-          modifiedByUserName: ""
+          modifiedByUserName: "",
+          telegramBotToken:'',
+          telegramChatId:'',
         },
         rules: {
           loginName: [

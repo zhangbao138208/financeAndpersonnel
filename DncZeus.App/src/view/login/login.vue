@@ -1,5 +1,5 @@
 <style lang="less">
-@import "./login.less";
+@import './login.less';
 </style>
 
 <template>
@@ -14,7 +14,17 @@
                 @on-success-valid="handleSubmit"
                 :processing="processing"
                 :loading="loading"
-              ></login-form>
+              >
+              </login-form>
+             
+
+              <!-- <SliderVerificationCode
+                height="60px"
+                sliderWidth="120px"
+                inactiveValue="未解锁"
+                activeValue="已解锁"
+                v-model="value"
+              /> -->
             </div>
           </Card>
         </div>
@@ -24,66 +34,66 @@
 </template>
 
 <script>
-import LoginForm from "_c/login-form";
-import { mapActions } from "vuex";
-import axios from "@/libs/api.request";
-import store from "@/store";
-import { initRouter } from "@/libs/router-util";
+import LoginForm from '_c/login-form'
+import { mapActions } from 'vuex'
+import axios from '@/libs/api.request'
+import store from '@/store'
+import { initRouter } from '@/libs/router-util'
 
 export default {
   components: {
-    LoginForm
+    LoginForm,
   },
   data() {
     return {
       processing: false,
-      loading: false
-    };
+      loading: false,
+    }
   },
   methods: {
-    ...mapActions(["handleLogin", "getUserInfo"]),
+    ...mapActions(['handleLogin', 'getUserInfo']),
     handleSubmit({ userName, password }) {
-      var target = this;
-      this.loading = true;
+      var target = this
+      this.loading = true
       this.handleLogin({ userName, password })
-        .then(res => {
+        .then((res) => {
           if (res.data.code == 200) {
-            this.processing = true;
+            this.processing = true
             this.$Message.loading({
               duration: 0,
               closable: false,
-              content: "用户信息验证成功,正在登录系统..."
-            });
-            this.getUserInfo().then(res => {
+              content: '用户信息验证成功,正在登录系统...',
+            })
+            this.getUserInfo().then((res) => {
               setTimeout(() => {
-                initRouter(target);
+                initRouter(target)
                 this.$router.push({
-                  name: "home"
-                });
+                  name: 'home',
+                })
 
                 setTimeout(() => {
-                  this.$Message.destroy();
-                }, 1000);
-              }, 1500);
-            });
+                  this.$Message.destroy()
+                }, 1000)
+              }, 1500)
+            })
           } else {
-            this.processing = false;
-            this.loading = false;
-            this.$Message.error(res.data.message);
+            this.processing = false
+            this.loading = false
+            this.$Message.error(res.data.message)
           }
         })
-        .catch(error => {
-          target.loading = false;
+        .catch((error) => {
+          target.loading = false
           if (!error.status) {
             this.$Message.error({
-              content: "网络出错,请检查你的网络或者服务是否可用",
-              duration: 5
-            });
+              content: '网络出错,请检查你的网络或者服务是否可用',
+              duration: 5,
+            })
           }
-        });
-    }
-  }
-};
+        })
+    },
+  },
+}
 </script>
 
 <style>
@@ -95,7 +105,7 @@ export default {
   font-size: 40px;
 }
 .bg {
-  background: url("../../assets/images/login-bg.jpg");
+  background: url('../../assets/images/login-bg.jpg');
   height: 100%;
   text-align: center;
   line-height: 100%;

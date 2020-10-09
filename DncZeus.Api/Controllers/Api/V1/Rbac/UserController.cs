@@ -13,6 +13,10 @@ using System;
 using System.Linq;
 using Microsoft.Data.SqlClient;
 using System.Collections.Generic;
+using DncZeus.Api.Utils.Encryption;
+using System.Text.Unicode;
+using System.Text;
+using DncZeus.Api.Utils;
 
 /******************************************
  * AUTHOR:          Rector
@@ -34,15 +38,18 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
     {
         private readonly DncZeusDbContext _dbContext;
         private readonly IMapper _mapper;
+        private readonly RSAHelper _rSAHelper;
+
         /// <summary>
         /// 
         /// </summary>
         /// <param name="dbContext"></param>
         /// <param name="mapper"></param>
-        public UserController(DncZeusDbContext dbContext, IMapper mapper)
+        public UserController(DncZeusDbContext dbContext, IMapper mapper, RSAHelper rSAHelper)
         {
             _dbContext = dbContext;
             _mapper = mapper;
+            _rSAHelper = rSAHelper;
         }
 
         /// <summary>
@@ -103,8 +110,11 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
                     response.SetFailed("登录名已存在");
                     return Ok(response);
                 }
+                //RSAHelper rSAHelper = new RSAHelper
+                //    (RSAType.RSA,Encoding.UTF8, CeyhConfiguration.TheRSASetting.Private,CeyhConfiguration.TheRSASetting.Public);
                 var entity = _mapper.Map<UserCreateViewModel, DncUser>(model);
                 entity.CreatedOn = DateTime.Now;
+                entity.Password = _rSAHelper.Encrypt(model.Password);
                 entity.Guid = Guid.NewGuid();
                 entity.Status = model.Status;
                 _dbContext.DncUser.Add(entity);
@@ -128,7 +138,9 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
             {
                 var entity = _dbContext.DncUser.FirstOrDefault(x => x.Guid == guid);
                 var response = ResponseModelFactory.CreateInstance;
-                response.SetData(_mapper.Map<DncUser, UserEditViewModel>(entity));
+                var resEntity = _mapper.Map<DncUser, UserEditViewModel>(entity);
+                resEntity.Password = _rSAHelper.Decrypt(entity.Password);
+                response.SetData(resEntity);
                 return Ok(response);
             }
         }
@@ -156,13 +168,17 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
                     response.SetFailed("用户不存在");
                     return Ok(response);
                 }
+                //RSAHelper rSAHelper = new RSAHelper
+                //   (RSAType.RSA, Encoding.UTF8, CeyhConfiguration.TheRSASetting.Private, CeyhConfiguration.TheRSASetting.Public);
                 entity.DisplayName = model.DisplayName;
                 entity.IsDeleted = model.IsDeleted;
                 entity.IsLocked = model.IsLocked;
                 entity.ModifiedByUserGuid = AuthContextService.CurrentUser.Guid;
                 entity.ModifiedByUserName = AuthContextService.CurrentUser.DisplayName;
                 entity.ModifiedOn = DateTime.Now;
-                entity.Password = model.Password;
+                entity.TelegramBotToken = model.TelegramBotToken;
+                entity.TelegramChatId = model.TelegramChatId;
+                entity.Password = _rSAHelper.Encrypt(model.Password);
                 entity.Status = model.Status;
                 entity.UserType = model.UserType;
                 entity.Description = model.Description;
@@ -276,6 +292,24 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
             else
             {
                 response.SetFailed("保存用户角色数据失败");
+            }
+            return Ok(response);
+        }
+
+        /// <summary>
+        /// 查询所有步骤列表(只包含主要的字段信息:name,code)
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("/api/v1/rbac/user/find_simple_list")]
+        public ActionResult<ResponseResultModel<IEnumerable<SimpleModel>>> FindSimpleList()
+        {
+            var response = ResponseModelFactory.CreateInstance;
+            using (_dbContext)
+            {
+                var users = _dbContext.DncUser.
+                    Where(x => x.IsDeleted == CommonEnum.IsDeleted.No && x.Status == UserStatus.Normal)
+                    .Select(x => new { name= x.DisplayName,code= x.Guid }).ToList();
+                response.SetData(users);
             }
             return Ok(response);
         }

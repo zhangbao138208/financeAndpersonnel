@@ -16,6 +16,22 @@ import '@/assets/icons/iconfont.css'
 import TreeTable from 'tree-table-vue'
 import Moment from 'moment'
 
+import SliderVerificationCode from 'slider-verification-code';
+import 'slider-verification-code/lib/slider-verification-code.css';
+
+Vue.use(SliderVerificationCode);
+
+// 引入 vue-kikindeditor 需要的文件
+import VueKindEditor from 'vue-kindeditor'
+import 'kindeditor/kindeditor-all.js'
+import 'kindeditor/themes/default/default.css'
+
+Vue.config.productionTip = false
+
+// 注册 vue-kikindeditor plugin
+Vue.use(VueKindEditor)
+
+
 import Blob from './excel/Blob'
 import Export2Excel from './excel/Export2Excel.js'
 
@@ -31,6 +47,18 @@ import 'muse-ui/dist/muse-ui.css';
 Vue.use(MuseUI);
 
 import '@/directive/echartResizeHelper.js';
+
+import JSEncrypt from 'jsencrypt';
+
+
+Vue.prototype.$getRsaCode = function(str) { // 注册方法
+        let pubKey = config.rsaPublicKey // ES6 模板字符串 引用 rsa 公钥
+        let encryptStr = new JSEncrypt();
+        encryptStr.setPublicKey(pubKey); // 设置 加密公钥
+        let data = encryptStr.encrypt(str.toString()); // 进行加密
+        return data;
+    }
+    //const Base64 = require('js-base64').Base64
 
 
 // 实际打包时应该不引入mock

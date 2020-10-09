@@ -34,7 +34,7 @@ namespace DncZeus.Api.Controllers.Api.V1.User
            
         }
         /// <summary>
-        /// 
+        /// 部门列表
         /// </summary>
         /// <returns></returns>
         [HttpPost]

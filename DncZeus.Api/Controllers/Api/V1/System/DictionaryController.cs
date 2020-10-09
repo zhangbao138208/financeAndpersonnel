@@ -87,7 +87,7 @@ namespace DncZeus.Api.Controllers.Api.V1.System
             }
             using (_dbContext)
             {
-                if (_dbContext.DncRole.Count(x => x.Name == model.Name) > 0)
+                if (_dbContext.SystemDictionary.Count(x => x.Name == model.Name) > 0)
                 {
                     response.SetFailed("字典已存在");
                     return Ok(response);
@@ -246,7 +246,7 @@ namespace DncZeus.Api.Controllers.Api.V1.System
         {
             var response = ResponseModelFactory.CreateInstance;
             var list =  _dictionaryService.GetSYSDictionary(code);
-            var data= list;
+            var data= list.OrderBy(l=>l.Value).ToList();
             response.SetData(data);
             return Ok(response);
         }

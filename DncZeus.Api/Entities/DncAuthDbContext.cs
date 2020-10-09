@@ -87,6 +87,26 @@ namespace DncZeus.Api.Entities
         /// </summary>
         public DbSet<SystemDicType> SystemDicType { get; set; }
 
+        /// <summary>
+        /// 流程审批模板
+        /// </summary>
+        public DbSet<WorkflowTemplate> WorkflowTemplate { get; set; }
+
+        /// <summary>
+        /// 流程审批步骤
+        /// </summary>
+        public DbSet<WorkflowStep> WorkflowStep { get; set; }
+
+        /// <summary>
+        /// 流程审批工作
+        /// </summary>
+        public DbSet<WorkflowList> WorkflowList { get; set; }
+
+        /// <summary>
+        /// 流程审批
+        /// </summary>
+        public DbSet<WorkflowReceiver> WorkflowReceiver { get; set; }
+
         #region DbQuery
         /// <summary>
         /// 

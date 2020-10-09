@@ -17,12 +17,12 @@ export default {
      * @description api请求基础路径
      */
     baseUrl: {
-        dev: 'http://localhost:54321/',
+        dev: 'http://localhost:5001/',
         pro: 'http://localhost:7500/',
         defaultPrefix: "api/v1/"
     },
     authUrl: {
-        dev: 'http://localhost:54321/api/oauth/auth',
+        dev: 'http://localhost:5001/api/oauth/auth',
         pro: 'http://localhost:7500/api/oauth/auth'
     },
     /**
@@ -37,5 +37,7 @@ export default {
             showInHeader: true, // 设为false后不会在顶部显示错误日志徽标
             developmentOff: true // 设为true后在开发环境不会收集错误信息，方便开发中排查错误
         }
-    }
+    },
+
+    rsaPublicKey: `MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCvqYKAop1jfuV9Z8YNrd9NTWdBEHqPqgBm8hb5eW8tD1iFPzfPKWmuXeotSGJGR+lZ2jD/nWas9iekJrk3+Nwxwk2I2pbFp1Zl+bTdRCNCoBEaRq1WXhLsXKXdDHPWD3+2pqp9FgiacY+LfSQ0mG8aQ2URLnfme2zjjjgjnSW8GwIDAQAB`
 }

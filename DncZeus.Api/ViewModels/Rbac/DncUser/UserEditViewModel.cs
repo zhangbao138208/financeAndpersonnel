@@ -37,6 +37,14 @@ namespace DncZeus.Api.ViewModels.Rbac.DncUser
         /// </summary>
         public string Avatar { get; set; }
         /// <summary>
+        /// 纸飞机机器人令牌
+        /// </summary>
+        public string TelegramBotToken { get; set; }
+        /// <summary>
+        /// 纸飞机广播群地址
+        /// </summary>
+        public string TelegramChatId { get; set; }
+        /// <summary>
         /// 
         /// </summary>
         public UserType UserType { get; set; }

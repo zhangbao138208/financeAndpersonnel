@@ -60,7 +60,8 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
                 var query = _dbContext.DncPermission.AsQueryable();
                 if (!string.IsNullOrEmpty(payload.Kw))
                 {
-                    query = query.Where(x => x.Name.Contains(payload.Kw.Trim()) || x.Code.Contains(payload.Kw.Trim()));
+                    query = query.Where(x => x.Name.Contains(payload.Kw.Trim()) ||
+                    x.Code.Contains(payload.Kw.Trim()));
                 }
                 if (payload.IsDeleted > IsDeleted.All)
                 {

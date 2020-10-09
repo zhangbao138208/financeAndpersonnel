@@ -59,3 +59,11 @@ export const saveUserRoles = (data) => {
         data
     })
 }
+
+//load user simple list
+export const loadUserSimpleList = () => {
+    return axios.request({
+        url: 'rbac/user/find_simple_list',
+        method: 'get'
+    })
+}

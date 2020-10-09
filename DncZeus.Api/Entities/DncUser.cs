@@ -33,6 +33,22 @@ namespace DncZeus.Api.Entities
         public string Password { get; set; }
         [Column(TypeName = "nvarchar(255)",Order = 100)]
         public string Avatar { get; set; }
+        /// <summary>
+        /// 部门
+        /// </summary>
+        public UserDepartment Department { get; set; }
+        /// <summary>
+        /// 职位
+        /// </summary>
+        public UserDepartment Position { get; set; }
+        /// <summary>
+        /// 纸飞机机器人令牌
+        /// </summary>
+        public string TelegramBotToken { get; set; }
+        /// <summary>
+        /// 纸飞机广播群地址
+        /// </summary>
+        public string TelegramChatId { get; set; }
         public UserType UserType { get; set; }
         public IsLocked IsLocked { get; set; }
         //[EnumDataType(typeof(UserStatus))]
