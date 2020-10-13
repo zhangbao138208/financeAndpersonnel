@@ -19,10 +19,12 @@ using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Linq;
+using System.Threading.Tasks;
 using DncZeus.Api.ViewModels.Rbac.DncPermission;
 using static DncZeus.Api.Entities.Enums.CommonEnum;
 using DncZeus.Api.Extensions.CustomException;
 using Microsoft.Data.SqlClient;
+using SqlParameter = Microsoft.Data.SqlClient.SqlParameter;
 
 namespace DncZeus.Api.Controllers.Api.V1.Rbac
 {
@@ -52,10 +54,11 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// </summary>
         /// <returns></returns>
         [HttpPost]
-        public ActionResult<ResponseResultModel<IEnumerable<PermissionJsonModel>>> List(PermissionRequestPayload payload)
+        public async Task<ActionResult<ResponseResultModel<IEnumerable<PermissionJsonModel>>>>
+            List(PermissionRequestPayload payload)
         {
             var response = ResponseModelFactory.CreateResultInstance;
-            using (_dbContext)
+            await using (_dbContext)
             {
                 var query = _dbContext.DncPermission.AsQueryable();
                 if (!string.IsNullOrEmpty(payload.Kw))
@@ -75,8 +78,9 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
                 {
                     query = query.Where(x => x.MenuGuid == payload.MenuGuid);
                 }
-                var list = query.Paged(payload.CurrentPage, payload.PageSize).Include(x => x.Menu).ToList();
-                var totalCount = query.Count();
+                var list =await query.Paged(payload.CurrentPage, payload.PageSize).
+                    Include(x => x.Menu).ToListAsync();
+                var totalCount = await query.CountAsync();
                 var data = list.Select(_mapper.Map<DncPermission, PermissionJsonModel>);
                 /*
                  * .Select(x => new PermissionJsonModel {
@@ -97,7 +101,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// <returns></returns>
         [HttpPost]
         [ProducesResponseType(200)]
-        public ActionResult<ResponseModel> Create(PermissionCreateViewModel model)
+        public async Task<ActionResult<ResponseModel>> Create(PermissionCreateViewModel model)
         {
             var response = ResponseModelFactory.CreateInstance;
             if (model.Name.Trim().Length <= 0)
@@ -105,9 +109,11 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
                 response.SetFailed("请输入权限名称");
                 return Ok(response);
             }
-            using (_dbContext)
+
+            await using (_dbContext)
             {
-                if (_dbContext.DncPermission.Count(x => x.ActionCode == model.ActionCode && x.MenuGuid == model.MenuGuid) > 0)
+                if (await _dbContext.DncPermission.CountAsync(x => x.ActionCode == model.ActionCode 
+                                                        && x.MenuGuid == model.MenuGuid) > 0)
                 {
                     response.SetFailed("权限操作码已存在");
                     return Ok(response);
@@ -117,8 +123,8 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
                 entity.Code = RandomHelper.GetRandomizer(8, true, false, true, true);
                 entity.CreatedByUserGuid = AuthContextService.CurrentUser.Guid;
                 entity.CreatedByUserName = AuthContextService.CurrentUser.DisplayName;
-                _dbContext.DncPermission.Add(entity);
-                _dbContext.SaveChanges();
+                await _dbContext.DncPermission.AddAsync(entity);
+                await _dbContext.SaveChangesAsync();
 
                 response.SetSuccess();
                 return Ok(response);
@@ -132,15 +138,16 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// <returns></returns>
         [HttpGet("{code}")]
         [ProducesResponseType(200)]
-        public ActionResult<PermissionEditViewModel> Edit(string code)
+        public async Task<ActionResult<PermissionEditViewModel>> Edit(string code)
         {
-            using (_dbContext)
+            await using (_dbContext)
             {
-                var entity = _dbContext.DncPermission.FirstOrDefault(x => x.Code == code);
+                var entity = await _dbContext.DncPermission.
+                    FirstOrDefaultAsync(x => x.Code == code);
                 var response = ResponseModelFactory.CreateInstance;
                 var model = _mapper.Map<DncPermission, PermissionEditViewModel>(entity);
                 var menu = _dbContext.DncMenu.FirstOrDefault(x => x.Guid == entity.MenuGuid);
-                model.MenuName = menu.Name;
+                if (menu != null) model.MenuName = menu.Name;
                 response.SetData(model);
                 return Ok(response);
             }
@@ -153,7 +160,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// <returns></returns>
         [HttpPut]
         [ProducesResponseType(200)]
-        public ActionResult<ResponseModel> Edit(PermissionEditViewModel model)
+        public async Task<ActionResult<ResponseModel>> Edit(PermissionEditViewModel model)
         {
             var response = ResponseModelFactory.CreateInstance;
             if (ConfigurationManager.AppSettings.IsTrialVersion)
@@ -161,14 +168,17 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
                 response.SetIsTrial();
                 return Ok(response);
             }
-            using (_dbContext)
+
+            await using (_dbContext)
             {
-                if (_dbContext.DncPermission.Count(x => x.ActionCode == model.ActionCode && x.Code != model.Code) > 0)
+                if (await _dbContext.DncPermission.CountAsync(x => x.ActionCode == model.ActionCode && 
+                                                        x.Code != model.Code) > 0)
                 {
                     response.SetFailed("权限操作码已存在");
                     return Ok(response);
                 }
-                var entity = _dbContext.DncPermission.FirstOrDefault(x => x.Code == model.Code);
+                var entity = await _dbContext.DncPermission.
+                    FirstOrDefaultAsync(x => x.Code == model.Code);
                 if (entity == null)
                 {
                     response.SetFailed("权限不存在");
@@ -183,7 +193,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
                 entity.ModifiedOn = DateTime.Now;
                 entity.Status = model.Status;
                 entity.Description = model.Description;
-                _dbContext.SaveChanges();
+                await _dbContext.SaveChangesAsync();
                 response.SetSuccess();
                 return Ok(response);
             }
@@ -196,7 +206,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// <returns></returns>
         [HttpDelete("{ids}")]
         [ProducesResponseType(200)]
-        public ActionResult<ResponseModel> Delete(string ids)
+        public async Task<ActionResult<ResponseModel>> Delete(string ids)
         {
             var response = ResponseModelFactory.CreateInstance;
             if (ConfigurationManager.AppSettings.IsTrialVersion)
@@ -204,7 +214,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
                 response.SetIsTrial();
                 return Ok(response);
             }
-            response = UpdateIsDelete(IsDeleted.Yes, ids);
+            response = await UpdateIsDelete(IsDeleted.Yes, ids);
             return Ok(response);
         }
 
@@ -215,9 +225,9 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// <returns></returns>
         [HttpPost("{ids}")]
         [ProducesResponseType(200)]
-        public ActionResult<ResponseModel> Recover(string ids)
+        public async Task<ActionResult<ResponseModel>> Recover(string ids)
         {
-            var response = UpdateIsDelete(IsDeleted.No, ids);
+            var response = await UpdateIsDelete(IsDeleted.No, ids);
             return Ok(response);
         }
 
@@ -229,7 +239,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// <returns></returns>
         [HttpPost]
         [ProducesResponseType(200)]
-        public ActionResult<ResponseModel> Batch(string command, string ids)
+        public async Task<ActionResult<ResponseModel>> Batch(string command, string ids)
         {
             var response = ResponseModelFactory.CreateInstance;
             switch (command)
@@ -240,10 +250,10 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
                         response.SetIsTrial();
                         return Ok(response);
                     }
-                    response = UpdateIsDelete(IsDeleted.Yes, ids);
+                    response = await UpdateIsDelete(IsDeleted.Yes, ids);
                     break;
                 case "recover":
-                    response = UpdateIsDelete(IsDeleted.No, ids);
+                    response = await UpdateIsDelete(IsDeleted.No, ids);
                     break;
                 case "forbidden":
                     if (ConfigurationManager.AppSettings.IsTrialVersion)
@@ -251,10 +261,10 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
                         response.SetIsTrial();
                         return Ok(response);
                     }
-                    response = UpdateStatus(UserStatus.Forbidden, ids);
+                    response = await UpdateStatus(UserStatus.Forbidden, ids);
                     break;
                 case "normal":
-                    response = UpdateStatus(UserStatus.Normal, ids);
+                    response = await UpdateStatus(UserStatus.Normal, ids);
                     break;
                 default:
                     break;
@@ -268,36 +278,43 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// <param name="code">角色编码</param>
         /// <returns></returns>
         [HttpGet("/api/v1/rbac/permission/permission_tree/{code}")]
-        public ActionResult<PermissionTreeModel> PermissionTree(string code)
+        public async Task<ActionResult<PermissionTreeModel>> PermissionTree(string code)
         {
             var response = ResponseModelFactory.CreateInstance;
-            using (_dbContext)
+            await using (_dbContext)
             {
-                var role = _dbContext.DncRole.FirstOrDefault(x => x.Code == code);
+                var role = await _dbContext.DncRole.FirstOrDefaultAsync(x => x.Code == code);
                 if (role == null)
                 {
                     response.SetFailed("角色不存在");
                     return Ok(response);
                 }
-                var menu = _dbContext.DncMenu.Where(x => x.IsDeleted == IsDeleted.No && x.Status == Status.Normal).OrderBy(x => x.CreatedOn).ThenBy(x => x.Sort)
+                var menu = await _dbContext.DncMenu.
+                    Where(x => x.IsDeleted == IsDeleted.No && x.Status == Status.Normal).
+                    OrderBy(x => x.CreatedOn).ThenBy(x => x.Sort)
                     .Select(x => new PermissionMenuTree
                     {
                         Guid = x.Guid,
                         ParentGuid = x.ParentGuid,
                         Title = x.Name
-                    }).ToList();
+                    }).ToListAsync();
                 //DncPermissionWithAssignProperty
-                var sql = @"SELECT P.Code,P.MenuGuid,P.Name,P.ActionCode,ISNULL(S.RoleCode,'') AS RoleCode,(CASE WHEN S.PermissionCode IS NOT NULL THEN 1 ELSE 0 END) AS IsAssigned FROM DncPermission AS P 
-LEFT JOIN (SELECT * FROM DncRolePermissionMapping AS RPM WHERE RPM.RoleCode={0}) AS S 
-ON S.PermissionCode= P.Code
-WHERE P.IsDeleted=0 AND P.Status=1";
+                var sql = @"-- noinspection SqlNoDataSourceInspectionForFile
+                
+                SELECT P.Code,P.MenuGuid,P.Name,P.ActionCode,ISNULL(S.RoleCode,'') AS RoleCode,(CASE WHEN S.PermissionCode IS NOT NULL THEN 1 ELSE 0 END) AS IsAssigned FROM DncPermission AS P 
+                LEFT JOIN (SELECT * FROM DncRolePermissionMapping AS RPM WHERE RPM.RoleCode={0}) AS S 
+                ON S.PermissionCode= P.Code
+                WHERE P.IsDeleted=0 AND P.Status=1";
                 if (role.IsSuperAdministrator)
                 {
-                    sql = @"SELECT P.Code,P.MenuGuid,P.Name,P.ActionCode,'SUPERADM' AS RoleCode,(CASE WHEN P.Code IS NOT NULL THEN 1 ELSE 0 END) AS IsAssigned FROM DncPermission AS P 
+                    sql =
+                        $@"SELECT P.C{"ARG0"}ode,P.MenuGuid,P.Name,P.ActionCode,'SUPERADM' AS RoleCode,(CASE WHEN P.Code IS NOT NULL THEN 1 ELSE 0 END) AS IsAssigned FROM DncPermission AS P 
 WHERE P.IsDeleted=0 AND P.Status=1";
                 }
-                var permissionList = _dbContext.DncPermissionWithAssignProperty.FromSqlRaw(sql, code).ToList();
-                var tree = menu.FillRecursive(permissionList, Guid.Empty, role.IsSuperAdministrator);
+                var permissionList =await _dbContext.DncPermissionWithAssignProperty.
+                    FromSqlRaw(sql, code).ToListAsync();
+                var tree = 
+                    menu.FillRecursive(permissionList, Guid.Empty, role.IsSuperAdministrator);
                 response.SetData(new { tree, selectedPermissions = permissionList.Where(x => x.IsAssigned == 1).Select(x => x.Code) });
             }
 
@@ -312,15 +329,15 @@ WHERE P.IsDeleted=0 AND P.Status=1";
         /// <param name="isDeleted"></param>
         /// <param name="ids">权限ID字符串,多个以逗号隔开</param>
         /// <returns></returns>
-        private ResponseModel UpdateIsDelete(IsDeleted isDeleted, string ids)
+        private  async Task<ResponseModel> UpdateIsDelete(IsDeleted isDeleted, string ids)
         {
-            using (_dbContext)
+            await using (_dbContext)
             {
                 var parameters = ids.Split(",").Select((id, index) => new SqlParameter(string.Format("@p{0}", index), id)).ToList();
                 var parameterNames = string.Join(", ", parameters.Select(p => p.ParameterName));
-                var sql = string.Format("UPDATE DncPermission SET IsDeleted=@IsDeleted WHERE Code IN ({0})", parameterNames);
+                var sql = $"UPDATE DncPermission SET IsDeleted=@IsDeleted WHERE Code IN ({parameterNames})";
                 parameters.Add(new SqlParameter("@IsDeleted", (int)isDeleted));
-                _dbContext.Database.ExecuteSqlCommand(sql, parameters);
+                await _dbContext.Database.ExecuteSqlCommandAsync(sql, parameters);
                 var response = ResponseModelFactory.CreateInstance;
                 return response;
             }
@@ -332,15 +349,15 @@ WHERE P.IsDeleted=0 AND P.Status=1";
         /// <param name="status">权限状态</param>
         /// <param name="ids">权限ID字符串,多个以逗号隔开</param>
         /// <returns></returns>
-        private ResponseModel UpdateStatus(UserStatus status, string ids)
+        private async Task<ResponseModel> UpdateStatus(UserStatus status, string ids)
         {
-            using (_dbContext)
+            await using (_dbContext)
             {
                 var parameters = ids.Split(",").Select((id, index) => new SqlParameter(string.Format("@p{0}", index), id)).ToList();
                 var parameterNames = string.Join(", ", parameters.Select(p => p.ParameterName));
-                var sql = string.Format("UPDATE DncPermission SET Status=@Status WHERE Code IN ({0})", parameterNames);
+                var sql = $"UPDATE DncPermission SET Status=@Status WHERE Code IN ({parameterNames})";
                 parameters.Add(new SqlParameter("@Status", status));
-                _dbContext.Database.ExecuteSqlCommand(sql, parameters);
+                await _dbContext.Database.ExecuteSqlCommandAsync(sql, parameters);
                 var response = ResponseModelFactory.CreateInstance;
                 return response;
             }

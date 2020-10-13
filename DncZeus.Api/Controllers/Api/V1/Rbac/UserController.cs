@@ -16,6 +16,7 @@ using System.Collections.Generic;
 using DncZeus.Api.Utils.Encryption;
 using System.Text.Unicode;
 using System.Text;
+using System.Threading.Tasks;
 using DncZeus.Api.Utils;
 
 /******************************************
@@ -38,18 +39,19 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
     {
         private readonly DncZeusDbContext _dbContext;
         private readonly IMapper _mapper;
-        private readonly RSAHelper _rSAHelper;
+        private readonly RSAHelper _rSaHelper;
 
         /// <summary>
         /// 
         /// </summary>
         /// <param name="dbContext"></param>
         /// <param name="mapper"></param>
-        public UserController(DncZeusDbContext dbContext, IMapper mapper, RSAHelper rSAHelper)
+        /// <param name="rSaHelper"></param>
+        public UserController(DncZeusDbContext dbContext, IMapper mapper, RSAHelper rSaHelper)
         {
             _dbContext = dbContext;
             _mapper = mapper;
-            _rSAHelper = rSAHelper;
+            _rSaHelper = rSaHelper;
         }
 
         /// <summary>
@@ -57,9 +59,10 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// </summary>
         /// <returns></returns>
         [HttpPost]
-        public ActionResult<ResponseResultModel<IEnumerable<UserJsonModel>>> List(UserRequestPayload payload)
+        public async Task<ActionResult<ResponseResultModel<IEnumerable<UserJsonModel>>>> 
+            List(UserRequestPayload payload)
         {
-            using (_dbContext)
+            await using (_dbContext)
             {
                 var query = _dbContext.DncUser.AsQueryable();
                 if (!string.IsNullOrEmpty(payload.Kw))
@@ -79,8 +82,8 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
                 {
                     query = query.OrderBy(payload.FirstSort.Field, payload.FirstSort.Direct == "DESC");
                 }
-                var list = query.Paged(payload.CurrentPage, payload.PageSize).ToList();
-                var totalCount = query.Count();
+                var list = await query.Paged(payload.CurrentPage, payload.PageSize).ToListAsync();
+                var totalCount = await query.CountAsync();
                 var data = list.Select(_mapper.Map<DncUser, UserJsonModel>);
                 var response = ResponseModelFactory.CreateResultInstance;
                 response.SetData(data, totalCount);
@@ -95,7 +98,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// <returns></returns>
         [HttpPost]
         [ProducesResponseType(200)]
-        public ActionResult<ResponseModel> Create(UserCreateViewModel model)
+        public async Task<ActionResult<ResponseModel>> Create(UserCreateViewModel model)
         {
             var response = ResponseModelFactory.CreateInstance;
             if (model.LoginName.Trim().Length <= 0)
@@ -103,9 +106,11 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
                 response.SetFailed("请输入登录名称");
                 return Ok(response);
             }
-            using (_dbContext)
+
+            await using (_dbContext)
             {
-                if (_dbContext.DncUser.Count(x => x.LoginName == model.LoginName) > 0)
+                if (await _dbContext.DncUser.CountAsync(x => x.LoginName ==
+                                                             model.LoginName) > 0)
                 {
                     response.SetFailed("登录名已存在");
                     return Ok(response);
@@ -114,11 +119,11 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
                 //    (RSAType.RSA,Encoding.UTF8, CeyhConfiguration.TheRSASetting.Private,CeyhConfiguration.TheRSASetting.Public);
                 var entity = _mapper.Map<UserCreateViewModel, DncUser>(model);
                 entity.CreatedOn = DateTime.Now;
-                entity.Password = _rSAHelper.Encrypt(model.Password);
+                entity.Password = _rSaHelper.Encrypt(model.Password);
                 entity.Guid = Guid.NewGuid();
                 entity.Status = model.Status;
-                _dbContext.DncUser.Add(entity);
-                _dbContext.SaveChanges();
+                await _dbContext.DncUser.AddAsync(entity);
+                await _dbContext.SaveChangesAsync();
 
                 response.SetSuccess();
                 return Ok(response);
@@ -132,14 +137,14 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// <returns></returns>
         [HttpGet("{guid}")]
         [ProducesResponseType(200)]
-        public ActionResult<ResponseModel<UserEditViewModel>> Edit(Guid guid)
+        public async Task<ActionResult<ResponseModel<UserEditViewModel>>> Edit(Guid guid)
         {
-            using (_dbContext)
+            await using (_dbContext)
             {
-                var entity = _dbContext.DncUser.FirstOrDefault(x => x.Guid == guid);
+                var entity = await _dbContext.DncUser.FirstOrDefaultAsync(x => x.Guid == guid);
                 var response = ResponseModelFactory.CreateInstance;
                 var resEntity = _mapper.Map<DncUser, UserEditViewModel>(entity);
-                resEntity.Password = _rSAHelper.Decrypt(entity.Password);
+                if (entity != null) resEntity.Password = _rSaHelper.Decrypt(entity.Password);
                 response.SetData(resEntity);
                 return Ok(response);
             }
@@ -152,7 +157,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// <returns></returns>
         [HttpPut]
         [ProducesResponseType(200)]
-        public ActionResult<ResponseModel> Edit(UserEditViewModel model)
+        public async Task<ActionResult<ResponseModel>> Edit(UserEditViewModel model)
         {
             var response = ResponseModelFactory.CreateInstance;
             if (ConfigurationManager.AppSettings.IsTrialVersion)
@@ -160,9 +165,11 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
                 response.SetIsTrial();
                 return Ok(response);
             }
-            using (_dbContext)
+
+            await using (_dbContext)
             {
-                var entity = _dbContext.DncUser.FirstOrDefault(x => x.Guid == model.Guid);
+                var entity = await _dbContext.DncUser.
+                    FirstOrDefaultAsync(x => x.Guid == model.Guid);
                 if (entity == null)
                 {
                     response.SetFailed("用户不存在");
@@ -178,11 +185,12 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
                 entity.ModifiedOn = DateTime.Now;
                 entity.TelegramBotToken = model.TelegramBotToken;
                 entity.TelegramChatId = model.TelegramChatId;
-                entity.Password = _rSAHelper.Encrypt(model.Password);
+                entity.Password = _rSaHelper.Encrypt(model.Password);
+                entity.Avatar = model.Avatar;
                 entity.Status = model.Status;
                 entity.UserType = model.UserType;
                 entity.Description = model.Description;
-                _dbContext.SaveChanges();
+                await _dbContext.SaveChangesAsync();
                 response = ResponseModelFactory.CreateInstance;
                 return Ok(response);
             }
@@ -195,7 +203,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// <returns></returns>
         [HttpDelete("{ids}")]
         [ProducesResponseType(200)]
-        public ActionResult<ResponseModel> Delete(string ids)
+        public async Task<ActionResult<ResponseModel>> Delete(string ids)
         {
             var response = ResponseModelFactory.CreateInstance;
             if (ConfigurationManager.AppSettings.IsTrialVersion)
@@ -203,7 +211,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
                 response.SetIsTrial();
                 return Ok(response);
             }
-            response = UpdateIsDelete(CommonEnum.IsDeleted.Yes, ids);
+            response = await UpdateIsDelete(CommonEnum.IsDeleted.Yes, ids);
             return Ok(response);
         }
 
@@ -214,9 +222,9 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// <returns></returns>
         [HttpPost("{ids}")]
         [ProducesResponseType(200)]
-        public ActionResult<ResponseModel> Recover(string ids)
+        public async Task<ActionResult<ResponseModel>> Recover(string ids)
         {
-            var response = UpdateIsDelete(CommonEnum.IsDeleted.No, ids);
+            var response = await UpdateIsDelete(CommonEnum.IsDeleted.No, ids);
             return Ok(response);
         }
 
@@ -228,7 +236,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// <returns></returns>
         [HttpPost]
         [ProducesResponseType(200)]
-        public ActionResult<ResponseModel> Batch(string command, string ids)
+        public async Task<ActionResult<ResponseModel>> Batch(string command, string ids)
         {
             var response = ResponseModelFactory.CreateInstance;
             switch (command)
@@ -239,10 +247,10 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
                         response.SetIsTrial();
                         return Ok(response);
                     }
-                    response = UpdateIsDelete(CommonEnum.IsDeleted.Yes, ids);
+                    response = await UpdateIsDelete(CommonEnum.IsDeleted.Yes, ids);
                     break;
                 case "recover":
-                    response = UpdateIsDelete(CommonEnum.IsDeleted.No, ids);
+                    response = await UpdateIsDelete(CommonEnum.IsDeleted.No, ids);
                     break;
                 case "forbidden":
                     if (ConfigurationManager.AppSettings.IsTrialVersion)
@@ -250,10 +258,10 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
                         response.SetIsTrial();
                         return Ok(response);
                     }
-                    response = UpdateStatus(UserStatus.Forbidden, ids);
+                    response = await UpdateStatus(UserStatus.Forbidden, ids);
                     break;
                 case "normal":
-                    response = UpdateStatus(UserStatus.Normal, ids);
+                    response = await UpdateStatus(UserStatus.Normal, ids);
                     break;
                 default:
                     break;
@@ -268,21 +276,22 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// <param name="model"></param>
         /// <returns></returns>
         [HttpPost("/api/v1/rbac/user/save_roles")]
-        public ActionResult<ResponseModel> SaveRoles(SaveUserRolesViewModel model)
+        public async Task<ActionResult<ResponseModel>> SaveRoles(SaveUserRolesViewModel model)
         {
             var response = ResponseModelFactory.CreateInstance;
-            var roles = model.AssignedRoles.Select(x => new DncUserRoleMapping
+            var roles = model.AssignedRoles.
+                Select(x => new DncUserRoleMapping
             {
                 UserGuid = model.UserGuid,
                 CreatedOn = DateTime.Now,
                 RoleCode = x.Trim()
             }).ToList();
-            _dbContext.Database.ExecuteSqlCommand("DELETE FROM DncUserRoleMapping WHERE UserGuid={0}", model.UserGuid);
+            await _dbContext.Database.ExecuteSqlCommandAsync("DELETE FROM DncUserRoleMapping WHERE UserGuid={0}", model.UserGuid);
             var success = true;
             if (roles.Count > 0)
             {
-                _dbContext.DncUserRoleMapping.AddRange(roles);
-                success = _dbContext.SaveChanges() > 0;
+                await _dbContext.DncUserRoleMapping.AddRangeAsync(roles);
+                success = await _dbContext.SaveChangesAsync() > 0;
             }
 
             if (success)
@@ -301,14 +310,15 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// </summary>
         /// <returns></returns>
         [HttpGet("/api/v1/rbac/user/find_simple_list")]
-        public ActionResult<ResponseResultModel<IEnumerable<SimpleModel>>> FindSimpleList()
+        public async Task<ActionResult<ResponseResultModel<IEnumerable<SimpleModel>>>> FindSimpleList()
         {
             var response = ResponseModelFactory.CreateInstance;
-            using (_dbContext)
+            await using (_dbContext)
             {
-                var users = _dbContext.DncUser.
-                    Where(x => x.IsDeleted == CommonEnum.IsDeleted.No && x.Status == UserStatus.Normal)
-                    .Select(x => new { name= x.DisplayName,code= x.Guid }).ToList();
+                var users = await _dbContext.DncUser.
+                    Where(x => x.IsDeleted == CommonEnum.IsDeleted.No && 
+                               x.Status == UserStatus.Normal)
+                    .Select(x => new { name= x.DisplayName,code= x.Guid }).ToListAsync();
                 response.SetData(users);
             }
             return Ok(response);
@@ -322,9 +332,9 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// <param name="isDeleted"></param>
         /// <param name="ids">用户ID字符串,多个以逗号隔开</param>
         /// <returns></returns>
-        private ResponseModel UpdateIsDelete(CommonEnum.IsDeleted isDeleted, string ids)
+        private async Task<ResponseModel> UpdateIsDelete(CommonEnum.IsDeleted isDeleted, string ids)
         {
-            using (_dbContext)
+            await using (_dbContext)
             {
                 //var idList = ids.Split(",").ToList();
                 ////idList.ForEach(x => {
@@ -333,9 +343,9 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
                 //_dbContext.Database.ExecuteSqlCommand($"UPDATE DncUser SET IsDeleted={(int)isDeleted} WHERE Id IN ({ids})");
                 var parameters = ids.Split(",").Select((id, index) => new SqlParameter(string.Format("@p{0}", index), id)).ToList();
                 var parameterNames = string.Join(", ", parameters.Select(p => p.ParameterName));
-                var sql = string.Format("UPDATE DncUser SET IsDeleted=@IsDeleted WHERE Guid IN ({0})", parameterNames);
+                var sql = $"UPDATE DncUser SET IsDeleted=@IsDeleted WHERE Guid IN ({parameterNames})";
                 parameters.Add(new SqlParameter("@IsDeleted", (int)isDeleted));
-                _dbContext.Database.ExecuteSqlCommand(sql, parameters);
+                await _dbContext.Database.ExecuteSqlCommandAsync(sql, parameters);
                 var response = ResponseModelFactory.CreateInstance;
                 return response;
             }
@@ -347,15 +357,15 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// <param name="status">用户状态</param>
         /// <param name="ids">用户ID字符串,多个以逗号隔开</param>
         /// <returns></returns>
-        private ResponseModel UpdateStatus(UserStatus status, string ids)
+        private async Task<ResponseModel> UpdateStatus(UserStatus status, string ids)
         {
-            using (_dbContext)
+            await using (_dbContext)
             {
                 var parameters = ids.Split(",").Select((id, index) => new SqlParameter(string.Format("@p{0}", index), id)).ToList();
                 var parameterNames = string.Join(", ", parameters.Select(p => p.ParameterName));
-                var sql = string.Format("UPDATE DncUser SET Status=@Status WHERE Guid IN ({0})", parameterNames);
+                var sql = $"UPDATE DncUser SET Status=@Status WHERE Guid IN ({parameterNames})";
                 parameters.Add(new SqlParameter("@Status", (int)status));
-                _dbContext.Database.ExecuteSqlCommand(sql, parameters);
+                await _dbContext.Database.ExecuteSqlCommandAsync(sql, parameters);
                 var response = ResponseModelFactory.CreateInstance;
                 return response;
             }

@@ -35,7 +35,6 @@ namespace DncZeus.Api.Controllers
                 httpEx.StatusCode : (HttpStatusCode)Response.StatusCode;
             var ex = (HttpException)HttpContext.Features.Get<IExceptionHandlerFeature>()?.Error;
 
-            var parsedCode = (HttpStatusCode)code;
             var error = new ErrorDetails
             {
                 StatusCode = code,
@@ -44,7 +43,6 @@ namespace DncZeus.Api.Controllers
             // 如果是ASP.NET Core Web Api 应用程序，直接返回状态码(不跳转到错误页面，这里假设所有API接口的路径都是以/api/开始的)
             if (HttpContext.Features.Get<IHttpRequestFeature>().RawTarget.StartsWith("/api/", StringComparison.Ordinal))
             {
-                 parsedCode = (HttpStatusCode)code;
                 // error = new ErrorDetails
                 //{
                 //    StatusCode = code,

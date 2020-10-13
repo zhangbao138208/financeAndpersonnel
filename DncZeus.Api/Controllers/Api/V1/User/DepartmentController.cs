@@ -7,7 +7,6 @@ using DncZeus.Api.Extensions.AuthContext;
 using DncZeus.Api.Extensions.CustomException;
 using DncZeus.Api.Models.Response;
 using DncZeus.Api.RequestPayload.User.Department;
-using DncZeus.Api.Services;
 using DncZeus.Api.Utils;
 using DncZeus.Api.ViewModels.User.Department;
 using Microsoft.AspNetCore.Mvc;
@@ -16,6 +15,7 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace DncZeus.Api.Controllers.Api.V1.User
 {
@@ -38,10 +38,11 @@ namespace DncZeus.Api.Controllers.Api.V1.User
         /// </summary>
         /// <returns></returns>
         [HttpPost]
-        public ActionResult<ResponseResultModel<IEnumerable<DepartmentJsonModel>>> List(DepartmentRequestPaload payload)
+        public async Task<ActionResult<ResponseResultModel<IEnumerable<DepartmentJsonModel>>>>
+            List(DepartmentRequestPaload payload)
         {
             var response = ResponseModelFactory.CreateResultInstance;
-            using (_dbContext)
+            await using (_dbContext)
             {
                 var query = _dbContext.UserDepartment.AsQueryable();
                 if (!string.IsNullOrEmpty(payload.Kw))
@@ -56,7 +57,8 @@ namespace DncZeus.Api.Controllers.Api.V1.User
                 {
                     query = query.Where(x => x.Status == payload.Status);
                 }
-                var list = query.Paged(payload.CurrentPage, payload.PageSize).OrderBy(r => r.SortID).ToList();
+                var list = await query.Paged(payload.CurrentPage, payload.PageSize).
+                    OrderBy(r => r.SortID).ToListAsync();
                 var totalCount = query.Count();
                 var data = list.Select(_mapper.Map<UserDepartment, DepartmentJsonModel>);
 
@@ -72,7 +74,7 @@ namespace DncZeus.Api.Controllers.Api.V1.User
         /// <returns></returns>
         [HttpPost]
         [ProducesResponseType(200)]
-        public ActionResult<ResponseModel> Create(DepartmentCreateViewModel model)
+        public async Task<ActionResult<ResponseModel>> Create(DepartmentCreateViewModel model)
         {
             var response = ResponseModelFactory.CreateInstance;
             if (model.Name.Trim().Length <= 0)
@@ -80,7 +82,8 @@ namespace DncZeus.Api.Controllers.Api.V1.User
                 response.SetFailed("请输入部门名称");
                 return Ok(response);
             }
-            using (_dbContext)
+
+            await using (_dbContext)
             {
                 if (_dbContext.DncRole.Count(x => x.Name == model.Name) > 0)
                 {
@@ -122,8 +125,8 @@ namespace DncZeus.Api.Controllers.Api.V1.User
                             break;
                     }
                 }
-                _dbContext.UserDepartment.Add(entity);
-                _dbContext.SaveChanges();
+                await _dbContext.UserDepartment.AddAsync(entity);
+                await _dbContext.SaveChangesAsync();
 
                 response.SetSuccess();
                 return Ok(response);
@@ -137,75 +140,75 @@ namespace DncZeus.Api.Controllers.Api.V1.User
         /// <returns></returns>
         [HttpGet("{code}")]
         [ProducesResponseType(200)]
-        public ActionResult<ResponseModel<DepartmentCreateViewModel>> Edit(string code)
+        public async Task<ActionResult<ResponseModel<DepartmentCreateViewModel>>> Edit(string code)
         {
-            using (_dbContext)
+            await using (_dbContext)
             {
                 var entity = _dbContext.UserDepartment.FirstOrDefault(x => x.Code == code);
                 var response = ResponseModelFactory.CreateInstance;
                 var resEntity = _mapper.Map<UserDepartment, DepartmentCreateViewModel>(entity);
                 List<string> restDays = new List<string>();
 
-                if (string.IsNullOrEmpty(entity.Monday))
+                if (entity != null && string.IsNullOrEmpty(entity.Monday))
                 {
                     restDays.Add("1");
                 }
                 else
                 {
-                    resEntity.WorkTime = entity.Monday;
+                    if (entity != null) resEntity.WorkTime = entity.Monday;
                 }
 
-                if (string.IsNullOrEmpty(entity.Tuesday))
+                if (entity != null && string.IsNullOrEmpty(entity.Tuesday))
                 {
                     restDays.Add("2");
                 }
                 else
                 {
-                    resEntity.WorkTime = entity.Tuesday;
+                    if (entity != null) resEntity.WorkTime = entity.Tuesday;
                 }
 
-                if (string.IsNullOrEmpty(entity.Wednesday))
+                if (entity != null && string.IsNullOrEmpty(entity.Wednesday))
                 {
                     restDays.Add("3");
                 }
                 else
                 {
-                    resEntity.WorkTime = entity.Wednesday;
+                    if (entity != null) resEntity.WorkTime = entity.Wednesday;
                 }
 
-                if (string.IsNullOrEmpty(entity.Thursday))
+                if (entity != null && string.IsNullOrEmpty(entity.Thursday))
                 {
                     restDays.Add("4");
                 }
                 else
                 {
-                    resEntity.WorkTime = entity.Thursday;
+                    if (entity != null) resEntity.WorkTime = entity.Thursday;
                 }
 
-                if (string.IsNullOrEmpty(entity.Friday))
+                if (entity != null && string.IsNullOrEmpty(entity.Friday))
                 {
                     restDays.Add("5");
                 }
                 else
                 {
-                    resEntity.WorkTime = entity.Friday;
+                    if (entity != null) resEntity.WorkTime = entity.Friday;
                 }
-                if (string.IsNullOrEmpty(entity.Saturday))
+                if (entity != null && string.IsNullOrEmpty(entity.Saturday))
                 {
                     restDays.Add("6");
                 }
                 else
                 {
-                    resEntity.WorkTime = entity.Saturday;
+                    if (entity != null) resEntity.WorkTime = entity.Saturday;
                 }
 
-                if (string.IsNullOrEmpty(entity.Sunday))
+                if (entity != null && string.IsNullOrEmpty(entity.Sunday))
                 {
                     restDays.Add("7");
                 }
                 else
                 {
-                    resEntity.WorkTime = entity.Sunday;
+                    if (entity != null) resEntity.WorkTime = entity.Sunday;
                 }
                 resEntity.RestDays = restDays.ToArray();
                 response.SetData(resEntity);
@@ -221,7 +224,7 @@ namespace DncZeus.Api.Controllers.Api.V1.User
         /// <returns></returns>
         [HttpPut]
         [ProducesResponseType(200)]
-        public ActionResult<ResponseModel> Edit(DepartmentCreateViewModel model)
+        public async Task<ActionResult<ResponseModel>> Edit(DepartmentCreateViewModel model)
         {
             var response = ResponseModelFactory.CreateInstance;
             if (ConfigurationManager.AppSettings.IsTrialVersion)
@@ -229,7 +232,8 @@ namespace DncZeus.Api.Controllers.Api.V1.User
                 response.SetIsTrial();
                 return Ok(response);
             }
-            using (_dbContext)
+
+            await using (_dbContext)
             {
                 if (_dbContext.UserDepartment.Count(x => x.Name == model.Name && x.Code != model.Code) > 0)
                 {
@@ -237,7 +241,7 @@ namespace DncZeus.Api.Controllers.Api.V1.User
                     return Ok(response);
                 }
 
-                var entity = _dbContext.UserDepartment.Find(model.Code);
+                var entity = await _dbContext.UserDepartment.FindAsync(model.Code);
                 entity.Monday = model.WorkTime;
                 entity.Wednesday = model.WorkTime;
                 entity.Thursday = model.WorkTime;
@@ -284,7 +288,7 @@ namespace DncZeus.Api.Controllers.Api.V1.User
                     }
                 }
                 _dbContext.Entry(entity).State = EntityState.Modified;
-                _dbContext.SaveChanges();
+                await _dbContext.SaveChangesAsync();
                 return Ok(response);
             }
         }
@@ -296,7 +300,7 @@ namespace DncZeus.Api.Controllers.Api.V1.User
         /// <returns></returns>
         [HttpDelete("{ids}")]
         [ProducesResponseType(200)]
-        public ActionResult<ResponseModel> Delete(string ids)
+        public async Task<ActionResult<ResponseModel>> Delete(string ids)
         {
             var response = ResponseModelFactory.CreateInstance;
             if (ConfigurationManager.AppSettings.IsTrialVersion)
@@ -304,7 +308,7 @@ namespace DncZeus.Api.Controllers.Api.V1.User
                 response.SetIsTrial();
                 return Ok(response);
             }
-            response = UpdateIsDelete(CommonEnum.IsDeleted.Yes, ids);
+            response =await UpdateIsDelete(CommonEnum.IsDeleted.Yes, ids);
             return Ok(response);
         }
 
@@ -315,9 +319,9 @@ namespace DncZeus.Api.Controllers.Api.V1.User
         /// <returns></returns>
         [HttpPost("{ids}")]
         [ProducesResponseType(200)]
-        public ActionResult<ResponseModel> Recover(string ids)
+        public async Task<ActionResult<ResponseModel>> Recover(string ids)
         {
-            var response = UpdateIsDelete(CommonEnum.IsDeleted.No, ids);
+            var response =await UpdateIsDelete(CommonEnum.IsDeleted.No, ids);
             return Ok(response);
         }
         /// <summary>
@@ -328,7 +332,7 @@ namespace DncZeus.Api.Controllers.Api.V1.User
         /// <returns></returns>
         [HttpPost]
         [ProducesResponseType(200)]
-        public ActionResult<ResponseModel> Batch(string command, string ids)
+        public async Task<ActionResult<ResponseModel>> Batch(string command, string ids)
         {
             var response = ResponseModelFactory.CreateInstance;
             switch (command)
@@ -339,10 +343,10 @@ namespace DncZeus.Api.Controllers.Api.V1.User
                         response.SetIsTrial();
                         return Ok(response);
                     }
-                    response = UpdateIsDelete(CommonEnum.IsDeleted.Yes, ids);
+                    response =await UpdateIsDelete(CommonEnum.IsDeleted.Yes, ids);
                     break;
                 case "recover":
-                    response = UpdateIsDelete(CommonEnum.IsDeleted.No, ids);
+                    response =await UpdateIsDelete(CommonEnum.IsDeleted.No, ids);
                     break;
                 case "forbidden":
                     if (ConfigurationManager.AppSettings.IsTrialVersion)
@@ -350,10 +354,10 @@ namespace DncZeus.Api.Controllers.Api.V1.User
                         response.SetIsTrial();
                         return Ok(response);
                     }
-                    response = UpdateStatus(UserStatus.Forbidden, ids);
+                    response =await UpdateStatus(UserStatus.Forbidden, ids);
                     break;
                 case "normal":
-                    response = UpdateStatus(UserStatus.Normal, ids);
+                    response = await UpdateStatus(UserStatus.Normal, ids);
                     break;
                 default:
                     break;
@@ -365,14 +369,14 @@ namespace DncZeus.Api.Controllers.Api.V1.User
         /// </summary>
         /// <returns></returns>
         [HttpGet("/api/v1/user/department/find_simple_list")]
-        public ActionResult<ResponseResultModel<IEnumerable<SimpleModel>>> FindSimpleList()
+        public async Task<ActionResult<ResponseResultModel<IEnumerable<SimpleModel>>>> FindSimpleList()
         {
             var response = ResponseModelFactory.CreateInstance;
-            using (_dbContext)
+            await using (_dbContext)
             {
-                var roles = _dbContext.UserDepartment.
+                var roles =await _dbContext.UserDepartment.
                     Where(x => x.IsDeleted == CommonEnum.IsDeleted.No && x.Status == CommonEnum.Status.Normal).
-                    OrderBy(r => r.LevelID).Select(x => new { x.Name, x.Code }).ToList();
+                    OrderBy(r => r.LevelID).Select(x => new { x.Name, x.Code }).ToListAsync();
                 response.SetData(roles);
             }
             return Ok(response);
@@ -385,15 +389,15 @@ namespace DncZeus.Api.Controllers.Api.V1.User
         /// <param name="isDeleted"></param>
         /// <param name="ids">角色ID字符串,多个以逗号隔开</param>
         /// <returns></returns>
-        private ResponseModel UpdateIsDelete(CommonEnum.IsDeleted isDeleted, string ids)
+        private async Task<ResponseModel> UpdateIsDelete(CommonEnum.IsDeleted isDeleted, string ids)
         {
-            using (_dbContext)
+            await using (_dbContext)
             {
                 var parameters = ids.Split(",").Select((id, index) => new SqlParameter(string.Format("@p{0}", index), id)).ToList();
                 var parameterNames = string.Join(", ", parameters.Select(p => p.ParameterName));
-                var sql = string.Format("UPDATE UserDepartment SET IsDeleted=@IsDeleted WHERE Code IN ({0})", parameterNames);
+                var sql = $"UPDATE UserDepartment SET IsDeleted=@IsDeleted WHERE Code IN ({parameterNames})";
                 parameters.Add(new SqlParameter("@IsDeleted", (int)isDeleted));
-                _dbContext.Database.ExecuteSqlCommand(sql, parameters);
+                await _dbContext.Database.ExecuteSqlCommandAsync(sql, parameters);
                 var response = ResponseModelFactory.CreateInstance;
                 return response;
             }
@@ -405,15 +409,15 @@ namespace DncZeus.Api.Controllers.Api.V1.User
         /// <param name="status">角色状态</param>
         /// <param name="ids">角色ID字符串,多个以逗号隔开</param>
         /// <returns></returns>
-        private ResponseModel UpdateStatus(UserStatus status, string ids)
+        private async Task<ResponseModel> UpdateStatus(UserStatus status, string ids)
         {
-            using (_dbContext)
+            await using (_dbContext)
             {
                 var parameters = ids.Split(",").Select((id, index) => new SqlParameter(string.Format("@p{0}", index), id)).ToList();
                 var parameterNames = string.Join(", ", parameters.Select(p => p.ParameterName));
-                var sql = string.Format("UPDATE UserDepartment SET Status=@Status WHERE Code IN ({0})", parameterNames);
+                var sql = $"UPDATE UserDepartment SET Status=@Status WHERE Code IN ({parameterNames})";
                 parameters.Add(new SqlParameter("@Status", (int)status));
-                _dbContext.Database.ExecuteSqlCommand(sql, parameters);
+                await _dbContext.Database.ExecuteSqlCommandAsync(sql, parameters);
                 var response = ResponseModelFactory.CreateInstance;
                 return response;
             }

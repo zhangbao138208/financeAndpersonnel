@@ -45,7 +45,7 @@ namespace DncZeus.Api.Controllers
         public async Task<IActionResult> Profile()
         {
             var response = ResponseModelFactory.CreateInstance;
-            using (_dbContext)
+            await using (_dbContext)
             {
                 var guid = AuthContextService.CurrentUser.Guid;
                 var user = await _dbContext.DncUser.FirstOrDefaultAsync(x => x.Guid == guid);
@@ -54,16 +54,20 @@ namespace DncZeus.Api.Controllers
                     Where(x => x.IsDeleted == IsDeleted.No && x.Status == Status.Normal).ToListAsync();
 
                 //查询当前登录用户拥有的权限集合(非超级管理员)
-                var sqlPermission = @"SELECT P.Code AS PermissionCode,P.ActionCode AS PermissionActionCode,P.Name AS PermissionName,P.Type AS PermissionType,M.Name AS MenuName,M.Guid AS MenuGuid,M.Alias AS MenuAlias,M.IsDefaultRouter FROM DncRolePermissionMapping AS RPM 
-LEFT JOIN DncPermission AS P ON P.Code = RPM.PermissionCode
-INNER JOIN DncMenu AS M ON M.Guid = P.MenuGuid
-WHERE P.IsDeleted=0 AND P.Status=1 AND EXISTS (SELECT 1 FROM DncUserRoleMapping AS URM WHERE URM.UserGuid={0} AND URM.RoleCode=RPM.RoleCode)";
+                var sqlPermission = @"-- noinspection SqlDialectInspection
+                
+                SELECT P.Code AS PermissionCode,P.ActionCode AS PermissionActionCode,P.Name AS PermissionName,P.Type AS PermissionType,M.Name AS MenuName,M.Guid AS MenuGuid,M.Alias AS MenuAlias,M.IsDefaultRouter FROM DncRolePermissionMapping AS RPM 
+                LEFT JOIN DncPermission AS P ON P.Code = RPM.PermissionCode
+                INNER JOIN DncMenu AS M ON M.Guid = P.MenuGuid
+                WHERE P.IsDeleted=0 AND P.Status=1 AND EXISTS (SELECT 1 FROM DncUserRoleMapping AS URM WHERE URM.UserGuid={0} AND URM.RoleCode=RPM.RoleCode)";
                 if (user.UserType == UserType.SuperAdministrator)
                 {
                     //如果是超级管理员
-                    sqlPermission = @"SELECT P.Code AS PermissionCode,P.ActionCode AS PermissionActionCode,P.Name AS PermissionName,P.Type AS PermissionType,M.Name AS MenuName,M.Guid AS MenuGuid,M.Alias AS MenuAlias,M.IsDefaultRouter FROM DncPermission AS P 
-INNER JOIN DncMenu AS M ON M.Guid = P.MenuGuid
-WHERE P.IsDeleted=0 AND P.Status=1";
+                    sqlPermission = @"-- noinspection SqlDialectInspectionForFile
+                    
+                    SELECT P.Code AS PermissionCode,P.ActionCode AS PermissionActionCode,P.Name AS PermissionName,P.Type AS PermissionType,M.Name AS MenuName,M.Guid AS MenuGuid,M.Alias AS MenuAlias,M.IsDefaultRouter FROM DncPermission AS P 
+                    INNER JOIN DncMenu AS M ON M.Guid = P.MenuGuid
+                    WHERE P.IsDeleted=0 AND P.Status=1";
                 }
                 var permissions = await _dbContext.
                     DncPermissionWithMenu.FromSqlRaw(sqlPermission, user.Guid).ToListAsync();
@@ -84,24 +88,23 @@ WHERE P.IsDeleted=0 AND P.Status=1";
             return Ok(response);
         }
 
-        private List<string> FindParentMenuAlias(List<DncMenu> menus, Guid? parentGuid)
+        private List<string> FindParentMenuAlias(IEnumerable<DncMenu> menus, Guid? parentGuid)
         {
             var pages = new List<string>();
-            var parent = menus.FirstOrDefault(x => x.Guid == parentGuid);
-            if (parent != null)
+            IEnumerable<DncMenu> dncMenus = menus as DncMenu[] ?? menus.ToArray();
+            var parent = dncMenus.FirstOrDefault(x => x.Guid == parentGuid);
+            if (parent == null) return pages.Distinct().ToList();
+            if (!pages.Contains(parent.Alias))
             {
-                if (!pages.Contains(parent.Alias))
-                {
-                    pages.Add(parent.Alias);
-                }
-                else
-                {
-                    return pages;
-                }
-                if (parent.ParentGuid != Guid.Empty)
-                {
-                    pages.AddRange(FindParentMenuAlias(menus, parent.ParentGuid));
-                }
+                pages.Add(parent.Alias);
+            }
+            else
+            {
+                return pages;
+            }
+            if (parent.ParentGuid != Guid.Empty)
+            {
+                pages.AddRange(FindParentMenuAlias(dncMenus, parent.ParentGuid));
             }
 
             return pages.Distinct().ToList();
@@ -114,24 +117,24 @@ WHERE P.IsDeleted=0 AND P.Status=1";
         [HttpGet]
         public async Task<IActionResult> Menu()
         {
-            var strSql = @"SELECT M.* FROM DncRolePermissionMapping AS RPM 
-LEFT JOIN DncPermission AS P ON P.Code = RPM.PermissionCode
-INNER JOIN DncMenu AS M ON M.Guid = P.MenuGuid
-WHERE P.IsDeleted=0 AND P.Status=1 AND P.Type=0 AND M.IsDeleted=0 AND M.Status=1 AND EXISTS (SELECT 1 FROM DncUserRoleMapping AS URM WHERE URM.UserGuid={0} AND URM.RoleCode=RPM.RoleCode)";
+            var strSql = @"-- noinspection SqlNoDataSourceInspection
+            
+            SELECT M.* FROM DncRolePermissionMapping AS RPM 
+            LEFT JOIN DncPermission AS P ON P.Code = RPM.PermissionCode
+            INNER JOIN DncMenu AS M ON M.Guid = P.MenuGuid
+            WHERE P.IsDeleted=0 AND P.Status=1 AND P.Type=0 AND M.IsDeleted=0 AND M.Status=1 AND EXISTS (SELECT 1 FROM DncUserRoleMapping AS URM WHERE URM.UserGuid={0} AND URM.RoleCode=RPM.RoleCode)";
 
             if (AuthContextService.CurrentUser.UserType == UserType.SuperAdministrator)
             {
                 //如果是超级管理员
-                strSql = @"SELECT * FROM DncMenu WHERE IsDeleted=0 AND Status=1";
+                strSql = @"-- noinspection SqlNoDataSourceInspection
+                
+                SELECT * FROM DncMenu WHERE IsDeleted=0 AND Status=1";
             }
             var menus = await _dbContext.DncMenu.FromSqlRaw(strSql, AuthContextService.CurrentUser.Guid).ToListAsync();
             var rootMenus =await  _dbContext.DncMenu.Where(x => x.IsDeleted == IsDeleted.No && x.Status == Status.Normal && x.ParentGuid == Guid.Empty).ToListAsync();
-            foreach (var root in rootMenus)
+            foreach (var root in rootMenus.Where(root => !menus.Exists(x => x.Guid == root.Guid)))
             {
-                if (menus.Exists(x => x.Guid == root.Guid))
-                {
-                    continue;
-                }
                 menus.Add(root);
             }
             menus = menus.OrderBy(x => x.Sort).ThenBy(x=>x.CreatedOn).ToList();
@@ -152,7 +155,7 @@ WHERE P.IsDeleted=0 AND P.Status=1 AND P.Type=0 AND M.IsDeleted=0 AND M.Status=1
         /// <param name="menus"></param>
         /// <param name="selectedGuid"></param>
         /// <returns></returns>
-        public static List<MenuItem> BuildTree(this List<MenuItem> menus, string selectedGuid = null)
+        private static List<MenuItem> BuildTree(this IEnumerable<MenuItem> menus, string selectedGuid = null)
         {
             var lookup = menus.ToLookup(x => x.ParentId);
 
@@ -183,7 +186,7 @@ WHERE P.IsDeleted=0 AND P.Status=1 AND P.Type=0 AND M.IsDeleted=0 AND M.Status=1
             return result;
         }
 
-        public static List<MenuItem> LoadMenuTree(List<DncMenu> menus, string selectedGuid = null)
+        public static List<MenuItem> LoadMenuTree(IEnumerable<DncMenu> menus, string selectedGuid = null)
         {
             var temp = menus.Select(x => new MenuItem
             {

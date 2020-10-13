@@ -113,17 +113,29 @@
 
         <FormItem label="进度" label-position="top" v-if="isView">
           <Button type="success" shape="circle">起</Button>
-           <Icon type="md-fastforward" color='#ccc'/><Icon type="md-fastforward" color='#ccc'/><Icon
+          <Icon type="md-fastforward" color="#ccc" /><Icon
+            type="md-fastforward"
+            color="#ccc"
+          /><Icon type="md-fastforward" color="#ccc" />
+          <div
+            :key="item"
+            v-for="(item, index) in formModel.fields.steps"
+            style="display: inline-block"
+          >
+            <Button
+              type="primary"
+              v-if="index + 1 < formModel.fields.currentStep"
+              >{{ item }}</Button
+            >
+            <Button
+              type="default"
+              v-if="index + 1 >= formModel.fields.currentStep"
+              >{{ item }}</Button
+            >
+            <Icon type="md-fastforward" color="#ccc" /><Icon
               type="md-fastforward"
-              color='#ccc'
-            />
-          <div :key="item" v-for="(item ,index) in formModel.fields.steps" style="display:inline-block">
-            <Button type="primary" v-if="index+1<formModel.fields.currentStep">{{ item }}</Button>
-             <Button type="default" v-if="index+1>=formModel.fields.currentStep">{{ item }}</Button>
-            <Icon type="md-fastforward" color='#ccc'/><Icon type="md-fastforward" color='#ccc'/><Icon
-              type="md-fastforward"
-              color='#ccc'
-            />
+              color="#ccc"
+            /><Icon type="md-fastforward" color="#ccc" />
           </div>
 
           <Button type="error" shape="circle">止</Button>
@@ -216,27 +228,33 @@
               label="审批人"
               v-if="
                 formModel.fields.nextUsers &&
-                !!formModel.fields.nextUsers.length
+                !!formModel.fields.nextUsers.length&&formModel.fields.canChoose
               "
             >
-              <mu-select
-                v-model="formModel.fields.approver"
-                multiple
-                v-if="steps[0].isCounterSign"
-              >
+              <mu-select v-model="formModel.fields.approver" 
+               v-if="formModel.fields.isCounterSign">
                 <mu-option
-                  :key="next.user"
-                  :label="next.userName"
-                  :value="next.user"
+                  :key="index"
+                  :label="formModel.fields.nextUsers.reduce((total,cur,currentIndex)=>{
+                    if(currentIndex==formModel.fields.nextUsers.length-1){
+                       return total+cur.userName
+                    }else{
+                      return total+cur.userName+','
+                    }
+                  },'')"
+                  :value="formModel.fields.nextUsers.reduce((total,cur,currentIndex)=>{
+                   if(currentIndex==formModel.fields.nextUsers.length-1){
+                       return total+cur.user
+                    }else{
+                      return total+cur.user+','
+                    }
+                  },'')"
                   avatar
-                  v-for="next in formModel.fields.nextUsers"
+                  v-for="(next,index) in [1]"
                 ></mu-option>
               </mu-select>
 
-              <mu-select
-                v-model="formModel.fields.approver"
-                v-if="!steps[0].isCounterSign"
-              >
+              <mu-select v-model="formModel.fields.approver" v-else>
                 <mu-option
                   :key="next.user"
                   :label="next.userName"
@@ -251,7 +269,7 @@
       </Form>
       <div class="demo-drawer-footer">
         <Button
-          :disabled="isView"
+          :disabled="isView||isloading"
           icon="md-checkmark-circle"
           type="primary"
           @click="handleSubmitAgree"
@@ -297,6 +315,7 @@ export default {
   },
   data() {
     return {
+       isloading:false,
       steps: [],
       isView: false,
       uploadJson:
@@ -360,7 +379,7 @@ export default {
         notes: {
           columns: [
             { title: '节点', key: 'nodeName' },
-             {
+            {
               title: '状态',
               key: 'statusName',
               render: (h, params) => {
@@ -539,6 +558,7 @@ export default {
                           size: 'small',
                         },
                         style: {
+                          lineHeight:'20px',
                           backgroundColor: statusColor,
                           color: '#fff',
                         },
@@ -618,7 +638,7 @@ export default {
                           on: {
                             click: () => {
                               vm.$emit('on-edit', params)
-                              vm.$emit('input', params.tableData)
+                              // vm.$emit('input', params.tableData)
                             },
                           },
                         }),
@@ -794,13 +814,15 @@ export default {
       this.handleResetFormReceiver()
     },
     handleSubmitAgree() {
+      
       let valid = this.validateReceiverForm()
       if (valid) {
+        this.isloading=true
         if (this.formModel.mode === 'edit') {
           //同意
-          console.log(this.formModel.fields)
-          if (!this.formModel.fields.approver) {
+          if (!this.formModel.fields.approver&&this.formModel.fields.canChoose) {
             this.$Message.error('请选择审批人')
+             this.isloading=false
             return
           }
           this.formModel.fields.status = '1'
@@ -819,7 +841,10 @@ export default {
       }
     },
     handleResetFormReceiver() {
-      this.$refs['formReceiver'].resetFields()
+      //this.$refs['formReceiver'].resetFields()
+      Object.keys(this.formModel.fields).forEach(
+        (key) => (this.formModel.fields[key] = '')
+      )
     },
 
     doEditReceiver() {
@@ -831,6 +856,7 @@ export default {
           this.$Message.warning(res.data.message)
         }
         this.handleCloseFormWindow()
+         this.isloading=false
       })
     },
     validateReceiverForm() {
@@ -848,14 +874,12 @@ export default {
     doLoadReceiver(code) {
       loadReceiver({ code: code }).then((res) => {
         this.formModel.fields = res.data.data
-        console.log(this.formModel.fields)
       })
     },
 
     doViewReceiver(code) {
       viewReceiver({ code: code }).then((res) => {
         this.formModel.fields = res.data.data
-        console.log(this.formModel.fields)
       })
     },
 

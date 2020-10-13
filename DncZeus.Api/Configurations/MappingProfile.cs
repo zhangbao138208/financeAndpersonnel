@@ -17,6 +17,7 @@ using DncZeus.Api.ViewModels.Rbac.DncUser;
 using DncZeus.Api.ViewModels.Refuse;
 using DncZeus.Api.ViewModels.System.Dictionary;
 using DncZeus.Api.ViewModels.System.DicType;
+using DncZeus.Api.ViewModels.System.Loger;
 using DncZeus.Api.ViewModels.User.Department;
 using DncZeus.Api.ViewModels.User.Position;
 using DncZeus.Api.ViewModels.Wage;
@@ -155,6 +156,10 @@ namespace DncZeus.Api.Configurations
             CreateMap<ReceiverEditViewModel, WorkflowReceiver>();
             CreateMap<WorkflowReceiver, ReceiverReadOnlyModel>();
             CreateMap<ReceiverReadOnlyModel, WorkflowReceiver>();
+            #endregion
+            
+            #region SystemLog
+            CreateMap<SystemLog, SystemLogJsonModel>();
             #endregion
         }
     }

@@ -8,6 +8,7 @@ using DncZeus.Api.RequestPayload.Workflow.Receiver;
 using DncZeus.Api.Services;
 using DncZeus.Api.ViewModels.Workflow.Receiver;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -24,13 +25,15 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
         private readonly DncZeusDbContext _dbContext;
         private readonly IMapper _mapper;
         private readonly DictionaryService _dictionaryService;
+        private readonly TelegramService _telegramService;
 
         public ReceiverController(DncZeusDbContext dbContext, IMapper mapper,
-            DictionaryService dictionaryService)
+            DictionaryService dictionaryService,TelegramService telegramService)
         {
             _dbContext = dbContext;
             _mapper = mapper;
             _dictionaryService = dictionaryService;
+            _telegramService = telegramService;
         }
 
         /// <summary>
@@ -42,7 +45,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
             List(ReceiverRequestPaload payload)
         {
             var response = ResponseModelFactory.CreateResultInstance;
-            using (_dbContext)
+            await using (_dbContext)
             {
                 var query = (from ls in _dbContext.WorkflowReceiver
 
@@ -71,29 +74,29 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
                              from u2 in t6.DefaultIfEmpty()
                              select new ReceiverJsonModel
                              {
-                                 Id=ls.Id,
-                                 CheckDate=ls.CheckDate,
-                                 CreateDate=ls.CreateDate,
-                                 CreateUser=ls.CreateUser,
-                                 Note=ls.Note,
-                                 StepCode=ls.StepCode,
-                                 WorkflowCode=ls.WorkflowCode,
-                                 IsCheck=ls.IsCheck,
-
-                                 Status = ls.Status,
+                                 Id = ls.Id,
+                                 CheckDate = ls.CheckDate,
+                                 CreateDate = ls.CreateDate,
+                                 CreateUser = ls.CreateUser,
+                                 Note = ls.Note,
+                                 StepCode = ls.StepCode,
+                                 WorkflowCode = ls.WorkflowCode,
+                                 IsCheck = ls.IsCheck,
+                                 OldStatus = ls.Status,
+                                 Status = w.EndDate < DateTime.Now ? "-1" : ls.Status,
                                  TemplateCode = ls.TemplateCode,
                                  ListType = ls.Type,
                                  User = ls.User,
                                  TemplateName = tl.Name,
                                  UserName = User.DisplayName,
-                                 WorkflowName=w.Title,
-                                 StepName=step1.Title,
-                                 
-                             });
+                                 WorkflowName = w.Title,
+                                 StepName = step1.Title,
+
+                             }); ; ;
                 query = query.Where(q => q.User == AuthContextService.CurrentUser.Guid);
                 if (!string.IsNullOrEmpty(payload.Kw))
                 {
-                    query = query.Where(x => x.UserName.Contains(payload.Kw.Trim()) ||
+                    query = query.Where(x => x.WorkflowName.Contains(payload.Kw.Trim()) ||
                    x.Note.Contains(payload.Kw.Trim()));
                 }
                 if (!string.IsNullOrEmpty(payload.Status)&&payload.Status!="all")
@@ -113,7 +116,13 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
                 }
                 var totalCount = query.Count();
                 var data = list;
-
+                //更新已过期
+                var arr = data.Where(d => d.Status == "-1" && d.OldStatus != "-1").Select(s => s.Id).ToArray();
+                if (arr.Length>0)
+                {
+                   await UpdateStatus(arr);
+                }
+                
                 response.SetData(data, totalCount);
                 return Ok(response);
             }
@@ -128,7 +137,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
         [ProducesResponseType(200)]
         public async Task<ActionResult<ResponseModel<ReceiverEditViewModel>>> Edit(string code)
         {
-            using (_dbContext)
+            await using (_dbContext)
             {
 
                 var entity = await _dbContext.WorkflowReceiver.FindAsync(int.Parse(code));
@@ -139,10 +148,9 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
                 resEntity.ListType = workflow?.Type;
                 resEntity.EndDate = workflow?.EndDate.ToString("yyyy-MM-dd HH:MM:ss");
 
-                //var currStep1 = _dbContext.WorkflowStep.Find(entity.StepCode);
-                //var currStep2 = await 
-                //    _dbContext.WorkflowStep.FindAsync(entity.StepCode).ConfigureAwait(true);
-                //var currStep3 =_dbContext.WorkflowStep.FirstOrDefaultAsync(f=>f.Code== entity.StepCode);
+                resEntity.CanChoose = (await _dbContext.WorkflowReceiver.
+                    CountAsync(r=>r.WorkflowCode==entity.WorkflowCode&&r.StepCode==entity.StepCode&&
+                    !r.IsCheck))==1;
                 //查找下一步
                 var currStep = await _dbContext.WorkflowStep.FindAsync(entity.StepCode);
                 var nextStep = await  _dbContext.WorkflowStep.
@@ -153,6 +161,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
                 //下拉列表数据
                 if (nextStep!=null)
                 {
+                    resEntity.IsCounterSign = nextStep.IsCounterSign;
                     var users =await  _dbContext.DncUser.Where(u => nextStep.UserList.Contains(u.Guid.ToString())).
                         Select(s => new NextUser
                         {
@@ -191,7 +200,8 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
                 response.SetIsTrial();
                 return Ok(response);
             }
-            using (_dbContext)
+
+            await using (_dbContext)
             {
                 if (model.IsCheck)
                 {
@@ -215,24 +225,31 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
                 var entity = await _dbContext.WorkflowReceiver.FindAsync(model.Id);
 
                 //进行下一步审批
+               var canNext = (await _dbContext.WorkflowReceiver.
+                    CountAsync(r => r.WorkflowCode == entity.WorkflowCode && r.StepCode == entity.StepCode &&
+                    !r.IsCheck)) == 1;
                 if (!string.IsNullOrEmpty(model.NextStepCode) 
-                    && model.Approver != null&&model.Status==1)
+                    && !string.IsNullOrEmpty(model.Approver)&&model.Status==1&& canNext)
                 {
                     
-                    var step = await _dbContext.WorkflowStep.FindAsync(model.NextStepCode);
-                    var nextStepCode = "";
-                    if (step != null)
+                    //var step = await _dbContext.WorkflowStep.FindAsync(model.NextStepCode);
+                    //var nextStepCode = "";
+                    //if (step != null)
+                    //{
+                    //    //var steps = await _dbContext.WorkflowStep.
+                    //    //    Where(s => s.TemplateCode == step.TemplateCode).OrderBy(o=>o.SortID).ToListAsync();
+                    //    //if (steps.Count > int.Parse(step.SortID))
+                    //    //{
+                    //    //    nextStepCode = steps[int.Parse(step.SortID)]?.Code;
+                    //    //}
+                    //    nextStepCode= (await _dbContext.WorkflowStep.
+                    //   Where(s => s.TemplateCode == step.TemplateCode&&string.Compare(s.SortID,step.SortID)>0).OrderBy(o=>o.SortID)
+                    //   .FirstOrDefaultAsync()).Code;
+                    //}
+                    var receivers = new List<WorkflowReceiver>();
+                    foreach (var user in model.Approver.Split(','))
                     {
-                        var steps = await _dbContext.WorkflowStep.
-                            Where(s => s.TemplateCode == step.TemplateCode).ToListAsync();
-                        if (steps.Count > int.Parse(step.SortID))
-                        {
-                            nextStepCode = steps[int.Parse(step.SortID)]?.Code;
-                        }
-                    }
-                    List<WorkflowReceiver> receivers = new List<WorkflowReceiver>();
-                    foreach (var u in model.Approver)
-                    {
+                        var u = Guid.Parse(user);
                         //发送审批到下一个人
                         var receiver = WorkflowReceiverFactory.CreateInstance;
                         receiver.Type = entity.Type;
@@ -240,13 +257,48 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
                         receiver.Description = entity.Description;
                         receiver.WorkflowCode = entity.WorkflowCode;
                         receiver.CreateUser = AuthContextService.CurrentUser.Guid;
-                        receiver.StepCode = nextStepCode;
+                        receiver.StepCode = model.NextStepCode;
                         receiver.TemplateCode = entity.TemplateCode;
                         receivers.Add(receiver);
+                        //发送纸飞机通知
+                        var toDoUser = await _dbContext.DncUser.FindAsync(entity.User);
+                        var rUser = await _dbContext.DncUser.FindAsync(u);
+                        var workflowList= await _dbContext.WorkflowList.FindAsync(receiver.WorkflowCode);
+                        await _telegramService.SendTextMessageAsync(rUser.TelegramChatId,
+                            $"请审核用户【{toDoUser.DisplayName}】{workflowList.Title}", rUser.TelegramBotToken);
                     }
 
-                    _dbContext.WorkflowReceiver.AddRange(receivers);
+                    //如果审批状态为未通过需更新工作状态
+                    if (model.Status==2)
+                    {
+                       var work = await  _dbContext.WorkflowList.
+                           FindAsync(model.WorkflowCode);
+                       work.Status = "2";
+                       _dbContext.Entry(work).State = EntityState.Modified;
+                       
+                    }
+                    //全部同意也需要更新工作转态
+                    if (model.Status==1)
+                    {
+                        var disagree = await _dbContext.WorkflowReceiver
+                            .Where(r => r.WorkflowCode == model.WorkflowCode)
+                            .CountAsync();
+                        var step = await _dbContext.WorkflowStep.Where(s => s.TemplateCode == model.TemplateCode)
+                            .OrderBy(m => m.SortID).LastOrDefaultAsync();
+                        if (step.Code==model.StepCode &&disagree==1)
+                        {
+                            var work = await  _dbContext.WorkflowList.
+                                FindAsync(model.WorkflowCode);
+                            work.Status = "1";
+                            _dbContext.Entry(work).State = EntityState.Modified;
+                        }
+                    }
+                    
+
+                    await _dbContext.WorkflowReceiver.AddRangeAsync(receivers);
                 }
+                
+                
 
                 //设置审批状态
                 entity.Status = model.Status.ToString();
@@ -270,7 +322,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
         [ProducesResponseType(200)]
         public async Task<ActionResult<ResponseModel<ReceiverReadOnlyModel>>> View(string code)
         {
-            using (_dbContext)
+            await using (_dbContext)
             {
                 var entity = await _dbContext.WorkflowReceiver.FindAsync(int.Parse(code));
                 var response = ResponseModelFactory.CreateInstance;
@@ -279,7 +331,9 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
                 resEntity.CreateUserName = 
                     (await _dbContext.DncUser.FindAsync(entity.CreateUser))?.DisplayName;
                 resEntity.WorkflowName = workflow?.Title;
-                resEntity.DateSpan = $"{workflow.StartDate.ToString("yyyy-MM-dd HH:mm")} 至 {workflow.EndDate.ToString("yyyy-MM-dd HH:mm")}";
+                if (workflow != null)
+                    resEntity.DateSpan =
+                        $"{workflow.StartDate.ToString("yyyy-MM-dd HH:mm")} 至 {workflow.EndDate.ToString("yyyy-MM-dd HH:mm")}";
                 var receivers = await _dbContext.WorkflowReceiver.
                     Where(w => w.WorkflowCode == entity.WorkflowCode).ToListAsync();
                 var notes = new List<Note>();
@@ -315,5 +369,27 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
                 return Ok(response);
             }
         }
+
+        #region 私有方法
+
+        /// <summary>
+        /// 设置过期
+        /// </summary>
+        /// <param name="ids"></param>
+        /// <returns></returns>
+        [Obsolete]
+        private async Task<ResponseModel> UpdateStatus(int[] ids)
+        {
+            await using (_dbContext)
+            {
+                var parameters = ids.Select((id, index) => new SqlParameter($"@p{index}", id)).ToList();
+                var parameterNames = string.Join(", ", parameters.Select(p => p.ParameterName));
+                var sql = $"UPDATE WorkflowReceiver SET Status='-1'  WHERE ID IN ({parameterNames})";
+                await _dbContext.Database.ExecuteSqlCommandAsync(sql, parameters);
+                var response = ResponseModelFactory.CreateInstance;
+                return response;
+            }
+        }
+        #endregion
     }
 }

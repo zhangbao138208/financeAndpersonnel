@@ -4,14 +4,16 @@ using DncZeus.Api.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace DncZeus.Api.Migrations
 {
     [DbContext(typeof(DncZeusDbContext))]
-    partial class DncZeusDbContextModelSnapshot : ModelSnapshot
+    [Migration("20201012110344_addSystemLog")]
+    partial class addSystemLog
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

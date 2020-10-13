@@ -45,7 +45,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
         public async Task<ActionResult<ResponseResultModel<IEnumerable<WorkflowListJsonModel>>>> List(WorkflowListRequestPayload payload)
         {
             var response = ResponseModelFactory.CreateResultInstance;
-            using (_dbContext)
+            await using (_dbContext)
             {
                 var query = (from ls in _dbContext.WorkflowList
                              join de in _dbContext.UserDepartment on ls.DepartmentCode equals de.Code
@@ -57,7 +57,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
 
                              join user in _dbContext.DncUser on ls.User equals user.Guid
                              into t3
-                             from User in t3.DefaultIfEmpty()
+                             from user in t3.DefaultIfEmpty()
 
                              join step1 in _dbContext.WorkflowStep on ls.CurrentStepCode equals step1.Code
                              into t4
@@ -84,7 +84,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
                                  User = ls.User,
                                  DepartmentName = de.Name,
                                  TemplateName = tl.Name,
-                                 UserName = User.DisplayName,
+                                 UserName = user.DisplayName,
                                  CurrentStepName = step1.Title,
                                  NextStepName = step2.Title,
                              });
@@ -124,7 +124,8 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
                 response.SetFailed("请输入审批工作名称");
                 return Ok(response);
             }
-            using (_dbContext)
+
+            await using (_dbContext)
             {
                 if (_dbContext.DncRole.Count(x => x.Name == model.Title) > 0)
                 {
@@ -137,7 +138,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
                 entity.Status = "0";
                 entity.Code = RandomHelper.GetRandomizer(8, true, false, true, true);
                 //进行下一步审批
-                if (!string.IsNullOrEmpty(model.NextStepCode)&& model.Approver!=null)
+                if (!string.IsNullOrEmpty(model.NextStepCode)&& !string.IsNullOrEmpty(model.Approver))
                 {
                     //进行中
                     entity.Status = "1";
@@ -146,15 +147,16 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
                     if (step!=null)
                     {
                         var steps= await _dbContext.WorkflowStep.
-                            Where(s=>s.TemplateCode==step.TemplateCode).ToListAsync();
+                            Where(s=>s.TemplateCode==step.TemplateCode).OrderBy(o => o.SortID).ToListAsync();
                         if (steps.Count>int.Parse(step.SortID))
                         {
                             entity.NextStepCode = steps[int.Parse(step.SortID)]?.Code;
                         }
                     }
-                    List<WorkflowReceiver> receivers = new List<WorkflowReceiver>();
-                    foreach (var u in model.Approver)
+                    var receivers = new List<WorkflowReceiver>();
+                    foreach (var user in model.Approver.Split(','))
                     {
+                        var u = Guid.Parse(user);
                         //发送审批到下一个人
                         var receiver = WorkflowReceiverFactory.CreateInstance;
                         receiver.Type = entity.Type;
@@ -173,11 +175,11 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
                     }
                    
 
-                    _dbContext.WorkflowReceiver.AddRange(receivers);
+                    await _dbContext.WorkflowReceiver.AddRangeAsync(receivers);
 
                 }
                 
-                _dbContext.WorkflowList.Add(entity);
+                await _dbContext.WorkflowList.AddAsync(entity);
                 await _dbContext.SaveChangesAsync();
                 return Ok(response);
             }
@@ -192,7 +194,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
         [ProducesResponseType(200)]
         public async Task<ActionResult<ResponseModel<WorkflowListCreateViewModel>>> Edit(string code)
         {
-            using (_dbContext)
+            await using (_dbContext)
             {
                 var entity = await _dbContext.WorkflowList.FirstOrDefaultAsync(x => x.Code == code);
                 var response = ResponseModelFactory.CreateInstance;
@@ -200,6 +202,10 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
 
                 var receivers = await _dbContext.WorkflowReceiver.
                    Where(w => w.WorkflowCode == entity.Code).ToListAsync();
+                //计算当前审批流程
+                resEntity.CurrentStepCode = (await _dbContext.WorkflowReceiver.Where(l => 
+                l.WorkflowCode == resEntity.Code &&
+                 !l.IsCheck).FirstOrDefaultAsync())?.StepCode;
                 var notes = new List<Note>();
                 foreach (var receiver in receivers)
                 {
@@ -239,7 +245,8 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
                 response.SetIsTrial();
                 return Ok(response);
             }
-            using (_dbContext)
+
+            await using (_dbContext)
             {
                 if (model.Status!="0")
                 {
@@ -249,7 +256,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
 
                 var entity = _mapper.Map<WorkflowListCreateViewModel, WorkflowList>(model);
                 //进行下一步审批
-                if (!string.IsNullOrEmpty(model.NextStepCode) && model.Approver !=null)
+                if (!string.IsNullOrEmpty(model.NextStepCode) && !string.IsNullOrEmpty(model.Approver))
                 {
                     //进行中
                     entity.Status = "1";
@@ -260,15 +267,16 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
                     if (step != null)
                     {
                         var steps = await _dbContext.WorkflowStep.
-                            Where(s => s.TemplateCode == step.TemplateCode).ToListAsync();
+                            Where(s => s.TemplateCode == step.TemplateCode).OrderBy(o => o.SortID).ToListAsync();
                         if (steps.Count > int.Parse(step.SortID))
                         {
                             entity.NextStepCode = steps[int.Parse(step.SortID)]?.Code;
                         }
                     }
-                    List<WorkflowReceiver> receivers = new List<WorkflowReceiver>();
-                    foreach (var u in model.Approver)
+                    var receivers = new List<WorkflowReceiver>();
+                    foreach (var user in model.Approver.Split(','))
                     {
+                        var u = Guid.Parse(user);
                         //发送审批到下一个人
                         var receiver = WorkflowReceiverFactory.CreateInstance;
                         receiver.Type = entity.Type;
@@ -279,9 +287,14 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
                         receiver.StepCode = entity.CurrentStepCode;
                         receiver.TemplateCode = step?.TemplateCode;
                         receivers.Add(receiver);
+                        //发送纸飞机通知
+                        var toDoUser = await _dbContext.DncUser.FindAsync(entity.User);
+                        var rUser = await _dbContext.DncUser.FindAsync(u);
+                        await _telegramService.SendTextMessageAsync(rUser.TelegramChatId,
+                            $"请审核用户【{toDoUser.DisplayName}】{entity.Title}", rUser.TelegramBotToken);
                     }
 
-                    _dbContext.WorkflowReceiver.AddRange(receivers);
+                    await _dbContext.WorkflowReceiver.AddRangeAsync(receivers);
                 }
                 _dbContext.Entry(entity).State = EntityState.Modified;
                  await  _dbContext.SaveChangesAsync();
@@ -314,7 +327,8 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
                 response.SetFailed("请选择状态为新工作的项");
                 return Ok(response);
             }
-            using (_dbContext)
+
+            await using (_dbContext)
             {
                 _dbContext.WorkflowList.RemoveRange(_dbContext.WorkflowList
                     .Where(w => ids.Contains(w.Code)).ToList()
@@ -391,11 +405,11 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
         [Obsolete]
         private async Task<ResponseModel> UpdateIsDelete(string ids)
         {
-            using (_dbContext)
+            await using (_dbContext)
             {
                 var parameters = ids.Split(",").Select((id, index) => new SqlParameter(string.Format("@p{0}", index), id)).ToList();
                 var parameterNames = string.Join(", ", parameters.Select(p => p.ParameterName));
-                var sql = string.Format("DELETE WorkflowList  WHERE Code IN ({0})", parameterNames);
+                var sql = $"DELETE WorkflowList  WHERE Code IN ({parameterNames})";
                 await _dbContext.Database.ExecuteSqlCommandAsync(sql, parameters);
                 var response = ResponseModelFactory.CreateInstance;
                 return response;

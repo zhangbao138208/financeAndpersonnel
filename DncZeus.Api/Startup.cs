@@ -31,6 +31,8 @@ using Newtonsoft.Json.Serialization;
 using System;
 using System.IO;
 using System.Reflection;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Unicode;
 using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
@@ -53,6 +55,8 @@ namespace DncZeus.Api
         /// <param name="services"></param>
         public void ConfigureServices(IServiceCollection services)
         {
+            
+            
             services.AddCors(o =>
                 o.AddPolicy("CorsPolicy",
                     builder => builder
@@ -81,16 +85,16 @@ namespace DncZeus.Api
 
             services.AddControllers().AddNewtonsoftJson();
 
-            //services.AddDbContext<DncZeusDbContext>(options =>
-            //    options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
             services.AddDbContext<DncZeusDbContext>(options =>
-                    options
-                    //.UseLazyLoadingProxies()//启用懒加载
-                           .UseMySql(Configuration.GetConnectionString("MYSQLConnection"), mysqlOptions => // 启用读写分离后，默认读库，否则默认写库
-                            {
-                               mysqlOptions.ServerVersion(new Version(5, 7, 17), ServerType.MySql);
-                           }));
-          
+                options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
+            //services.AddDbContext<DncZeusDbContext>(options =>
+            //        options
+            //        .UseLazyLoadingProxies()//启用懒加载
+            //               .UseMySql(Configuration.GetConnectionString("MYSQLConnection"), mysqlOptions => // 启用读写分离后，默认读库，否则默认写库
+            //                {
+            //                   mysqlOptions.ServerVersion(new Version(5, 7, 17), ServerType.MySql);
+            //               }));
+
 
             services.AddSwaggerGen(c =>
             {
@@ -102,10 +106,10 @@ namespace DncZeus.Api
             });
 
             // 注入日志
-            services.AddLogging(config =>
-            {
-                config.AddLog4Net();
-            });
+            // services.AddLogging(config =>
+            // {
+            //     config.AddLog4Net();
+            // });
 
 
             services.AddMvc().AddNewtonsoftJson(options =>
@@ -129,14 +133,21 @@ namespace DncZeus.Api
         /// <param name="app"></param>
         /// <param name="env"></param>
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILoggerFactory loggerFactory)
         {
             if (env.IsDevelopment())
             {
                 //app.UseDeveloperExceptionPage();
             }
             CeyhConfiguration.Instance(app.ApplicationServices.GetService<IConfiguration>());
-
+            //将日志记录到数据库config/NLog.config
+            NLog.LogManager.LoadConfiguration("nlog.config").GetCurrentClassLogger();
+            NLog.LogManager.Configuration.Variables["connectionString"] = 
+                Configuration.GetConnectionString("LogConnection");
+            // NLog.LogManager.Configuration.Variables["dbProvider"] =
+            //     Configuration["DbProvider"];
+            //避免日志中的中文输出乱码
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
             app.UseDeveloperExceptionPage();
             //app.UseExceptionHandler("/error/500");

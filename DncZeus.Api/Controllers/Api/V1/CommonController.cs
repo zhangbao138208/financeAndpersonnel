@@ -23,7 +23,6 @@ namespace DncZeus.Api.Controllers.Api.V1
         /// 上传文件 Form表单提交，
         /// appointName 指定文件名称
         /// </summary>
-        /// <param name="file"></param>
         /// <returns></returns>
         [HttpPost]
         [Route("Upload")]
@@ -53,15 +52,7 @@ namespace DncZeus.Api.Controllers.Api.V1
                         result.Url = upload.FileInfo["filepath"].ToString();
                         result.Name = upload.FileInfo["Name"].ToString();
 
-                        if (string.IsNullOrWhiteSpace(CeyhConfiguration.TheUploadFileSettings.HostUrl))
-                        {
-                            result.HostUrl = $"{Net.GetOrigin}{ result.Url}";
-                        }
-                        else
-                        {
-                            result.HostUrl = $"{CeyhConfiguration.TheUploadFileSettings.HostUrl}{ result.Url}";
-
-                        }
+                        result.HostUrl = string.IsNullOrWhiteSpace(CeyhConfiguration.TheUploadFileSettings.HostUrl) ? $"{Net.GetOrigin}{ result.Url}" : $"{CeyhConfiguration.TheUploadFileSettings.HostUrl}{ result.Url}";
 
                     }
                     else
@@ -118,15 +109,7 @@ namespace DncZeus.Api.Controllers.Api.V1
                         result.Url = upload.FileInfo["filepath"].ToString();
                         result.Name = upload.FileInfo["Name"].ToString();
 
-                        if (string.IsNullOrWhiteSpace(CeyhConfiguration.TheUploadFileSettings.HostUrl))
-                        {
-                            result.HostUrl = $"{Net.GetOrigin}{ result.Url}";
-                        }
-                        else
-                        {
-                            result.HostUrl = $"{CeyhConfiguration.TheUploadFileSettings.HostUrl}{ result.Url}";
-
-                        }
+                        result.HostUrl = string.IsNullOrWhiteSpace(CeyhConfiguration.TheUploadFileSettings.HostUrl) ? $"{Net.GetOrigin}{ result.Url}" : $"{CeyhConfiguration.TheUploadFileSettings.HostUrl}{ result.Url}";
 
                     }
                     else

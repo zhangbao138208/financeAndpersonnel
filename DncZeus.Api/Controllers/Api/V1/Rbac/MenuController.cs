@@ -22,6 +22,7 @@ using System.Data.SqlClient;
 using System.Linq;
 using Microsoft.Data.SqlClient;
 using System.Threading.Tasks;
+using SqlParameter = Microsoft.Data.SqlClient.SqlParameter;
 
 namespace DncZeus.Api.Controllers.Api.V1.Rbac
 {
@@ -55,7 +56,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         public async Task<ActionResult<ResponseResultModel<IEnumerable<MenuJsonModel>>>>
             List(MenuRequestPayload payload)
         {
-            using (_dbContext)
+            await using (_dbContext)
             {
                 var query = _dbContext.DncMenu.AsQueryable();
                 if (!string.IsNullOrEmpty(payload.Kw))
@@ -75,7 +76,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
                     query = query.Where(x => x.ParentGuid == payload.ParentGuid);
                 }
                 var list = await query.Paged(payload.CurrentPage, payload.PageSize).ToListAsync();
-                var totalCount = query.Count();
+                var totalCount = await query.CountAsync();
                 var data = list.Select(_mapper.Map<DncMenu, MenuJsonModel>);
                 var response = ResponseModelFactory.CreateResultInstance;
                 response.SetData(data, totalCount);
@@ -92,7 +93,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         [ProducesResponseType(200)]
         public async Task<ActionResult<ResponseModel>> Create(MenuCreateViewModel model)
         {
-            using (_dbContext)
+            await using (_dbContext)
             {
                 var entity = _mapper.Map<MenuCreateViewModel, DncMenu>(model);
                 entity.CreatedOn = DateTime.Now;
@@ -118,7 +119,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         [ProducesResponseType(200)]
         public async Task<ActionResult<MenuEditRetModel>> Edit(Guid guid)
         {
-            using (_dbContext)
+            await using (_dbContext)
             {
                 var entity = await _dbContext.DncMenu.FirstOrDefaultAsync(x => x.Guid == guid);
                 var response = ResponseModelFactory.CreateInstance;
@@ -138,7 +139,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         [ProducesResponseType(200)]
         public async Task<ActionResult<ResponseModel>> Edit(MenuEditViewModel model)
         {
-            using (_dbContext)
+            await using (_dbContext)
             {
                 var entity = await _dbContext.DncMenu.FirstOrDefaultAsync(x => x.Guid == model.Guid);
                 entity.Name = model.Name;
@@ -264,11 +265,11 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// <returns></returns>
         private async Task<ResponseModel> UpdateIsDeleteAsync(CommonEnum.IsDeleted isDeleted, string ids)
         {
-            using (_dbContext)
+            await using (_dbContext)
             {
                 var parameters = ids.Split(",").Select((id, index) => new SqlParameter(string.Format("@p{0}", index), id)).ToList();
                 var parameterNames = string.Join(", ", parameters.Select(p => p.ParameterName));
-                var sql = string.Format("UPDATE DncMenu SET IsDeleted=@IsDeleted WHERE Guid IN ({0})", parameterNames);
+                var sql = $"UPDATE DncMenu SET IsDeleted=@IsDeleted WHERE Guid IN ({parameterNames})";
                 parameters.Add(new SqlParameter("@IsDeleted", (int)isDeleted));
                 await _dbContext.Database.ExecuteSqlCommandAsync(sql, parameters);
                 var response = ResponseModelFactory.CreateInstance;
@@ -284,11 +285,11 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// <returns></returns>
         private async Task<ResponseModel> UpdateStatusAsync(UserStatus status, string ids)
         {
-            using (_dbContext)
+            await using (_dbContext)
             {
                 var parameters = ids.Split(",").Select((id, index) => new SqlParameter(string.Format("@p{0}", index), id)).ToList();
                 var parameterNames = string.Join(", ", parameters.Select(p => p.ParameterName));
-                var sql = string.Format("UPDATE DncMenu SET Status=@Status WHERE Guid IN ({0})", parameterNames);
+                var sql = $"UPDATE DncMenu SET Status=@Status WHERE Guid IN ({parameterNames})";
                 parameters.Add(new SqlParameter("@Status", (int)status));
                 await _dbContext.Database.ExecuteSqlCommandAsync(sql, parameters);
                 var response = ResponseModelFactory.CreateInstance;
@@ -334,22 +335,23 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         public static List<MenuTree> BuildTree(this List<MenuTree> menus, string selectedGuid = null)
         {
             var lookup = menus.ToLookup(x => x.ParentGuid);
-            Func<Guid?, List<MenuTree>> build = null;
-            build = pid =>
+
+            List<MenuTree> Build(Guid? pid)
             {
                 return lookup[pid]
-                 .Select(x => new MenuTree()
-                 {
-                     Guid = x.Guid,
-                     ParentGuid = x.ParentGuid,
-                     Title = x.Title,
-                     Expand = (x.ParentGuid == null || x.ParentGuid == Guid.Empty),
-                     Selected = selectedGuid == x.Guid,
-                     Children = build(new Guid(x.Guid)),
-                 })
-                 .ToList();
-            };
-            var result = build(null);
+                    .Select(x => new MenuTree()
+                    {
+                        Guid = x.Guid,
+                        ParentGuid = x.ParentGuid,
+                        Title = x.Title,
+                        Expand = (x.ParentGuid == null || x.ParentGuid == Guid.Empty),
+                        Selected = selectedGuid == x.Guid,
+                        Children = Build(new Guid(x.Guid ?? string.Empty))
+                    })
+                    .ToList();
+            }
+
+            var result = Build(null);
             return result;
         }
     }

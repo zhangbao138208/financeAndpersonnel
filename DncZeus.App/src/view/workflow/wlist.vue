@@ -35,35 +35,6 @@
                       placeholder="输入关键字搜索..."
                       @on-search="handleSearchWlist()"
                     >
-                      <!-- <Select
-                        slot="prepend"
-                        v-model="stores.wlist.query.isDeleted"
-                        @on-change="handleSearchWlist"
-                        placeholder="删除状态"
-                        style="width: 60px"
-                      >
-                        <Option
-                          v-for="item in stores.wlist.sources
-                            .isDeletedSources"
-                          :value="item.value"
-                          :key="item.value"
-                          >{{ item.text }}</Option
-                        >
-                      </Select>
-                      <Select
-                        slot="prepend"
-                        v-model="stores.wlist.query.status"
-                        @on-change="handleSearchWlist"
-                        placeholder="工作表类型状态"
-                        style="width: 60px"
-                      >
-                        <Option
-                          v-for="item in stores.wlist.sources.statusSources"
-                          :value="item.value"
-                          :key="item.value"
-                          >{{ item.text }}</Option
-                        >
-                      </Select> -->
                     </Input>
                   </FormItem>
                 </Form>
@@ -76,24 +47,7 @@
                     title="删除"
                     @click="handleBatchCommand('delete')"
                   ></Button>
-                  <!-- <Button
-                    class="txt-success"
-                    icon="md-redo"
-                    title="恢复"
-                    @click="handleBatchCommand('recover')"
-                  ></Button>
-                  <Button
-                    class="txt-danger"
-                    icon="md-hand"
-                    title="禁用"
-                    @click="handleBatchCommand('forbidden')"
-                  ></Button>
-                  <Button
-                    class="txt-success"
-                    icon="md-checkmark"
-                    title="启用"
-                    @click="handleBatchCommand('normal')"
-                  ></Button> -->
+
                   <Button
                     icon="md-refresh"
                     title="刷新"
@@ -185,24 +139,36 @@
         </FormItem>
 
         <FormItem label="进度" label-position="top" v-if="isView">
-           <Button type="success" shape="circle">起</Button>
-           <Icon type="md-fastforward" color='#ccc'/><Icon type="md-fastforward" color='#ccc'/><Icon
+          <Button type="success" shape="circle">起</Button>
+          <Icon type="md-fastforward" color="#ccc" /><Icon
+            type="md-fastforward"
+            color="#ccc"
+          /><Icon type="md-fastforward" color="#ccc" />
+          <div
+            :key="item.code"
+            v-for="(item, index) in steps"
+            style="display: inline-block"
+          >
+            <Button type="primary" v-if="index + 1 < stepLength">{{
+              item.title
+            }}</Button>
+            <Button type="default" v-if="index + 1 >= stepLength">{{
+              item.title
+            }}</Button>
+            <Icon type="md-fastforward" color="#ccc" /><Icon
               type="md-fastforward"
-              color='#ccc'
-            />
-          <div :key="item.code" v-for="(item ,index) in steps" style="display:inline-block">
-            <Button type="primary" v-if="index+1<stepLength">{{ item.title }}</Button>
-             <Button type="default" v-if="index+1>=stepLength">{{ item.title }}</Button>
-             <Icon type="md-fastforward" color='#ccc'/><Icon type="md-fastforward" color='#ccc'/><Icon
-              type="md-fastforward"
-              color='#ccc'
-            />
+              color="#ccc"
+            /><Icon type="md-fastforward" color="#ccc" />
           </div>
 
           <Button type="error" shape="circle">止</Button>
         </FormItem>
 
-        <FormItem label="意见" label-position="top" v-if="!!formModel.fields.notes">
+        <FormItem
+          label="意见"
+          label-position="top"
+          v-if="!!formModel.fields.notes && isView"
+        >
           <Table
             width="650"
             border
@@ -285,15 +251,14 @@
             >
               <mu-select
                 v-model="formModel.fields.approver"
-                multiple
                 v-if="steps[0].isCounterSign"
               >
                 <mu-option
-                  :key="user"
-                  :label="steps[0].usersName[index]"
-                  :value="user"
+                  :key="index"
+                  :label="steps[0].usersName.join(',')"
+                  :value="steps[0].users.join(',')"
                   avatar
-                  v-for="(user, index) in steps[0].users"
+                  v-for="(item, index) in [1]"
                 ></mu-option>
               </mu-select>
 
@@ -315,7 +280,7 @@
       </Form>
       <div class="demo-drawer-footer">
         <Button
-          :disabled="isView||isloading"
+          :disabled="isView || isloading"
           icon="md-checkmark-circle"
           type="primary"
           @click="handleSubmitDePartment"
@@ -355,7 +320,7 @@ export default {
   },
   data() {
     return {
-      isloading:false,
+      isloading: false,
       steps: [],
       isView: false,
       uploadJson:
@@ -946,7 +911,7 @@ export default {
       this.handleResetFormWlist()
     },
     handleSubmitDePartment() {
-      this.isloading=true
+      this.isloading = true
       let valid = this.validateWlistForm()
       if (valid) {
         if (this.formModel.mode === 'create') {
@@ -958,7 +923,10 @@ export default {
       }
     },
     handleResetFormWlist() {
-      this.$refs['formWlist'].resetFields()
+      // this.$refs['formWlist'].resetFields()
+      Object.keys(this.formModel.fields).forEach(
+        (key) => (this.formModel.fields[key] = '')
+      )
     },
     doCreateWlist() {
       createWlist(this.formModel.fields).then((res) => {
@@ -966,10 +934,11 @@ export default {
           this.$Message.success(res.data.message)
           this.loadWlistList()
         } else {
+           this.isloading = false
           this.$Message.warning(res.data.message)
         }
         this.handleCloseFormWindow()
-        this.isloading=false
+        this.isloading = false
       })
     },
     doEditWlist() {
@@ -981,7 +950,7 @@ export default {
           this.$Message.warning(res.data.message)
         }
         this.handleCloseFormWindow()
-        this.isloading=false
+        this.isloading = false
       })
     },
     validateWlistForm() {

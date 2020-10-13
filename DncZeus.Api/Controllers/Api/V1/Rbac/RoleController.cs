@@ -21,6 +21,7 @@ using System;
 using System.Linq;
 using Microsoft.Data.SqlClient;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace DncZeus.Api.Controllers.Api.V1.Rbac
 {
@@ -51,10 +52,11 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// </summary>
         /// <returns></returns>
         [HttpPost]
-        public ActionResult<ResponseResultModel<IEnumerable<RoleJsonModel>>> List(RoleRequestPayload payload)
+        public async Task<ActionResult<ResponseResultModel<IEnumerable<RoleJsonModel>>>> 
+            List(RoleRequestPayload payload)
         {
             var response = ResponseModelFactory.CreateResultInstance;
-            using (_dbContext)
+            await using (_dbContext)
             {
                 var query = _dbContext.DncRole.AsQueryable();
                 if (!string.IsNullOrEmpty(payload.Kw))
@@ -69,8 +71,8 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
                 {
                     query = query.Where(x => x.Status == payload.Status);
                 }
-                var list = query.Paged(payload.CurrentPage, payload.PageSize).ToList();
-                var totalCount = query.Count();
+                var list =await query.Paged(payload.CurrentPage, payload.PageSize).ToListAsync();
+                var totalCount = await query.CountAsync(); 
                 var data = list.Select(_mapper.Map<DncRole, RoleJsonModel>);
 
                 response.SetData(data, totalCount);
@@ -85,7 +87,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// <returns></returns>
         [HttpPost]
         [ProducesResponseType(200)]
-        public ActionResult<ResponseModel> Create(RoleCreateViewModel model)
+        public async Task<ActionResult<ResponseModel>> Create(RoleCreateViewModel model)
         {
             var response = ResponseModelFactory.CreateInstance;
             if (model.Name.Trim().Length <= 0)
@@ -93,7 +95,8 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
                 response.SetFailed("请输入角色名称");
                 return Ok(response);
             }
-            using (_dbContext)
+
+            await using (_dbContext)
             {
                 if (_dbContext.DncRole.Count(x => x.Name == model.Name) > 0)
                 {
@@ -107,8 +110,8 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
                 entity.IsBuiltin = false;
                 entity.CreatedByUserGuid = AuthContextService.CurrentUser.Guid;
                 entity.CreatedByUserName = AuthContextService.CurrentUser.DisplayName;
-                _dbContext.DncRole.Add(entity);
-                _dbContext.SaveChanges();
+                await _dbContext.DncRole.AddAsync(entity);
+                await _dbContext.SaveChangesAsync();
 
                 response.SetSuccess();
                 return Ok(response);
@@ -122,11 +125,12 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// <returns></returns>
         [HttpGet("{code}")]
         [ProducesResponseType(200)]
-        public ActionResult<ResponseModel<RoleCreateViewModel>> Edit(string code)
+        public async Task<ActionResult<ResponseModel<RoleCreateViewModel>>> Edit(string code)
         {
-            using (_dbContext)
+            await using (_dbContext)
             {
-                var entity = _dbContext.DncRole.FirstOrDefault(x => x.Code == code);
+                var entity = await _dbContext.DncRole.
+                    FirstOrDefaultAsync(x => x.Code == code);
                 var response = ResponseModelFactory.CreateInstance;
                 response.SetData(_mapper.Map<DncRole, RoleCreateViewModel>(entity));
                 return Ok(response);
@@ -140,7 +144,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// <returns></returns>
         [HttpPut]
         [ProducesResponseType(200)]
-        public ActionResult<ResponseModel> Edit(RoleCreateViewModel model)
+        public async Task<ActionResult<ResponseModel>> Edit(RoleCreateViewModel model)
         {
             var response = ResponseModelFactory.CreateInstance;
             if (ConfigurationManager.AppSettings.IsTrialVersion)
@@ -148,9 +152,11 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
                 response.SetIsTrial();
                 return Ok(response);
             }
-            using (_dbContext)
+
+            await using (_dbContext)
             {
-                if (_dbContext.DncRole.Count(x => x.Name == model.Name && x.Code != model.Code) > 0)
+                if (await _dbContext.DncRole.CountAsync(x => x.Name == model.Name 
+                                                             && x.Code != model.Code) > 0)
                 {
                     response.SetFailed("角色已存在");
                     return Ok(response);
@@ -158,20 +164,24 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
 
                 var entity = _dbContext.DncRole.FirstOrDefault(x => x.Code == model.Code);
 
-                if (entity.IsSuperAdministrator && !AuthContextService.IsSupperAdministator)
+                if (entity != null && entity.IsSuperAdministrator && !AuthContextService.IsSupperAdministator)
                 {
                     response.SetFailed("没有足够的权限");
                     return Ok(response);
                 }
 
-                entity.Name = model.Name;
-                entity.IsDeleted = model.IsDeleted;
-                entity.ModifiedByUserGuid = AuthContextService.CurrentUser.Guid;
-                entity.ModifiedByUserName = AuthContextService.CurrentUser.DisplayName;
-                entity.ModifiedOn = DateTime.Now;
-                entity.Status = model.Status;
-                entity.Description = model.Description;
-                _dbContext.SaveChanges();
+                if (entity != null)
+                {
+                    entity.Name = model.Name;
+                    entity.IsDeleted = model.IsDeleted;
+                    entity.ModifiedByUserGuid = AuthContextService.CurrentUser.Guid;
+                    entity.ModifiedByUserName = AuthContextService.CurrentUser.DisplayName;
+                    entity.ModifiedOn = DateTime.Now;
+                    entity.Status = model.Status;
+                    entity.Description = model.Description;
+                }
+
+                await _dbContext.SaveChangesAsync();
                 return Ok(response);
             }
         }
@@ -183,7 +193,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// <returns></returns>
         [HttpDelete("{ids}")]
         [ProducesResponseType(200)]
-        public ActionResult<ResponseModel> Delete(string ids)
+        public async Task<ActionResult<ResponseModel>> Delete(string ids)
         {
             var response = ResponseModelFactory.CreateInstance;
             if (ConfigurationManager.AppSettings.IsTrialVersion)
@@ -191,7 +201,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
                 response.SetIsTrial();
                 return Ok(response);
             }
-            response = UpdateIsDelete(CommonEnum.IsDeleted.Yes, ids);
+            response = await UpdateIsDelete(CommonEnum.IsDeleted.Yes, ids);
             return Ok(response);
         }
 
@@ -202,9 +212,9 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// <returns></returns>
         [HttpPost("{ids}")]
         [ProducesResponseType(200)]
-        public ActionResult<ResponseModel> Recover(string ids)
+        public async Task<ActionResult<ResponseModel>> Recover(string ids)
         {
-            var response = UpdateIsDelete(CommonEnum.IsDeleted.No, ids);
+            var response = await UpdateIsDelete(CommonEnum.IsDeleted.No, ids);
             return Ok(response);
         }
 
@@ -216,7 +226,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// <returns></returns>
         [HttpPost]
         [ProducesResponseType(200)]
-        public ActionResult<ResponseModel> Batch(string command, string ids)
+        public async Task<ActionResult<ResponseModel>> Batch(string command, string ids)
         {
             var response = ResponseModelFactory.CreateInstance;
             switch (command)
@@ -227,10 +237,10 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
                         response.SetIsTrial();
                         return Ok(response);
                     }
-                    response = UpdateIsDelete(CommonEnum.IsDeleted.Yes, ids);
+                    response = await UpdateIsDelete(CommonEnum.IsDeleted.Yes, ids);
                     break;
                 case "recover":
-                    response = UpdateIsDelete(CommonEnum.IsDeleted.No, ids);
+                    response = await UpdateIsDelete(CommonEnum.IsDeleted.No, ids);
                     break;
                 case "forbidden":
                     if (ConfigurationManager.AppSettings.IsTrialVersion)
@@ -238,10 +248,10 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
                         response.SetIsTrial();
                         return Ok(response);
                     }
-                    response = UpdateStatus(UserStatus.Forbidden, ids);
+                    response = await UpdateStatus(UserStatus.Forbidden, ids);
                     break;
                 case "normal":
-                    response = UpdateStatus(UserStatus.Normal, ids);
+                    response = await UpdateStatus(UserStatus.Normal, ids);
                     break;
                 default:
                     break;
@@ -255,10 +265,10 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// <param name="payload">角色分配权限的请求载体类</param>
         /// <returns></returns>
         [HttpPost("/api/v1/rbac/role/assign_permission")]
-        public ActionResult<ResponseModel> AssignPermission(RoleAssignPermissionPayload payload)
+        public async Task<ActionResult<ResponseModel>> AssignPermission(RoleAssignPermissionPayload payload)
         {
             var response = ResponseModelFactory.CreateInstance;
-            using (_dbContext)
+            await using (_dbContext)
             {
                 var role = _dbContext.DncRole.FirstOrDefault(x => x.Code == payload.RoleCode);
                 if (role == null)
@@ -273,8 +283,9 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
                     return Ok(response);
                 }
                 //先删除当前角色原来已分配的权限
-                _dbContext.Database.ExecuteSqlCommand("DELETE FROM DncRolePermissionMapping WHERE RoleCode={0}", payload.RoleCode);
-                if (payload.Permissions != null || payload.Permissions.Count > 0)
+                await _dbContext.Database.ExecuteSqlCommandAsync("DELETE FROM DncRolePermissionMapping WHERE RoleCode={0}", payload.RoleCode);
+                if (payload.Permissions == null || (payload.Permissions == null && payload.Permissions.Count <= 0))
+                    return Ok(response);
                 {
                     var permissions = payload.Permissions.Select(x => new DncRolePermissionMapping
                     {
@@ -282,8 +293,8 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
                         PermissionCode = x.Trim(),
                         RoleCode = payload.RoleCode.Trim()
                     });
-                    _dbContext.DncRolePermissionMapping.AddRange(permissions);
-                    _dbContext.SaveChanges();
+                    await _dbContext.DncRolePermissionMapping.AddRangeAsync(permissions);
+                    await _dbContext.SaveChangesAsync();
                 }
 
             }
@@ -296,10 +307,10 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// <param name="guid">用户GUID</param>
         /// <returns></returns>
         [HttpGet("/api/v1/rbac/role/find_list_by_user_guid/{guid}")]
-        public IActionResult FindListByUserGuid(Guid guid)
+        public async Task<IActionResult> FindListByUserGuid(Guid guid)
         {
             var response = ResponseModelFactory.CreateInstance;
-            using (_dbContext)
+            await using (_dbContext)
             {
                 //有N+1次查询的性能问题
                 //var query = _dbContext.DncUser
@@ -311,12 +322,17 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
                 //    x.DncRole.Code,
                 //    x.DncRole.Name
                 //});
-                var sql = @"SELECT R.* FROM DncUserRoleMapping AS URM
-INNER JOIN DncRole AS R ON R.Code=URM.RoleCode
-WHERE URM.UserGuid={0}";
-                var query = _dbContext.DncRole.FromSqlRaw(sql, guid).ToList();
+                var sql = @"-- noinspection SqlNoDataSourceInspection
+                
+                SELECT R.* FROM DncUserRoleMapping AS URM
+                INNER JOIN DncRole AS R ON R.Code=URM.RoleCode
+                WHERE URM.UserGuid={0}";
+                var query = await _dbContext.DncRole.FromSqlRaw(sql, guid).ToListAsync();
                 var assignedRoles = query.ToList().Select(x => x.Code).ToList();
-                var roles = _dbContext.DncRole.Where(x => x.IsDeleted == CommonEnum.IsDeleted.No && x.Status == CommonEnum.Status.Normal).ToList().Select(x => new { label = x.Name, key = x.Code });
+                var roles = _dbContext.DncRole.
+                    Where(x => x.IsDeleted == CommonEnum.IsDeleted.No &&
+                               x.Status == CommonEnum.Status.Normal).ToListAsync().Result.
+                    Select(x => new { label = x.Name, key = x.Code });
                 response.SetData(new { roles, assignedRoles });
                 return Ok(response);
             }
@@ -327,12 +343,15 @@ WHERE URM.UserGuid={0}";
         /// </summary>
         /// <returns></returns>
         [HttpGet("/api/v1/rbac/role/find_simple_list")]
-        public ActionResult<ResponseResultModel<IEnumerable<SimpleModel>>> FindSimpleList()
+        public async Task<ActionResult<ResponseResultModel<IEnumerable<SimpleModel>>>> FindSimpleList()
         {
             var response = ResponseModelFactory.CreateInstance;
-            using (_dbContext)
+            await using (_dbContext)
             {
-                var roles = _dbContext.DncRole.Where(x => x.IsDeleted == CommonEnum.IsDeleted.No && x.Status == CommonEnum.Status.Normal).Select(x => new { x.Name, x.Code }).ToList();
+                var roles =
+                    await _dbContext.DncRole.Where(x => x.IsDeleted == CommonEnum.IsDeleted.No && 
+                                                  x.Status == CommonEnum.Status.Normal).
+                        Select(x => new { x.Name, x.Code }).ToListAsync();
                 response.SetData(roles);
             }
             return Ok(response);
@@ -346,15 +365,15 @@ WHERE URM.UserGuid={0}";
         /// <param name="isDeleted"></param>
         /// <param name="ids">角色ID字符串,多个以逗号隔开</param>
         /// <returns></returns>
-        private ResponseModel UpdateIsDelete(CommonEnum.IsDeleted isDeleted, string ids)
+        private async Task<ResponseModel> UpdateIsDelete(CommonEnum.IsDeleted isDeleted, string ids)
         {
-            using (_dbContext)
+            await using (_dbContext)
             {
                 var parameters = ids.Split(",").Select((id, index) => new SqlParameter(string.Format("@p{0}", index), id)).ToList();
                 var parameterNames = string.Join(", ", parameters.Select(p => p.ParameterName));
-                var sql = string.Format("UPDATE DncRole SET IsDeleted=@IsDeleted WHERE Code IN ({0})", parameterNames);
+                var sql = $"UPDATE DncRole SET IsDeleted=@IsDeleted WHERE Code IN ({parameterNames})";
                 parameters.Add(new SqlParameter("@IsDeleted", (int)isDeleted));
-                _dbContext.Database.ExecuteSqlCommand(sql, parameters);
+                await _dbContext.Database.ExecuteSqlCommandAsync(sql, parameters);
                 var response = ResponseModelFactory.CreateInstance;
                 return response;
             }
@@ -366,15 +385,15 @@ WHERE URM.UserGuid={0}";
         /// <param name="status">角色状态</param>
         /// <param name="ids">角色ID字符串,多个以逗号隔开</param>
         /// <returns></returns>
-        private ResponseModel UpdateStatus(UserStatus status, string ids)
+        private async Task<ResponseModel> UpdateStatus(UserStatus status, string ids)
         {
-            using (_dbContext)
+            await using (_dbContext)
             {
                 var parameters = ids.Split(",").Select((id, index) => new SqlParameter(string.Format("@p{0}", index), id)).ToList();
                 var parameterNames = string.Join(", ", parameters.Select(p => p.ParameterName));
-                var sql = string.Format("UPDATE DncRole SET Status=@Status WHERE Code IN ({0})", parameterNames);
+                var sql = $"UPDATE DncRole SET Status=@Status WHERE Code IN ({parameterNames})";
                 parameters.Add(new SqlParameter("@Status", (int)status));
-                _dbContext.Database.ExecuteSqlCommand(sql, parameters);
+                await _dbContext.Database.ExecuteSqlCommandAsync(sql, parameters);
                 var response = ResponseModelFactory.CreateInstance;
                 return response;
             }

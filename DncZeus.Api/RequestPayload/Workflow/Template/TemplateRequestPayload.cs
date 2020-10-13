@@ -12,5 +12,7 @@ namespace DncZeus.Api.RequestPayload.Workflow.Template
         /// 状态
         /// </summary>
         public Status Status { get; set; }
+
+        public string ParentCode { get; set; }
     }
 }

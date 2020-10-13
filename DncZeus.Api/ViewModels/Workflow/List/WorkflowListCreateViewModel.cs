@@ -8,8 +8,8 @@ namespace DncZeus.Api.ViewModels.Workflow.List
     public class WorkflowListCreateViewModel
     {
         public string Code { get; set; }
-        [Required(ErrorMessage = "{0}字段是必须的")]
-        public Guid User { get; set; }
+        //[Required(ErrorMessage = "{0}字段是必须的")]
+        public Guid? User { get; set; }
        // [Required(ErrorMessage = "{0}字段是必须的")]
         public string DepartmentCode { get; set; }
         [Required(ErrorMessage = "{0}字段是必须的")]
@@ -21,14 +21,14 @@ namespace DncZeus.Api.ViewModels.Workflow.List
         /// <summary>
         /// 审批人
         /// </summary>
-        public Guid[] Approver { get; set; }
+        public string Approver { get; set; }
         public string Number { get; set; }
         [Required(ErrorMessage = "{0}字段是必须的")]
         public string Title { get; set; }
         public string Description { get; set; }
         public DateTime? StartDate { get; set; }
         public DateTime EndDate { get; set; }
-        public Guid NotifyUser { get; set; }
+        public Guid? NotifyUser { get; set; }
 
         public List<Note> Notes { get; set; }
     }

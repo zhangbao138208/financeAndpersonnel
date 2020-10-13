@@ -9,14 +9,11 @@ using DncZeus.Api.Entities;
 using DncZeus.Api.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
-using System.Linq;
 using System.Security.Claims;
 using DncZeus.Api.Auth;
 using static DncZeus.Api.Entities.Enums.CommonEnum;
 using DncZeus.Api.Models;
 using DncZeus.Api.Utils.Encryption;
-using System.Text;
-using DncZeus.Api.Utils;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 
@@ -31,12 +28,15 @@ namespace DncZeus.Api.Controllers
     {
         private readonly AppAuthenticationSettings _appSettings;
         private readonly DncZeusDbContext _dbContext;
-        private readonly RSAHelper _rSAHelper;
-        public OauthController(IOptions<AppAuthenticationSettings> appSettings, DncZeusDbContext dbContext, RSAHelper rSAHelper)
+        private readonly RSAHelper _rSaHelper;
+        public OauthController(
+            IOptions<AppAuthenticationSettings> appSettings, 
+            DncZeusDbContext dbContext,
+            RSAHelper rSaHelper)
         {
             _appSettings = appSettings.Value;
             _dbContext = dbContext;
-            _rSAHelper = rSAHelper;
+            _rSaHelper = rSaHelper;
         }
        
         /// <summary>
@@ -53,7 +53,7 @@ namespace DncZeus.Api.Controllers
             DncUser user;
             //RSAHelper rSAHelper = new RSAHelper
             //       (RSAType.RSA, Encoding.UTF8, CeyhConfiguration.TheRSASetting.Private, CeyhConfiguration.TheRSASetting.Public);
-            using (_dbContext)
+            await using (_dbContext)
             {
                 user = await _dbContext.DncUser.FirstOrDefaultAsync(x => x.LoginName == username.Trim());
                 
@@ -62,8 +62,8 @@ namespace DncZeus.Api.Controllers
                     response.SetFailed("用户不存在");
                     return Ok(response);
                 }
-                var userP= _rSAHelper.Decrypt(user.Password);
-                var modelP= _rSAHelper.Decrypt(password.Trim());
+                var userP= _rSaHelper.Decrypt(user.Password);
+                var modelP= _rSaHelper.Decrypt(password.Trim());
                 //var s1 = rSAHelper.Decrypt(password.Trim());
                 if (userP != modelP)
                 {
@@ -81,7 +81,7 @@ namespace DncZeus.Api.Controllers
                     return Ok(response);
                 }
             }
-            var claimsIdentity = new ClaimsIdentity(new Claim[]
+            var claimsIdentity = new ClaimsIdentity(new[]
                 {
                     new Claim(ClaimTypes.Name, username),
                     new Claim("guid",user.Guid.ToString()),

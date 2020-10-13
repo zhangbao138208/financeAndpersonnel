@@ -240,7 +240,6 @@ namespace DncZeus.Api.Controllers.Api.V1.System
         /// <summary>
         /// 删除财务账号
         /// </summary>
-        /// <param name="isDeleted"></param>
         /// <param name="ids">财务账号ID字符串,多个以逗号隔开</param>
         /// <returns></returns>
         private ResponseModel UpdateIsDelete(string ids)

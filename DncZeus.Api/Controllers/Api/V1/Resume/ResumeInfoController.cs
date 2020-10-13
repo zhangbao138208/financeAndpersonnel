@@ -14,6 +14,7 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace DncZeus.Api.Controllers.Api.V1.Resume
 {
@@ -35,10 +36,11 @@ namespace DncZeus.Api.Controllers.Api.V1.Resume
         /// </summary>
         /// <returns></returns>
         [HttpPost]
-        public ActionResult<ResponseResultModel<IEnumerable<ResumeJsonModel>>> List(ResumeRequestPload payload)
+        public async Task<ActionResult<ResponseResultModel<IEnumerable<ResumeJsonModel>>>>
+            List(ResumeRequestPload payload)
         {
             var response = ResponseModelFactory.CreateResultInstance;
-            using (_dbContext)
+            await using (_dbContext)
             {
                 var query = (from resume in _dbContext.ResumeInfo
                 join position in _dbContext.UserPosition on resume.PositionCode equals position.Code
@@ -46,14 +48,14 @@ namespace DncZeus.Api.Controllers.Api.V1.Resume
                 from position in t1.DefaultIfEmpty()
                 join department in _dbContext.UserDepartment on resume.DepartmentCode equals department.Code
                 into t2
-                from departiment in t2.DefaultIfEmpty()
+                from department in t2.DefaultIfEmpty()
                 select new ResumeJsonModel{
                     RealName=resume.RealName,
                     Age=resume.Age,
                     PositionCode=resume.PositionCode,
                     PositionName=position.Name,
                     DepartmentCode=resume.DepartmentCode,
-                    DepartmentName=departiment.Name,
+                    DepartmentName=department.Name,
                     IsDeleted=resume.IsDeleted,
                     LevelID=resume.LevelID,
                     Email=resume.Email,
@@ -81,8 +83,9 @@ namespace DncZeus.Api.Controllers.Api.V1.Resume
                 {
                     query = query.Where(x => x.Status == payload.Status);
                 }
-                var list = query.Paged(payload.CurrentPage, payload.PageSize).OrderBy(r => r.LevelID).ToList();
-                var totalCount = query.Count();
+                var list = await query.Paged(payload.CurrentPage, payload.PageSize).
+                    OrderBy(r => r.LevelID).ToListAsync();
+                var totalCount = await query.CountAsync();
                 //var data = list.Select(_mapper.Map<ResumeInfo, ResumeJsonModel>).ToList();
                 var data = list.ToList();
                 //data.ForEach(d=> {
@@ -101,7 +104,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Resume
         /// <returns></returns>
         [HttpPost]
         [ProducesResponseType(200)]
-        public ActionResult<ResponseModel> Create(ResumeCreateViewModel model)
+        public async Task<ActionResult<ResponseModel>> Create(ResumeCreateViewModel model)
         {
             var response = ResponseModelFactory.CreateInstance;
             if (model.RealName.Trim().Length <= 0)
@@ -109,9 +112,11 @@ namespace DncZeus.Api.Controllers.Api.V1.Resume
                 response.SetFailed("请输入简历名称");
                 return Ok(response);
             }
-            using (_dbContext)
+
+            await using (_dbContext)
             {
-                if (_dbContext.ResumeInfo.Count(x => x.RealName == model.RealName) > 0)
+                if (await _dbContext.ResumeInfo.
+                    CountAsync(x => x.RealName == model.RealName) > 0)
                 {
                     response.SetFailed("简历已存在");
                     return Ok(response);
@@ -122,8 +127,8 @@ namespace DncZeus.Api.Controllers.Api.V1.Resume
                 entity.CreatedByUserGuid = AuthContextService.CurrentUser.Guid;
                 entity.CreatedByUserName = AuthContextService.CurrentUser.DisplayName;
 
-                _dbContext.ResumeInfo.Add(entity);
-                _dbContext.SaveChanges();
+                await _dbContext.ResumeInfo.AddAsync(entity);
+                await _dbContext.SaveChangesAsync();
 
                 response.SetSuccess();
                 return Ok(response);
@@ -137,11 +142,11 @@ namespace DncZeus.Api.Controllers.Api.V1.Resume
         /// <returns></returns>
         [HttpGet("{code}")]
         [ProducesResponseType(200)]
-        public ActionResult<ResponseModel<ResumeCreateViewModel>> Edit(string code)
+        public async Task<ActionResult<ResponseModel<ResumeCreateViewModel>>> Edit(string code)
         {
-            using (_dbContext)
+            await using (_dbContext)
             {
-                var entity = _dbContext.ResumeInfo.Find(code);
+                var entity = await _dbContext.ResumeInfo.FindAsync(code);
                 var response = ResponseModelFactory.CreateInstance;
                 var resEntity = _mapper.Map<ResumeInfo, ResumeCreateViewModel>(entity);
                 response.SetData(resEntity);
@@ -157,7 +162,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Resume
         /// <returns></returns>
         [HttpPut]
         [ProducesResponseType(200)]
-        public ActionResult<ResponseModel> Edit(ResumeCreateViewModel model)
+        public async Task<ActionResult<ResponseModel>> Edit(ResumeCreateViewModel model)
         {
             var response = ResponseModelFactory.CreateInstance;
             if (ConfigurationManager.AppSettings.IsTrialVersion)
@@ -165,9 +170,11 @@ namespace DncZeus.Api.Controllers.Api.V1.Resume
                 response.SetIsTrial();
                 return Ok(response);
             }
-            using (_dbContext)
+
+            await using (_dbContext)
             {
-                if (_dbContext.ResumeInfo.Count(x => x.RealName == model.RealName && x.Code != model.Code) > 0)
+                if (await _dbContext.ResumeInfo.CountAsync(x => x.RealName == model.RealName && 
+                                                     x.Code != model.Code) > 0)
                 {
                     response.SetFailed("简历已存在");
                     return Ok(response);
@@ -182,7 +189,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Resume
                 entity.ModifiedByUserName = AuthContextService.CurrentUser.DisplayName;
 
                 _dbContext.Entry(entity).State = EntityState.Modified;
-                _dbContext.SaveChanges();
+                await _dbContext.SaveChangesAsync();
                 return Ok(response);
             }
         }
@@ -194,7 +201,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Resume
         /// <returns></returns>
         [HttpDelete("{ids}")]
         [ProducesResponseType(200)]
-        public ActionResult<ResponseModel> Delete(string ids)
+        public async Task<ActionResult<ResponseModel>> Delete(string ids)
         {
             var response = ResponseModelFactory.CreateInstance;
             if (ConfigurationManager.AppSettings.IsTrialVersion)
@@ -202,7 +209,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Resume
                 response.SetIsTrial();
                 return Ok(response);
             }
-            response = UpdateIsDelete(CommonEnum.IsDeleted.Yes, ids);
+            response = await UpdateIsDelete(CommonEnum.IsDeleted.Yes, ids);
             return Ok(response);
         }
 
@@ -213,9 +220,9 @@ namespace DncZeus.Api.Controllers.Api.V1.Resume
         /// <returns></returns>
         [HttpPost("{ids}")]
         [ProducesResponseType(200)]
-        public ActionResult<ResponseModel> Recover(string ids)
+        public async Task<ActionResult<ResponseModel>> Recover(string ids)
         {
-            var response = UpdateIsDelete(CommonEnum.IsDeleted.No, ids);
+            var response = await UpdateIsDelete(CommonEnum.IsDeleted.No, ids);
             return Ok(response);
         }
         /// <summary>
@@ -226,7 +233,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Resume
         /// <returns></returns>
         [HttpPost]
         [ProducesResponseType(200)]
-        public ActionResult<ResponseModel> Batch(string command, string ids)
+        public async Task<ActionResult<ResponseModel>> Batch(string command, string ids)
         {
             var response = ResponseModelFactory.CreateInstance;
             switch (command)
@@ -237,10 +244,10 @@ namespace DncZeus.Api.Controllers.Api.V1.Resume
                         response.SetIsTrial();
                         return Ok(response);
                     }
-                    response = UpdateIsDelete(CommonEnum.IsDeleted.Yes, ids);
+                    response = await UpdateIsDelete(CommonEnum.IsDeleted.Yes, ids);
                     break;
                 case "recover":
-                    response = UpdateIsDelete(CommonEnum.IsDeleted.No, ids);
+                    response = await UpdateIsDelete(CommonEnum.IsDeleted.No, ids);
                     break;
                 case "forbidden":
                     if (ConfigurationManager.AppSettings.IsTrialVersion)
@@ -248,10 +255,10 @@ namespace DncZeus.Api.Controllers.Api.V1.Resume
                         response.SetIsTrial();
                         return Ok(response);
                     }
-                    response = UpdateStatus(UserStatus.Forbidden, ids);
+                    response = await UpdateStatus(UserStatus.Forbidden, ids);
                     break;
                 case "normal":
-                    response = UpdateStatus(UserStatus.Normal, ids);
+                    response = await UpdateStatus(UserStatus.Normal, ids);
                     break;
                 default:
                     break;
@@ -266,15 +273,15 @@ namespace DncZeus.Api.Controllers.Api.V1.Resume
         /// <param name="isDeleted"></param>
         /// <param name="ids">角色ID字符串,多个以逗号隔开</param>
         /// <returns></returns>
-        private ResponseModel UpdateIsDelete(CommonEnum.IsDeleted isDeleted, string ids)
+        private async Task<ResponseModel> UpdateIsDelete(CommonEnum.IsDeleted isDeleted, string ids)
         {
-            using (_dbContext)
+            await using (_dbContext)
             {
                 var parameters = ids.Split(",").Select((id, index) => new SqlParameter(string.Format("@p{0}", index), id)).ToList();
                 var parameterNames = string.Join(", ", parameters.Select(p => p.ParameterName));
-                var sql = string.Format("UPDATE ResumeInfo SET IsDeleted=@IsDeleted WHERE Code IN ({0})", parameterNames);
+                var sql = $"UPDATE ResumeInfo SET IsDeleted=@IsDeleted WHERE Code IN ({parameterNames})";
                 parameters.Add(new SqlParameter("@IsDeleted", (int)isDeleted));
-                _dbContext.Database.ExecuteSqlCommand(sql, parameters);
+                await _dbContext.Database.ExecuteSqlCommandAsync(sql, parameters);
                 var response = ResponseModelFactory.CreateInstance;
                 return response;
             }
@@ -286,15 +293,15 @@ namespace DncZeus.Api.Controllers.Api.V1.Resume
         /// <param name="status">角色状态</param>
         /// <param name="ids">角色ID字符串,多个以逗号隔开</param>
         /// <returns></returns>
-        private ResponseModel UpdateStatus(UserStatus status, string ids)
+        private async Task<ResponseModel> UpdateStatus(UserStatus status, string ids)
         {
-            using (_dbContext)
+            await using (_dbContext)
             {
                 var parameters = ids.Split(",").Select((id, index) => new SqlParameter(string.Format("@p{0}", index), id)).ToList();
                 var parameterNames = string.Join(", ", parameters.Select(p => p.ParameterName));
-                var sql = string.Format("UPDATE ResumeInfo SET Status=@Status WHERE Code IN ({0})", parameterNames);
+                var sql = $"UPDATE ResumeInfo SET Status=@Status WHERE Code IN ({parameterNames})";
                 parameters.Add(new SqlParameter("@Status", (int)status));
-                _dbContext.Database.ExecuteSqlCommand(sql, parameters);
+                await _dbContext.Database.ExecuteSqlCommandAsync(sql, parameters);
                 var response = ResponseModelFactory.CreateInstance;
                 return response;
             }

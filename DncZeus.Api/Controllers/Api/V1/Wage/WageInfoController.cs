@@ -17,8 +17,10 @@ using NPOI.SS.UserModel;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace DncZeus.Api.Controllers.Api.V1.Wage
 {
@@ -39,10 +41,11 @@ namespace DncZeus.Api.Controllers.Api.V1.Wage
         /// </summary>
         /// <returns></returns>
         [HttpPost]
-        public ActionResult<ResponseResultModel<IEnumerable<WageJsonModel>>> List(WageRequestPayload payload)
+        public async Task<ActionResult<ResponseResultModel<IEnumerable<WageJsonModel>>>>
+            List(WageRequestPayload payload)
         {
             var response = ResponseModelFactory.CreateResultInstance;
-            using (_dbContext)
+            await using (_dbContext)
             {
                 var query = (from wageInfo in _dbContext.WageInfo
                              join position in _dbContext.UserPosition on wageInfo.PositionCode equals position.Code
@@ -50,7 +53,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Wage
                              from position in t1.DefaultIfEmpty()
                              join department in _dbContext.UserDepartment on wageInfo.DepartmentCode equals department.Code
                              into t2
-                             from departiment in t2.DefaultIfEmpty()
+                             from department in t2.DefaultIfEmpty()
                              select new WageJsonModel
                              {
                                  Code = wageInfo.Code,
@@ -58,7 +61,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Wage
                                  PositionCode = wageInfo.PositionCode,
                                  PositionName = position.Name,
                                  DepartmentCode = wageInfo.DepartmentCode,
-                                 DepartmentName = departiment.Name,
+                                 DepartmentName = department.Name,
                                  StartDate = wageInfo.StartDate,
                                  EndDate = wageInfo.EndDate,
                                  BaseWage = wageInfo.BaseWage,
@@ -109,7 +112,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Wage
                 {
                     query = query.Where(x => x.Status == payload.Status);
                 }
-                var list = query.Paged(payload.CurrentPage, payload.PageSize).ToList();
+                var list = await query.Paged(payload.CurrentPage, payload.PageSize).ToListAsync();
                 var totalCount = query.Count();
                 var data = list.ToList();
                 response.SetData(data, totalCount);
@@ -124,7 +127,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Wage
         /// <returns></returns>
         [HttpPost]
         [ProducesResponseType(200)]
-        public ActionResult<ResponseModel> Create(WageCreateViewModel model)
+        public async Task<ActionResult<ResponseModel>> Create(WageCreateViewModel model)
         {
             var response = ResponseModelFactory.CreateInstance;
             //if (model.RealName.Trim().Length <= 0)
@@ -132,7 +135,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Wage
             //    response.SetFailed("请输入工资名称");
             //    return Ok(response);
             //}
-            using (_dbContext)
+            await using (_dbContext)
             {
                 if (_dbContext.ResumeInfo.Count(x => x.RealName == model.RealName) > 0)
                 {
@@ -145,8 +148,8 @@ namespace DncZeus.Api.Controllers.Api.V1.Wage
                 entity.CreatedByUserGuid = AuthContextService.CurrentUser.Guid;
                 entity.CreatedByUserName = AuthContextService.CurrentUser.DisplayName;
 
-                _dbContext.WageInfo.Add(entity);
-                _dbContext.SaveChanges();
+                await _dbContext.WageInfo.AddAsync(entity);
+                await _dbContext.SaveChangesAsync();
 
                 response.SetSuccess();
                 return Ok(response);
@@ -157,19 +160,19 @@ namespace DncZeus.Api.Controllers.Api.V1.Wage
         /// </summary>
         /// <returns></returns>
         [HttpPost]
-        public ActionResult<ResponseModel> Import()
+        public async Task<ActionResult<ResponseModel>> Import()
         {
             var response = ResponseModelFactory.CreateInstance;
             //JArray lst = new JArray();
             //JObject jsonResult = new JObject();
-            List<WageInfo> lst = new List<WageInfo>();
+            var lst = new List<WageInfo>();
             //long size = 0;
-            string fileNamePath = string.Empty;
-            string RequestPath = string.Empty;
+            var fileNamePath = string.Empty;
+            var requestPath = string.Empty;
 
             try
             {
-                using (_dbContext)
+                await using (_dbContext)
                 {
                     var files = Request.Form.Files;
                     foreach (var file in files)
@@ -200,12 +203,29 @@ namespace DncZeus.Api.Controllers.Api.V1.Wage
                                 Code = RandomHelper.GetRandomizer(8, true, false, true, true),
                                 CreatedByUserGuid = AuthContextService.CurrentUser.Guid,
                                 CreatedByUserName = AuthContextService.CurrentUser.DisplayName,
+                                RealName = dt.Rows[i][dt.Columns["真实姓名"]].ToString(),
+                                DepartmentCode = _dbContext.UserDepartment
+                                    .SingleOrDefault(s => s.Name == dt.Rows[i][dt.Columns["部门"]].ToString().Trim())
+                                    ?.Code,
+                                PositionCode = _dbContext.UserPosition.SingleOrDefault(s =>
+                                    s.Name == dt.Rows[i][dt.Columns["职位"]].ToString().Trim())?.Code,
+                                StartDate = DateTime.Parse(dt.Rows[i][dt.Columns["开始日期"]].ToString()
+                                    ?.Replace("【", "")
+                                    .Replace("】", "") ?? string.Empty),
+                                EndDate = DateTime.Parse(dt.Rows[i][dt.Columns["结束日期"]].ToString()
+                                    ?.Replace("【", "")
+                                    .Replace("】", "") ?? throw new InvalidOperationException()),
+                                TotalWage = decimal.Parse(dt.Rows[i][dt.Columns["应发工资"]].ToString() ?? string.Empty),
+                                BaseWage = decimal.Parse(dt.Rows[i][dt.Columns["基本工资"]].ToString() ?? string.Empty),
+                                WorkDays = int.Parse(dt.Rows[i][dt.Columns["工作天数"]].ToString() ?? throw new InvalidOperationException()),
+                                OTWage = decimal.Parse(dt.Rows[i][dt.Columns["加班工资"]].ToString() ?? string.Empty),
+                                OTDays = int.Parse(dt.Rows[i][dt.Columns["加班天数"]].ToString() ?? string.Empty),
+                                PerformanceWage = decimal.Parse(dt.Rows[i][dt.Columns["绩效工资"]].ToString() ?? string.Empty),
+                                ReissueWage = decimal.Parse(dt.Rows[i][dt.Columns["补发工资"]].ToString() ?? string.Empty),
+                                Subsidy = decimal.Parse(dt.Rows[i][dt.Columns["补贴"]].ToString() ?? string.Empty),
+                                Commission = decimal.Parse(dt.Rows[i][dt.Columns["提成"]].ToString() ?? string.Empty),
+                                Bonus = decimal.Parse(dt.Rows[i][dt.Columns["奖金"]].ToString() ?? string.Empty),
                             };
-                            obj.RealName = dt.Rows[i][dt.Columns["真实姓名"]].ToString();
-                            obj.DepartmentCode = _dbContext.UserDepartment.
-                                SingleOrDefault(s => s.Name == dt.Rows[i][dt.Columns["部门"]].ToString().Trim())?.Code;
-                            obj.PositionCode = _dbContext.UserPosition.
-                                SingleOrDefault(s => s.Name == dt.Rows[i][dt.Columns["职位"]].ToString().Trim())?.Code;
                             //obj.StartDate = DateTime.Parse($"{dt.Rows[i][dt.Columns["开始日期"]].ToString().Split('-')[2]}-" +
                             //    $"{dt.Rows[i][dt.Columns["开始日期"]].ToString().Split('-')[1].Replace("月","")}-" +
                             //    $"{dt.Rows[i][dt.Columns["开始日期"]].ToString().Split('-')[0]}");
@@ -213,25 +233,14 @@ namespace DncZeus.Api.Controllers.Api.V1.Wage
                             //    $"{dt.Rows[i][dt.Columns["结束日期"]].ToString().Split('-')[1].Replace("月", "")}-" +
                             //    $"{dt.Rows[i][dt.Columns["结束日期"]].ToString().Split('-')[0]}");
 
-                            obj.StartDate = DateTime.Parse(dt.Rows[i][dt.Columns["开始日期"]].ToString().Replace("【", "").Replace("】", ""));
-                            obj.EndDate = DateTime.Parse(dt.Rows[i][dt.Columns["结束日期"]].ToString().Replace("【", "").Replace("】", ""));
 
-                            obj.TotalWage = decimal.Parse(dt.Rows[i][dt.Columns["应发工资"]].ToString());
-                            obj.BaseWage = decimal.Parse(dt.Rows[i][dt.Columns["基本工资"]].ToString());
-                            obj.WorkDays = int.Parse(dt.Rows[i][dt.Columns["工作天数"]].ToString());
-                            obj.OTWage = decimal.Parse(dt.Rows[i][dt.Columns["加班工资"]].ToString());
-                            obj.OTDays = int.Parse(dt.Rows[i][dt.Columns["加班天数"]].ToString());
-                            obj.PerformanceWage = decimal.Parse(dt.Rows[i][dt.Columns["绩效工资"]].ToString());
-                            obj.ReissueWage = decimal.Parse(dt.Rows[i][dt.Columns["补发工资"]].ToString());
-                            obj.Subsidy = decimal.Parse(dt.Rows[i][dt.Columns["补贴"]].ToString());
-                            obj.Commission = decimal.Parse(dt.Rows[i][dt.Columns["提成"]].ToString());
-                            obj.Bonus = decimal.Parse(dt.Rows[i][dt.Columns["奖金"]].ToString());
-                            var adds = dt.Rows[i][dt.Columns["额外工资"]].ToString().Split('；');
-                            obj.Additions = adds.Select(a => new { val = a.Split('：')[1], remark = a.Split('：')[0] }).ToJson();
-                            obj.SocialSecurity = decimal.Parse(dt.Rows[i][dt.Columns["社保"]].ToString());
-                            obj.AccumulationFund = decimal.Parse(dt.Rows[i][dt.Columns["公积金"]].ToString());
-                            obj.IncomeTax = decimal.Parse(dt.Rows[i][dt.Columns["个税"]].ToString());
-                            obj.Deductions = dt.Rows[i][dt.Columns["额外扣除"]].ToString().Split('；').
+                            var adds = dt.Rows[i][dt.Columns["额外工资"]].ToString()?.Split('；');
+                            obj.Additions = (adds ?? Array.Empty<string>()).Select(a => new { val = a.Split('：')[1], remark = a.Split('：')[0] }).ToJson();
+                            obj.SocialSecurity = decimal.Parse(dt.Rows[i][dt.Columns["社保"]].ToString() ?? string.Empty);
+                            obj.AccumulationFund = decimal.Parse(dt.Rows[i][dt.Columns["公积金"]].ToString() ?? string.Empty);
+                            obj.IncomeTax = decimal.Parse(dt.Rows[i][dt.Columns["个税"]].ToString() ?? string.Empty);
+                            obj.Deductions = dt.Rows[i][dt.Columns["额外扣除"]].ToString()
+                                ?.Split('；').
                                 Select(a => new { val = a.Split('：')[1], remark = a.Split('：')[0] }).ToJson();
                             //for (int j = 0; j < dt.Columns.Count; j++)
                             //{
@@ -239,14 +248,12 @@ namespace DncZeus.Api.Controllers.Api.V1.Wage
                             //}
                             lst.Add(obj);
                         }
-                        int count = lst.Count / 100 + 1;
-                        int skip = 0;
-                        for (int i = 0; i < count; i++)
+                        var count = lst.Count / 100 + 1;
+                        for (var i = 0; i < count; i++)
                         {
-                            skip = i * 100;//每次插入1000条，插入太多报错
-                            var chilildlist = lst.Skip(i).Take(1000).ToList();
-                            _dbContext.AddRange(chilildlist);
-                            _dbContext.SaveChanges();
+                            var childish = lst.Skip(i).Take(1000).ToList();
+                            await _dbContext.AddRangeAsync(childish);
+                            await _dbContext.SaveChangesAsync();
                         }
 
                     }
@@ -262,10 +269,17 @@ namespace DncZeus.Api.Controllers.Api.V1.Wage
             }
             return response;
         }
-        public class JsonModel
+
+        private class JsonModel
         {
-            public string val { get; set; }
-            public string remark { get; set; }
+            public JsonModel(string val, string remark)
+            {
+                Val = val;
+                Remark = remark;
+            }
+
+            public string Val { get; private set; }
+            public string Remark { get; private set; }
         }
         /// <summary>
         /// 导出薪资列表
@@ -273,11 +287,12 @@ namespace DncZeus.Api.Controllers.Api.V1.Wage
         /// <param name="payload"></param>
         /// <returns></returns>
         [HttpPost]
-        public ActionResult<ResponseResultModel<IEnumerable<WageJsonModel>>> Export(WageExportPayload payload)
+        public async Task<ActionResult<ResponseResultModel<IEnumerable<WageJsonModel>>>> 
+            Export(WageExportPayload payload)
         {
             var response = ResponseModelFactory.CreateResultInstance;
 
-            using (_dbContext)
+            await using (_dbContext)
             {
                 var query = (from wageInfo in _dbContext.WageInfo
                              join position in _dbContext.UserPosition on wageInfo.PositionCode equals position.Code
@@ -285,7 +300,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Wage
                              from position in t1.DefaultIfEmpty()
                              join department in _dbContext.UserDepartment on wageInfo.DepartmentCode equals department.Code
                              into t2
-                             from departiment in t2.DefaultIfEmpty()
+                             from department in t2.DefaultIfEmpty()
                              select new WageExportModel
                              {
                                  Code = wageInfo.Code,
@@ -293,11 +308,11 @@ namespace DncZeus.Api.Controllers.Api.V1.Wage
                                  PositionCode = wageInfo.PositionCode,
                                  PositionName = position.Name,
                                  DepartmentCode = wageInfo.DepartmentCode,
-                                 DepartmentName = departiment.Name,
+                                 DepartmentName = department.Name,
                                  Start = wageInfo.StartDate,
                                  End = wageInfo.EndDate,
-                                 StartDate = $"{((DateTime)wageInfo.StartDate).ToString("yyyy-MM-dd")}",
-                                 EndDate = $"{((DateTime)wageInfo.EndDate).ToString("yyyy-MM-dd")}",
+                                 StartDate = $"{((DateTime)wageInfo.StartDate):yyyy-MM-dd}",
+                                 EndDate = $"{((DateTime)wageInfo.EndDate):yyyy-MM-dd}",
                                  BaseWage = wageInfo.BaseWage,
                                  WorkDays = wageInfo.WorkDays,
                                  OTDays = wageInfo.OTDays,
@@ -345,18 +360,18 @@ namespace DncZeus.Api.Controllers.Api.V1.Wage
                     response.SetFailed("导出数据过多请分批导出");
                     return Ok(response);
                 }
-                var list = query.
+                var list = await query.
                     Where(w => w.Status == CommonEnum.Status.Normal
-                    && w.IsDeleted == CommonEnum.IsDeleted.No).ToList();
+                    && w.IsDeleted == CommonEnum.IsDeleted.No).ToListAsync();
 
                 list.ForEach(r =>
                 {
                     r.Additions = string.Join('；', JsonConvert.
                                  DeserializeObject<List<JsonModel>>(r.Additions).
-                                 Select(s => $"{s.remark}：{s.val}"));
+                                 Select(s => $"{s.Remark}：{s.Val}"));
                     r.Deductions = string.Join('；', JsonConvert.
                                  DeserializeObject<List<JsonModel>>(r.Deductions).
-                                 Select(s => $"{s.remark}：{s.val}"));
+                                 Select(s => $"{s.Remark}：{s.Val}"));
                 });
 
                 response.SetData(list);
@@ -374,28 +389,29 @@ namespace DncZeus.Api.Controllers.Api.V1.Wage
         /// <param name="payload"></param>
         /// <returns></returns>
         [HttpPost]
-        public ActionResult<ResponseResultModel<IEnumerable<WageReport>>> Report(WageReportPayload payload)
+        public async Task<ActionResult<ResponseResultModel<IEnumerable<WageReport>>>> 
+            Report(WageReportPayload payload)
         {
             var response = ResponseModelFactory.CreateResultInstance;
 
-            List<WageReport> wageReports = new List<WageReport>();
-            char[] colors = "0123456789ABCDEF".ToArray();
-            using (_dbContext)
+            var wageReports = new List<WageReport>();
+            var colors = "0123456789ABCDEF".ToArray();
+            await using (_dbContext)
             {
-                Random random = new Random();
+                var random = new Random();
                 var query = _dbContext.WageInfo.Where(w => w.Status == CommonEnum.Status.Normal
                     && w.IsDeleted == CommonEnum.IsDeleted.No);
                 //循环年份
                 for (int i = 0; i < payload.Year; i++)
                 {
-                    List<WageSeries> wageSeries = new List<WageSeries>();
-                    Legend legend = new Legend { Data=new List<string>()};
-                    WageReport report = new WageReport();
+                    var wageSeries = new List<WageSeries>();
+                    var legend = new Legend { Data=new List<string>()};
+                    var report = new WageReport();
 
                     switch (payload.Category)
                     {
                         case 0:
-                            WageSeries series = new WageSeries
+                            var series = new WageSeries
                             {
                                 AreaStyle = new Areastyle
                                 {
@@ -413,7 +429,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Wage
                             series.Name = "总体";
                             legend.Data.Add(series.Name);
                             var color = "#";
-                            for (int j = 0; j < 6; j++)
+                            for (var j = 0; j < 6; j++)
                             {
                                 color += colors[random.Next(0, 15)];
                             }
@@ -427,29 +443,23 @@ namespace DncZeus.Api.Controllers.Api.V1.Wage
                              group p by p.RealName into g
                              select new{g.Key}).ToList().ForEach(r =>{
                                  var queryTemp = query.Where(q => q.RealName == r.Key);
-                                 WageSeries series = new WageSeries
+                                 var series = new WageSeries
                                  {
-                                     AreaStyle = new Areastyle
-                                     {
-                                         Normal = new AreastyleNormal()
-                                     },
+                                     AreaStyle = new Areastyle {Normal = new AreastyleNormal()},
                                      ItemStyle = new ItemStyle
                                      {
-                                         Normal = new ItemStyleNormal
-                                         {
-                                             Label = new ItemStyleLabel()
-                                         }
-                                     }
+                                         Normal = new ItemStyleNormal {Label = new ItemStyleLabel()}
+                                     },
+                                     Name = r.Key
                                  };
-                                 series.Name = r.Key;
                                  legend.Data.Add(series.Name);
                                  series.Data = GetData(queryTemp, i);
-                                 var color = "#";
-                                 for (int j = 0; j < 6; j++)
+                                 var normalColor = "#";
+                                 for (var j = 0; j < 6; j++)
                                  {
-                                     color += colors[random.Next(0, 15)];
+                                     normalColor += colors[random.Next(0, 15)];
                                  }
-                                 series.AreaStyle.Normal.Color = color;
+                                 series.AreaStyle.Normal.Color = normalColor;
                                  wageSeries.Add(series);
                              });
                             break;
@@ -459,7 +469,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Wage
                             {
                                 var queryTemp = query.Where(q => q.DepartmentCode.Trim() == r.Code.Trim());
 
-                                WageSeries series = new WageSeries
+                                var series = new WageSeries
                                 {
                                     AreaStyle = new Areastyle
                                     {
@@ -476,12 +486,12 @@ namespace DncZeus.Api.Controllers.Api.V1.Wage
                                 series.Name = r.Name;
                                 legend.Data.Add(series.Name);
                                 series.Data = GetData(queryTemp, i);
-                                var color = "#";
+                                var normalColor = "#";
                                 for (int j = 0; j < 6; j++)
                                 {
-                                    color += colors[random.Next(0, 15)];
+                                    normalColor += colors[random.Next(0, 15)];
                                 }
-                                series.AreaStyle.Normal.Color = color;
+                                series.AreaStyle.Normal.Color = normalColor;
                                 wageSeries.Add(series);
                             }
                                 );
@@ -491,29 +501,23 @@ namespace DncZeus.Api.Controllers.Api.V1.Wage
                             _dbContext.UserPosition.ToList().ForEach(r =>
                             {
                                 var queryTemp = query.Where(q => q.PositionCode.Trim() == r.Code.Trim());
-                                WageSeries series = new WageSeries
+                                var series = new WageSeries
                                 {
-                                    AreaStyle = new Areastyle
-                                    {
-                                        Normal = new AreastyleNormal()
-                                    },
+                                    AreaStyle = new Areastyle {Normal = new AreastyleNormal()},
                                     ItemStyle = new ItemStyle
                                     {
-                                        Normal = new ItemStyleNormal
-                                        {
-                                            Label = new ItemStyleLabel()
-                                        }
-                                    }
+                                        Normal = new ItemStyleNormal {Label = new ItemStyleLabel()}
+                                    },
+                                    Name = r.Name
                                 };
-                                series.Name = r.Name;
                                 legend.Data.Add(series.Name);
                                 series.Data = GetData(queryTemp, i);
-                                var color = "#";
+                                var normalColor = "#";
                                 for (int j = 0; j < 6; j++)
                                 {
-                                    color += colors[random.Next(0, 15)];
+                                    normalColor += colors[random.Next(0, 15)];
                                 }
-                                series.AreaStyle.Normal.Color = color;
+                                series.AreaStyle.Normal.Color = normalColor;
                                 wageSeries.Add(series);
                             }
                                 );
@@ -522,23 +526,25 @@ namespace DncZeus.Api.Controllers.Api.V1.Wage
                             break;
                     }
 
-                    report.Title = $"{DateTime.Now.AddYears(-i).ToString("yyyy")}年度薪资报表";
+                    report.Title = $"{DateTime.Now.AddYears(-i):yyyy}年度薪资报表";
                     report.WageSeries = wageSeries;
                     report.Legend = legend;
                     wageReports.Add(report);
                 }
 
                 response.SetData(wageReports);
-                List<float> GetData(IQueryable<WageInfo> q, int year)
+
+                static List<float> GetData(IQueryable<WageInfo> q, int year)
                 {
                     var data = new List<float>();
 
-                    for (int i = 0; i < 12; i++)
+                    for (var i = 0; i < 12; i++)
                     {
                         var start = DateTime.Parse(DateTime.Now.AddYears(-year).ToString("yyyy-01-01 00:00:00")).
                            AddMonths(i);
                         var end = DateTime.Parse(DateTime.Now.AddYears(-year).ToString("yyyy-01-01 00:00:00")).
                            AddMonths(i + 1);
+                        // ReSharper disable once PossibleInvalidOperationException
                         data.Add((float)q.
                            Where(w => w.StartDate >= start
                             &&
@@ -652,11 +658,11 @@ namespace DncZeus.Api.Controllers.Api.V1.Wage
         /// <returns></returns>
         [HttpGet("{code}")]
         [ProducesResponseType(200)]
-        public ActionResult<ResponseModel<WageCreateViewModel>> Edit(string code)
+        public async Task<ActionResult<ResponseModel<WageCreateViewModel>>> Edit(string code)
         {
-            using (_dbContext)
+            await using (_dbContext)
             {
-                var entity = _dbContext.WageInfo.Find(code);
+                var entity = await _dbContext.WageInfo.FindAsync(code);
                 var response = ResponseModelFactory.CreateInstance;
                 var resEntity = _mapper.Map<WageInfo, WageCreateViewModel>(entity);
                 response.SetData(resEntity);
@@ -672,7 +678,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Wage
         /// <returns></returns>
         [HttpPut]
         [ProducesResponseType(200)]
-        public ActionResult<ResponseModel> Edit(WageCreateViewModel model)
+        public async Task<ActionResult<ResponseModel>> Edit(WageCreateViewModel model)
         {
             var response = ResponseModelFactory.CreateInstance;
             if (ConfigurationManager.AppSettings.IsTrialVersion)
@@ -680,9 +686,12 @@ namespace DncZeus.Api.Controllers.Api.V1.Wage
                 response.SetIsTrial();
                 return Ok(response);
             }
-            using (_dbContext)
+
+            await using (_dbContext)
             {
-                if (_dbContext.ResumeInfo.Count(x => x.RealName == model.RealName && x.Code != model.Code) > 0)
+                if (await _dbContext.ResumeInfo.
+                    CountAsync(x => x.RealName == model.RealName &&
+                                    x.Code != model.Code) > 0)
                 {
                     response.SetFailed("工资已存在");
                     return Ok(response);
@@ -697,7 +706,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Wage
                 entity.ModifiedByUserName = AuthContextService.CurrentUser.DisplayName;
 
                 _dbContext.Entry(entity).State = EntityState.Modified;
-                _dbContext.SaveChanges();
+                await _dbContext.SaveChangesAsync();
                 return Ok(response);
             }
         }
@@ -709,7 +718,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Wage
         /// <returns></returns>
         [HttpDelete("{ids}")]
         [ProducesResponseType(200)]
-        public ActionResult<ResponseModel> Delete(string ids)
+        public async Task<ActionResult<ResponseModel>> Delete(string ids)
         {
             var response = ResponseModelFactory.CreateInstance;
             if (ConfigurationManager.AppSettings.IsTrialVersion)
@@ -717,7 +726,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Wage
                 response.SetIsTrial();
                 return Ok(response);
             }
-            response = UpdateIsDelete(CommonEnum.IsDeleted.Yes, ids);
+            response =await UpdateIsDelete(CommonEnum.IsDeleted.Yes, ids);
             return Ok(response);
         }
 
@@ -728,9 +737,9 @@ namespace DncZeus.Api.Controllers.Api.V1.Wage
         /// <returns></returns>
         [HttpPost("{ids}")]
         [ProducesResponseType(200)]
-        public ActionResult<ResponseModel> Recover(string ids)
+        public async Task<ActionResult<ResponseModel>> Recover(string ids)
         {
-            var response = UpdateIsDelete(CommonEnum.IsDeleted.No, ids);
+            var response = await UpdateIsDelete(CommonEnum.IsDeleted.No, ids);
             return Ok(response);
         }
         /// <summary>
@@ -741,7 +750,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Wage
         /// <returns></returns>
         [HttpPost]
         [ProducesResponseType(200)]
-        public ActionResult<ResponseModel> Batch(string command, string ids)
+        public async Task<ActionResult<ResponseModel>> Batch(string command, string ids)
         {
             var response = ResponseModelFactory.CreateInstance;
             switch (command)
@@ -752,10 +761,10 @@ namespace DncZeus.Api.Controllers.Api.V1.Wage
                         response.SetIsTrial();
                         return Ok(response);
                     }
-                    response = UpdateIsDelete(CommonEnum.IsDeleted.Yes, ids);
+                    response = await UpdateIsDelete(CommonEnum.IsDeleted.Yes, ids);
                     break;
                 case "recover":
-                    response = UpdateIsDelete(CommonEnum.IsDeleted.No, ids);
+                    response = await UpdateIsDelete(CommonEnum.IsDeleted.No, ids);
                     break;
                 case "forbidden":
                     if (ConfigurationManager.AppSettings.IsTrialVersion)
@@ -763,10 +772,10 @@ namespace DncZeus.Api.Controllers.Api.V1.Wage
                         response.SetIsTrial();
                         return Ok(response);
                     }
-                    response = UpdateStatus(UserStatus.Forbidden, ids);
+                    response = await UpdateStatus(UserStatus.Forbidden, ids);
                     break;
                 case "normal":
-                    response = UpdateStatus(UserStatus.Normal, ids);
+                    response = await UpdateStatus(UserStatus.Normal, ids);
                     break;
                 default:
                     break;
@@ -781,15 +790,15 @@ namespace DncZeus.Api.Controllers.Api.V1.Wage
         /// <param name="isDeleted"></param>
         /// <param name="ids">角色ID字符串,多个以逗号隔开</param>
         /// <returns></returns>
-        private ResponseModel UpdateIsDelete(CommonEnum.IsDeleted isDeleted, string ids)
+        private async Task<ResponseModel> UpdateIsDelete(CommonEnum.IsDeleted isDeleted, string ids)
         {
-            using (_dbContext)
+            await using (_dbContext)
             {
                 var parameters = ids.Split(",").Select((id, index) => new SqlParameter(string.Format("@p{0}", index), id)).ToList();
                 var parameterNames = string.Join(", ", parameters.Select(p => p.ParameterName));
-                var sql = string.Format("UPDATE WageInfo SET IsDeleted=@IsDeleted WHERE Code IN ({0})", parameterNames);
+                var sql = $"UPDATE WageInfo SET IsDeleted=@IsDeleted WHERE Code IN ({parameterNames})";
                 parameters.Add(new SqlParameter("@IsDeleted", (int)isDeleted));
-                _dbContext.Database.ExecuteSqlCommand(sql, parameters);
+                await _dbContext.Database.ExecuteSqlCommandAsync(sql, parameters);
                 var response = ResponseModelFactory.CreateInstance;
                 return response;
             }
@@ -801,15 +810,15 @@ namespace DncZeus.Api.Controllers.Api.V1.Wage
         /// <param name="status">角色状态</param>
         /// <param name="ids">角色ID字符串,多个以逗号隔开</param>
         /// <returns></returns>
-        private ResponseModel UpdateStatus(UserStatus status, string ids)
+        private async Task<ResponseModel> UpdateStatus(UserStatus status, string ids)
         {
-            using (_dbContext)
+            await using (_dbContext)
             {
                 var parameters = ids.Split(",").Select((id, index) => new SqlParameter(string.Format("@p{0}", index), id)).ToList();
                 var parameterNames = string.Join(", ", parameters.Select(p => p.ParameterName));
-                var sql = string.Format("UPDATE WageInfo SET Status=@Status WHERE Code IN ({0})", parameterNames);
+                var sql = $"UPDATE WageInfo SET Status=@Status WHERE Code IN ({parameterNames})";
                 parameters.Add(new SqlParameter("@Status", (int)status));
-                _dbContext.Database.ExecuteSqlCommand(sql, parameters);
+                await _dbContext.Database.ExecuteSqlCommandAsync(sql, parameters);
                 var response = ResponseModelFactory.CreateInstance;
                 return response;
             }

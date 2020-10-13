@@ -21,6 +21,12 @@ namespace DncZeus.Api.ViewModels.Workflow.Receiver
         /// 审批人
         /// </summary>
         public List<NextUser> NextUsers { get; set; }
+        /// <summary>
+        /// 只有最后一位审核人可以选择下一步审批
+        /// </summary>
+        public bool CanChoose { get; set; }
+
+        public bool IsCounterSign { get; set; }
 
         public Guid User { get; set; }
         public string UserName { get; set; }

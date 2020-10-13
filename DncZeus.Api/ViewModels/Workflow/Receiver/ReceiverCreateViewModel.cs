@@ -21,7 +21,7 @@ namespace DncZeus.Api.ViewModels.Workflow.Receiver
         /// <summary>
         /// 审批人
         /// </summary>
-        public Guid[] Approver { get; set; }
+        public string Approver { get; set; }
 
         public Guid User { get; set; }
         public string UserName { get; set; }

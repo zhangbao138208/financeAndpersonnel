@@ -5,15 +5,19 @@
  * 版权所有，请勿删除
  ******************************************/
 
+using System;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using NLog.Web;
 
 namespace DncZeus.Api
 {
     /// <summary>
     /// 
     /// </summary>
-    public class Program
+    public static class Program
     {
         ///// <summary>
         ///// 应用程序启动入口方法(Main)
@@ -36,14 +40,17 @@ namespace DncZeus.Api
         //        .UseKestrel(c => c.AddServerHeader = false)
         //        .UseStartup<Startup>();
 
-        public static void Main(string[] args)
-        {
-            CreateWebHostBuilder(args).Build().Run();
-        }
+            public static void Main(string[] args)
+            {
+                CreateWebHostBuilder(args).Build().Run();
+            }
 
-        public static IWebHostBuilder CreateWebHostBuilder(string[] args) =>
-            WebHost.CreateDefaultBuilder(args)
-                .UseKestrel(c => c.AddServerHeader = false)
-                .UseStartup<Startup>();
-    }
+            private static IWebHostBuilder CreateWebHostBuilder(string[] args) =>
+                WebHost.CreateDefaultBuilder(args)
+                    .UseKestrel(c => c.AddServerHeader = false)
+                    .UseStartup<Startup>()
+                    
+                    .UseNLog(); //加入nlog日志;
+        }
+    
 }

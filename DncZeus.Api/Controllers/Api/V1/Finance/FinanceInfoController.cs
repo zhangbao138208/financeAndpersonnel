@@ -17,6 +17,7 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace DncZeus.Api.Controllers.Api.V1.Finance
 {
@@ -41,10 +42,11 @@ namespace DncZeus.Api.Controllers.Api.V1.Finance
         /// </summary>
         /// <returns></returns>
         [HttpPost]
-        public ActionResult<ResponseResultModel<IEnumerable<FinanceInfoJsonModel>>> List(FinanceInfoRequestPayload payload)
+        public async Task<ActionResult<ResponseResultModel<IEnumerable<FinanceInfoJsonModel>>>> 
+            List(FinanceInfoRequestPayload payload)
         {
             var response = ResponseModelFactory.CreateResultInstance;
-            using (_dbContext)
+            await using (_dbContext)
             {
                 var query = (
                     from f in _dbContext.FinanceInfo
@@ -94,8 +96,8 @@ namespace DncZeus.Api.Controllers.Api.V1.Finance
                 {
                     query = query.Where(x => x.InfoStatus == payload.Status);
                 }
-                var list = query.Paged(payload.CurrentPage, payload.PageSize).ToList();
-                var totalCount = query.Count();
+                var list = await query.Paged(payload.CurrentPage, payload.PageSize).ToListAsync();
+                var totalCount = await query.CountAsync();
                 //var data = list.Select(_mapper.Map<FinanceInfo, FinanceInfoJsonModel>).ToList();
                 var data = list;
                 data.ForEach(r => {

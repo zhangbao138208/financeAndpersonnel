@@ -13,7 +13,7 @@ namespace DncZeus.Api.Extensions.CustomException
     /// <summary>
     /// 
     /// </summary>
-    public class HttpException : Exception
+    public abstract class HttpException : Exception
     {
         /// <summary>
         /// 

@@ -407,7 +407,7 @@ export default {
             kw: '',
             isDeleted: 0,
             status: -1,
-            parentCode: '',
+            parentCode: 'all',
             parentName: '请选择...',
             sort: [
               {
@@ -863,7 +863,7 @@ export default {
       var node = nodes[0]
       if (node) {
         this.stores.template.query.parentCode = node.code
-        this.stores.template.query.parentName = node.Title
+        this.stores.template.query.parentName = node.title
       }
       this.loadTemplateList()
     },
@@ -877,7 +877,7 @@ export default {
       }
     },
     handleClearSearchTemplateTreeSelection() {
-      this.stores.template.query.parentCode = ''
+      this.stores.template.query.parentCode = 'all'
       this.stores.template.query.parentName = '请选择...'
       this.loadTemplateList()
     },

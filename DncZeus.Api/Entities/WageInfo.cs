@@ -68,21 +68,12 @@ namespace DncZeus.Api.Entities
         /// 公积金
         /// </summary>
         public decimal? AccumulationFund { get; set; }
-        [Column(TypeName = "decimal(18,4)")]
-        /// <summary>
-        /// 个税
-        /// </summary>
-        public decimal? IncomeTax { get; set; }
+        [Column(TypeName = "decimal(18,4)")] public decimal? IncomeTax { get; set; }
         /// <summary>
         /// 扣款
         /// </summary>
         public string Deductions { get; set; }
-        [Column(TypeName = "decimal(18,4)")]
-
-        /// <summary>
-        /// 应发工资
-        /// </summary>
-        public decimal? TotalWage { get; set; }
+        [Column(TypeName = "decimal(18,4)")] public decimal? TotalWage { get; set; }
 
     }
 }

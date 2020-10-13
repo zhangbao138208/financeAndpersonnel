@@ -13,6 +13,7 @@ using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -38,10 +39,11 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
         /// </summary>
         /// <returns></returns>
         [HttpPost]
-        public ActionResult<ResponseResultModel<IEnumerable<StepJsonModel>>> List(StepRequestPaload payload)
+        public async Task<ActionResult<ResponseResultModel<IEnumerable<StepJsonModel>>>>
+            List(StepRequestPaload payload)
         {
             var response = ResponseModelFactory.CreateResultInstance;
-            using (_dbContext)
+            await using (_dbContext)
             {
                 var query = (from l in _dbContext.WorkflowStep
                              join tem in _dbContext.WorkflowTemplate on
@@ -79,7 +81,8 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
                 {
                     query = query.Where(x => x.Status == payload.Status);
                 }
-                var list = query.Paged(payload.CurrentPage, payload.PageSize).OrderBy(r => r.SortID).ToList();
+                var list = await query.Paged(payload.CurrentPage, payload.PageSize).
+                    OrderBy(r => r.SortID).ToListAsync();
                 var totalCount = query.Count();
                 var data = list;
 
@@ -103,7 +106,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
         /// <returns></returns>
         [HttpPost]
         [ProducesResponseType(200)]
-        public ActionResult<ResponseModel> Create(StepCreateViewModel model)
+        public async Task<ActionResult<ResponseModel>> Create(StepCreateViewModel model)
         {
             var response = ResponseModelFactory.CreateInstance;
             if (model.Title.Trim().Length <= 0)
@@ -111,9 +114,10 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
                 response.SetFailed("请输入步骤名称");
                 return Ok(response);
             }
-            using (_dbContext)
+
+            await using (_dbContext)
             {
-                if (_dbContext.DncRole.Count(x => x.Name == model.Title) > 0)
+                if (await _dbContext.DncRole.CountAsync(x => x.Name == model.Title) > 0)
                 {
                     response.SetFailed("角色已存在");
                     return Ok(response);
@@ -125,8 +129,8 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
                 entity.CreatedByUserGuid = AuthContextService.CurrentUser.Guid;
                 entity.CreatedByUserName = AuthContextService.CurrentUser.DisplayName;
 
-                _dbContext.WorkflowStep.Add(entity);
-                _dbContext.SaveChanges();
+                await _dbContext.WorkflowStep.AddAsync(entity);
+                await _dbContext.SaveChangesAsync();
 
                 response.SetSuccess();
                 return Ok(response);
@@ -138,16 +142,17 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
         /// </summary>
         /// <param name="code">步骤惟一编码</param>
         /// <returns></returns>
-        [HttpGet("{code}")]
+        [HttpGet("{code}")] 
         [ProducesResponseType(200)]
-        public ActionResult<ResponseModel<StepCreateViewModel>> Edit(string code)
+        public async Task<ActionResult<ResponseModel<StepCreateViewModel>>> Edit(string code)
         {
-            using (_dbContext)
+            await using (_dbContext)
             {
-                var entity = _dbContext.WorkflowStep.FirstOrDefault(x => x.Code == code);
+                var entity = await _dbContext.WorkflowStep.
+                    FirstOrDefaultAsync(x => x.Code == code);
                 var response = ResponseModelFactory.CreateInstance;
                 var resEntity = _mapper.Map<WorkflowStep, StepCreateViewModel>(entity);
-                resEntity.UserList = entity.UserList.Split('|').ToList();
+                if (entity != null) resEntity.UserList = entity.UserList.Split('|').ToList();
                 response.SetData(resEntity);
                 return Ok(response);
             }
@@ -161,7 +166,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
         /// <returns></returns>
         [HttpPut]
         [ProducesResponseType(200)]
-        public ActionResult<ResponseModel> Edit(StepCreateViewModel model)
+        public async Task<ActionResult<ResponseModel>> Edit(StepCreateViewModel model)
         {
             var response = ResponseModelFactory.CreateInstance;
             if (ConfigurationManager.AppSettings.IsTrialVersion)
@@ -169,15 +174,17 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
                 response.SetIsTrial();
                 return Ok(response);
             }
-            using (_dbContext)
+
+            await using (_dbContext)
             {
-                if (_dbContext.WorkflowStep.Count(x => x.Title == model.Title && x.Code != model.Code) > 0)
+                if (await _dbContext.WorkflowStep.
+                    CountAsync(x => x.Title == model.Title && x.Code != model.Code) > 0)
                 {
                     response.SetFailed("步骤已存在");
                     return Ok(response);
                 }
 
-                var entity = _dbContext.WorkflowStep.Find(model.Code);
+                var entity = await _dbContext.WorkflowStep.FindAsync(model.Code);
 
                 entity.Title = model.Title;
                 entity.SortID = model.SortID;
@@ -192,7 +199,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
                 entity.ModifiedByUserName = AuthContextService.CurrentUser.DisplayName;
 
                 _dbContext.Entry(entity).State = EntityState.Modified;
-                _dbContext.SaveChanges();
+                await _dbContext.SaveChangesAsync();
                 return Ok(response);
             }
         }
@@ -204,7 +211,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
         /// <returns></returns>
         [HttpDelete("{ids}")]
         [ProducesResponseType(200)]
-        public ActionResult<ResponseModel> Delete(string ids)
+        public async Task<ActionResult<ResponseModel>> Delete(string ids)
         {
             var response = ResponseModelFactory.CreateInstance;
             if (ConfigurationManager.AppSettings.IsTrialVersion)
@@ -212,7 +219,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
                 response.SetIsTrial();
                 return Ok(response);
             }
-            response = UpdateIsDelete(CommonEnum.IsDeleted.Yes, ids);
+            response =await UpdateIsDelete(CommonEnum.IsDeleted.Yes, ids);
             return Ok(response);
         }
 
@@ -223,9 +230,9 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
         /// <returns></returns>
         [HttpPost("{ids}")]
         [ProducesResponseType(200)]
-        public ActionResult<ResponseModel> Recover(string ids)
+        public async Task<ActionResult<ResponseModel>> Recover(string ids)
         {
-            var response = UpdateIsDelete(CommonEnum.IsDeleted.No, ids);
+            var response = await UpdateIsDelete(CommonEnum.IsDeleted.No, ids);
             return Ok(response);
         }
         /// <summary>
@@ -236,7 +243,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
         /// <returns></returns>
         [HttpPost]
         [ProducesResponseType(200)]
-        public ActionResult<ResponseModel> Batch(string command, string ids)
+        public async Task<ActionResult<ResponseModel>> Batch(string command, string ids)
         {
             var response = ResponseModelFactory.CreateInstance;
             switch (command)
@@ -247,10 +254,10 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
                         response.SetIsTrial();
                         return Ok(response);
                     }
-                    response = UpdateIsDelete(CommonEnum.IsDeleted.Yes, ids);
+                    response = await UpdateIsDelete(CommonEnum.IsDeleted.Yes, ids);
                     break;
                 case "recover":
-                    response = UpdateIsDelete(CommonEnum.IsDeleted.No, ids);
+                    response = await UpdateIsDelete(CommonEnum.IsDeleted.No, ids);
                     break;
                 case "forbidden":
                     if (ConfigurationManager.AppSettings.IsTrialVersion)
@@ -258,10 +265,10 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
                         response.SetIsTrial();
                         return Ok(response);
                     }
-                    response = UpdateStatus(UserStatus.Forbidden, ids);
+                    response = await UpdateStatus(UserStatus.Forbidden, ids);
                     break;
                 case "normal":
-                    response = UpdateStatus(UserStatus.Normal, ids);
+                    response = await UpdateStatus(UserStatus.Normal, ids);
                     break;
                 default:
                     break;
@@ -323,7 +330,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
         /// <param name="isDeleted"></param>
         /// <param name="ids">角色ID字符串,多个以逗号隔开</param>
         /// <returns></returns>
-        private ResponseModel UpdateIsDelete(CommonEnum.IsDeleted isDeleted, string ids)
+        private async Task<ResponseModel> UpdateIsDelete(CommonEnum.IsDeleted isDeleted, string ids)
         {
             using (_dbContext)
             {
@@ -331,7 +338,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
                 var parameterNames = string.Join(", ", parameters.Select(p => p.ParameterName));
                 var sql = string.Format("UPDATE WorkflowStep SET IsDeleted=@IsDeleted WHERE Code IN ({0})", parameterNames);
                 parameters.Add(new SqlParameter("@IsDeleted", (int)isDeleted));
-                _dbContext.Database.ExecuteSqlCommand(sql, parameters);
+                await _dbContext.Database.ExecuteSqlCommandAsync(sql, parameters);
                 var response = ResponseModelFactory.CreateInstance;
                 return response;
             }
@@ -343,7 +350,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
         /// <param name="status">角色状态</param>
         /// <param name="ids">角色ID字符串,多个以逗号隔开</param>
         /// <returns></returns>
-        private ResponseModel UpdateStatus(UserStatus status, string ids)
+        private  async Task<ResponseModel> UpdateStatus(UserStatus status, string ids)
         {
             using (_dbContext)
             {
@@ -351,7 +358,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
                 var parameterNames = string.Join(", ", parameters.Select(p => p.ParameterName));
                 var sql = string.Format("UPDATE WorkflowStep SET Status=@Status WHERE Code IN ({0})", parameterNames);
                 parameters.Add(new SqlParameter("@Status", (int)status));
-                _dbContext.Database.ExecuteSqlCommand(sql, parameters);
+                await _dbContext.Database.ExecuteSqlCommandAsync(sql, parameters);
                 var response = ResponseModelFactory.CreateInstance;
                 return response;
             }

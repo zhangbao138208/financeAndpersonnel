@@ -107,6 +107,12 @@ namespace DncZeus.Api.Entities
         /// </summary>
         public DbSet<WorkflowReceiver> WorkflowReceiver { get; set; }
 
+        /// <summary>
+        /// 流程审批
+        /// </summary>
+        public DbSet<SystemLog> SystemLog { get; set; }
+
+
         #region DbQuery
         /// <summary>
         /// 

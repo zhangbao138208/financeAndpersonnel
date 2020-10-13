@@ -38,10 +38,10 @@ namespace DncZeus.Api.Controllers.Api.V1.System
         /// </summary>
         /// <returns></returns>
         [HttpPost]
-        public ActionResult<ResponseResultModel<IEnumerable<DictionaryJsonModel>>> List(DictionaryRequestPaload payload)
+        public async Task<ActionResult<ResponseResultModel<IEnumerable<DictionaryJsonModel>>>> List(DictionaryRequestPaload payload)
         {
             var response = ResponseModelFactory.CreateResultInstance;
-            using (_dbContext)
+            await using (_dbContext)
             {
                 var query = (from dic in _dbContext.SystemDictionary
                              join type in _dbContext.SystemDicType on dic.TypeCode equals type.Code
@@ -61,8 +61,9 @@ namespace DncZeus.Api.Controllers.Api.V1.System
                     query = query.Where(x => x.Name.Contains(payload.Kw.Trim()) ||
                    x.Code.Contains(payload.Kw.Trim()) || x.Value.Contains(payload.Kw.Trim()));
                 }
-                var list = query.Paged(payload.CurrentPage, payload.PageSize).OrderBy(r=>r.TypeCode).ToList();
-                var totalCount = query.Count();
+                var list = await query.Paged(payload.CurrentPage, payload.PageSize).
+                    OrderBy(r=>r.TypeCode).ToListAsync();
+                var totalCount = await query.CountAsync();
                 var data = list;
 
                 response.SetData(data, totalCount);
@@ -77,7 +78,7 @@ namespace DncZeus.Api.Controllers.Api.V1.System
         /// <returns></returns>
         [HttpPost]
         [ProducesResponseType(200)]
-        public ActionResult<ResponseModel> Create(DictionaryCreateViewModel model)
+        public async Task<ActionResult<ResponseModel>> Create(DictionaryCreateViewModel model)
         {
             var response = ResponseModelFactory.CreateInstance;
             if (model.Name.Trim().Length <= 0)
@@ -85,7 +86,8 @@ namespace DncZeus.Api.Controllers.Api.V1.System
                 response.SetFailed("请输入字典名称");
                 return Ok(response);
             }
-            using (_dbContext)
+
+            await using (_dbContext)
             {
                 if (_dbContext.SystemDictionary.Count(x => x.Name == model.Name) > 0)
                 {
@@ -94,8 +96,8 @@ namespace DncZeus.Api.Controllers.Api.V1.System
                 }
                 var entity = _mapper.Map<DictionaryCreateViewModel, SystemDictionary>(model);
                 entity.Code = RandomHelper.GetRandomizer(8, true, false, true, true);
-                _dbContext.SystemDictionary.Add(entity);
-                _dbContext.SaveChanges();
+                await _dbContext.SystemDictionary.AddAsync(entity);
+                await _dbContext.SaveChangesAsync();
                 //更新缓存
                 _dictionaryService.ClearDictionaryCache();
                 response.SetSuccess();
@@ -110,11 +112,12 @@ namespace DncZeus.Api.Controllers.Api.V1.System
         /// <returns></returns>
         [HttpGet("{code}")]
         [ProducesResponseType(200)]
-        public ActionResult<ResponseModel<DictionaryCreateViewModel>> Edit(string code)
+        public async Task<ActionResult<ResponseModel<DictionaryCreateViewModel>>> Edit(string code)
         {
-            using (_dbContext)
+            await using (_dbContext)
             {
-                var entity = _dbContext.SystemDictionary.FirstOrDefault(x => x.Code == code);
+                var entity = await _dbContext.SystemDictionary.
+                    FirstOrDefaultAsync(x => x.Code == code);
                 var response = ResponseModelFactory.CreateInstance;
                 var resEntity = _mapper.Map<SystemDictionary, DictionaryCreateViewModel>(entity);
                 response.SetData(resEntity);
@@ -130,7 +133,7 @@ namespace DncZeus.Api.Controllers.Api.V1.System
         /// <returns></returns>
         [HttpPut]
         [ProducesResponseType(200)]
-        public ActionResult<ResponseModel> Edit(DictionaryCreateViewModel model)
+        public async Task<ActionResult<ResponseModel>> Edit(DictionaryCreateViewModel model)
         {
             var response = ResponseModelFactory.CreateInstance;
             if (ConfigurationManager.AppSettings.IsTrialVersion)
@@ -138,9 +141,11 @@ namespace DncZeus.Api.Controllers.Api.V1.System
                 response.SetIsTrial();
                 return Ok(response);
             }
-            using (_dbContext)
+
+            await using (_dbContext)
             {
-                if (_dbContext.SystemDictionary.Count(x => x.Name == model.Name && x.Code != model.Code) > 0)
+                if (await _dbContext.SystemDictionary.CountAsync(x => x.Name == model.Name &&
+                                                           x.Code != model.Code) > 0)
                 {
                     response.SetFailed("字典已存在");
                     return Ok(response);
@@ -148,7 +153,7 @@ namespace DncZeus.Api.Controllers.Api.V1.System
 
                 var entity = _mapper.Map<DictionaryCreateViewModel, SystemDictionary>(model);
                 _dbContext.Entry(entity).State = EntityState.Modified;
-                _dbContext.SaveChanges();
+                await _dbContext.SaveChangesAsync();
                 //更新缓存
                 _dictionaryService.ClearDictionaryCache();
                 return Ok(response);
@@ -162,7 +167,7 @@ namespace DncZeus.Api.Controllers.Api.V1.System
         /// <returns></returns>
         [HttpDelete("{ids}")]
         [ProducesResponseType(200)]
-        public ActionResult<ResponseModel> Delete(string ids)
+        public async Task<ActionResult<ResponseModel>> Delete(string ids)
         {
             var response = ResponseModelFactory.CreateInstance;
             if (ConfigurationManager.AppSettings.IsTrialVersion)
@@ -175,12 +180,13 @@ namespace DncZeus.Api.Controllers.Api.V1.System
                 response.SetFailed("请选择删除项");
                 return Ok(response);
             }
-            using (_dbContext)
+
+            await using (_dbContext)
             {
-                _dbContext.SystemDictionary.RemoveRange(_dbContext.SystemDictionary
-                    .Where(w=>ids.Contains(w.Code)).ToList()
+                _dbContext.SystemDictionary.RemoveRange(await _dbContext.SystemDictionary
+                    .Where(w=>ids.Contains(w.Code)).ToListAsync()
                     );
-                _dbContext.SaveChanges();
+                await _dbContext.SaveChangesAsync();
                 //更新缓存
                 _dictionaryService.ClearDictionaryCache();
             }
@@ -197,7 +203,7 @@ namespace DncZeus.Api.Controllers.Api.V1.System
         /// <returns></returns>
         [HttpPost]
         [ProducesResponseType(200)]
-        public ActionResult<ResponseModel> Batch(string command, string ids)
+        public async Task<ActionResult<ResponseModel>> Batch(string command, string ids)
         {
             var response = ResponseModelFactory.CreateInstance;
             if (string.IsNullOrWhiteSpace(ids))
@@ -213,7 +219,7 @@ namespace DncZeus.Api.Controllers.Api.V1.System
                         response.SetIsTrial();
                         return Ok(response);
                     }
-                    response= UpdateIsDelete(ids);
+                    response=await UpdateIsDelete(ids);
                     //更新缓存
                     _dictionaryService.ClearDictionaryCache();
                     return response;
@@ -242,11 +248,13 @@ namespace DncZeus.Api.Controllers.Api.V1.System
         /// </summary>
         /// <returns></returns>
         [HttpGet("/api/v1/system/dictionary/find_simple_list/{code}")]
-        public  ActionResult<ResponseResultModel<IEnumerable<DictionaryJsonModel>>> FindSimpleList(string code)
+        public  async Task<ActionResult<ResponseResultModel<IEnumerable<DictionaryJsonModel>>>> 
+            FindSimpleList(string code)
         {
             var response = ResponseModelFactory.CreateInstance;
-            var list =  _dictionaryService.GetSYSDictionary(code);
-            var data= list.OrderBy(l=>l.Value).ToList();
+            var list =  await _dictionaryService.GetSYSDictionaryAsync(code);
+            var data= list.OrderBy(l=>l.Value).
+                ToList();
             response.SetData(data);
             return Ok(response);
         }
@@ -255,17 +263,16 @@ namespace DncZeus.Api.Controllers.Api.V1.System
         /// <summary>
         /// 删除财务账号
         /// </summary>
-        /// <param name="isDeleted"></param>
         /// <param name="ids">财务账号ID字符串,多个以逗号隔开</param>
         /// <returns></returns>
-        private ResponseModel UpdateIsDelete(string ids)
+        private async Task<ResponseModel> UpdateIsDelete(string ids)
         {
-            using (_dbContext)
+            await using (_dbContext)
             {
                 var parameters = ids.Split(",").Select((id, index) => new SqlParameter(string.Format("@p{0}", index), id)).ToList();
                 var parameterNames = string.Join(", ", parameters.Select(p => p.ParameterName));
-                var sql = string.Format("DELETE SystemDictionary  WHERE Code IN ({0})", parameterNames);
-                _dbContext.Database.ExecuteSqlCommand(sql, parameters);
+                var sql = $"DELETE SystemDictionary  WHERE Code IN ({parameterNames})";
+                await _dbContext.Database.ExecuteSqlCommandAsync(sql, parameters);
                 var response = ResponseModelFactory.CreateInstance;
                 return response;
             }

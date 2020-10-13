@@ -9,6 +9,8 @@ using Microsoft.AspNetCore.Http;
 using System;
 using System.Net;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
+
 
 namespace DncZeus.Api.Extensions.CustomException
 {
@@ -18,13 +20,17 @@ namespace DncZeus.Api.Extensions.CustomException
     public class ExceptionMiddleware
     {
         private readonly RequestDelegate _next;
+        private readonly ILogger<ExceptionMiddleware> _logger;
+
         /// <summary>
         /// 
         /// </summary>
         /// <param name="next"></param>
-        public ExceptionMiddleware(RequestDelegate next)
+        /// <param name="logger"></param>
+        public ExceptionMiddleware(RequestDelegate next,ILogger<ExceptionMiddleware> logger)
         {
-            _next = next;
+            _next = next;;
+            _logger = logger;
         }
 
         public async Task InvokeAsync(HttpContext httpContext)
@@ -36,6 +42,7 @@ namespace DncZeus.Api.Extensions.CustomException
             catch (Exception ex)
             {
                 await HandleExceptionAsync(httpContext, ex);
+                _logger.LogError(ex.Message);
             }
         }
 

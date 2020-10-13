@@ -19,6 +19,7 @@ namespace DncZeus.Api.ViewModels.Workflow.Receiver
         public string ListType { get; set; }
         public string ListTypeName { get; set; }
         public string Status { get; set; }
+        public string OldStatus { get; set; }
 
         public bool CanEdit { get; set; }
         public string StatusName { get; set; }

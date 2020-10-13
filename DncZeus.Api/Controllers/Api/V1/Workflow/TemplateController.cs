@@ -14,6 +14,7 @@ using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -34,12 +35,13 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
         }
         /// <summary>
         /// 模板列表
-        /// </summary>
+        /// </summary> 
         /// <returns></returns>
         [HttpPost]
-        public ActionResult<ResponseResultModel<IEnumerable<TemplateJsonModel>>> List(TemplateRequestPayload payload)
+        public async Task<ActionResult<ResponseResultModel<IEnumerable<TemplateJsonModel>>>> 
+            List(TemplateRequestPayload payload)
         {
-            using (_dbContext)
+            await using (_dbContext)
             {
                 var query = (from template in _dbContext.WorkflowTemplate
                              join copy in _dbContext.WorkflowTemplate on 
@@ -78,11 +80,16 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
                 {
                     query = query.Where(x => x.Status == payload.Status);
                 }
+                if (payload.ParentCode!="all")
+                {
+                    query = query.Where(x => 
+                        x.ParentCode == payload.ParentCode);
+                }
                 //if (payload.ParentGuid.HasValue)
                 //{
                 //    query = query.Where(x => x.ParentGuid == payload.ParentGuid);
                 //}
-                var list = query.Paged(payload.CurrentPage, payload.PageSize).ToList();
+                var list = await query.Paged(payload.CurrentPage, payload.PageSize).ToListAsync();
                 var totalCount = query.Count();
                 var data = list;
                 var response = ResponseModelFactory.CreateResultInstance;
@@ -98,9 +105,9 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
         /// <returns></returns>
         [HttpPost]
         [ProducesResponseType(200)]
-        public ActionResult<ResponseModel> Create(TemplateCreateViewModel model)
+        public async Task<ActionResult<ResponseModel>> Create(TemplateCreateViewModel model)
         {
-            using (_dbContext)
+            await using (_dbContext)
             {
                 var entity = _mapper.Map<TemplateCreateViewModel, WorkflowTemplate>(model);
                 entity.CreatedOn = DateTime.Now;
@@ -108,8 +115,8 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
                 entity.CreatedByUserGuid = AuthContextService.CurrentUser.Guid;
                 entity.CreatedByUserName = AuthContextService.CurrentUser.DisplayName;
                 entity.IsDeleted = CommonEnum.IsDeleted.No;
-                _dbContext.WorkflowTemplate.Add(entity);
-                _dbContext.SaveChanges();
+                await _dbContext.WorkflowTemplate.AddAsync(entity);
+                await _dbContext.SaveChangesAsync();
                 var response = ResponseModelFactory.CreateInstance;
                 response.SetSuccess();
                 return Ok(response);
@@ -123,15 +130,16 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
         /// <returns></returns>
         [HttpGet("{code}")]
         [ProducesResponseType(200)]
-        public ActionResult<TemplateEditRetModel> Edit(string code)
+        public async Task<ActionResult<TemplateEditRetModel>> Edit(string code)
         {
-            using (_dbContext)
+            await using (_dbContext)
             {
-                var entity = _dbContext.WorkflowTemplate.Find(code);
+                var entity = await _dbContext.WorkflowTemplate.FindAsync(code);
                 var response = ResponseModelFactory.CreateInstance;
                 var model = _mapper.Map<WorkflowTemplate,TemplateEditViewModel>(entity);
-                var tree = LoadMenuTree(model.ParentCode);
-                model.ParentName = tree.FirstOrDefault(t=>t.Code==model.ParentCode)?.Title;
+                var tree = await LoadMenuTree(model.ParentCode);
+                model.ParentName =  tree.FirstOrDefault
+                    (t=>t.Code==model.ParentCode)?.Title;
 
                 response.SetData(new { model, tree });
                 return Ok(response);
@@ -145,11 +153,11 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
         /// <returns></returns>
         [HttpPut]
         [ProducesResponseType(200)]
-        public ActionResult<ResponseModel> Edit(TemplateEditViewModel model)
+        public async Task<ActionResult<TemplateEditRetModel>> Edit(TemplateEditViewModel model)
         {
-            using (_dbContext)
+            await using (_dbContext)
             {
-                var entity = _dbContext.WorkflowTemplate.Find(model.Code);
+                var entity = await _dbContext.WorkflowTemplate.FindAsync(model.Code);
                 entity.Name = model.Name;
                 entity.Description = model.Description;
                 entity.ParentCode = model.ParentCode;
@@ -165,7 +173,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
                    
                 }
                 _dbContext.Entry(entity).State = EntityState.Modified;
-                _dbContext.SaveChanges();
+                await _dbContext.SaveChangesAsync();
                 var response = ResponseModelFactory.CreateInstance;
                 response.SetSuccess();
                 return Ok(response);
@@ -177,10 +185,10 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
         /// </summary>
         /// <returns></returns>
         [HttpGet("{selected?}")]
-        public ActionResult<TemplateTree> Tree(string selected)
+        public async Task<ActionResult<TemplateTree>> Tree(string selected)
         {
             var response = ResponseModelFactory.CreateInstance;
-            var tree = LoadMenuTree(selected?.ToString());
+            var tree = await LoadMenuTree(selected?.ToString());
             response.SetData(tree);
             return Ok(response);
         }
@@ -192,7 +200,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
         /// <returns></returns>
         [HttpDelete("{ids}")]
         [ProducesResponseType(200)]
-        public IActionResult Delete(string ids)
+        public async Task<IActionResult> Delete(string ids)
         {
             var response = ResponseModelFactory.CreateInstance;
             if (ConfigurationManager.AppSettings.IsTrialVersion)
@@ -200,7 +208,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
                 response.SetIsTrial();
                 return Ok(response);
             }
-            response = UpdateIsDelete(CommonEnum.IsDeleted.Yes, ids);
+            response = await UpdateIsDelete(CommonEnum.IsDeleted.Yes, ids);
             return Ok(response);
         }
 
@@ -211,9 +219,9 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
         /// <returns></returns>
         [HttpPost("{ids}")]
         [ProducesResponseType(200)]
-        public IActionResult Recover(string ids)
+        public async Task<IActionResult> Recover(string ids)
         {
-            var response = UpdateIsDelete(CommonEnum.IsDeleted.No, ids);
+            var response = await UpdateIsDelete(CommonEnum.IsDeleted.No, ids);
             return Ok(response);
         }
 
@@ -225,7 +233,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
         /// <returns></returns>
         [HttpPost]
         [ProducesResponseType(200)]
-        public IActionResult Batch(string command, string ids)
+        public async Task<IActionResult> Batch(string command, string ids)
         {
             var response = ResponseModelFactory.CreateInstance;
             switch (command)
@@ -236,10 +244,10 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
                         response.SetIsTrial();
                         return Ok(response);
                     }
-                    response = UpdateIsDelete(CommonEnum.IsDeleted.Yes, ids);
+                    response = await UpdateIsDelete(CommonEnum.IsDeleted.Yes, ids);
                     break;
                 case "recover":
-                    response = UpdateIsDelete(CommonEnum.IsDeleted.No, ids);
+                    response = await UpdateIsDelete(CommonEnum.IsDeleted.No, ids);
                     break;
                 case "forbidden":
                     if (ConfigurationManager.AppSettings.IsTrialVersion)
@@ -247,10 +255,10 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
                         response.SetIsTrial();
                         return Ok(response);
                     }
-                    response = UpdateStatus(UserStatus.Forbidden, ids);
+                    response = await UpdateStatus(UserStatus.Forbidden, ids);
                     break;
                 case "normal":
-                    response = UpdateStatus(UserStatus.Normal, ids);
+                    response = await UpdateStatus(UserStatus.Normal, ids);
                     break;
                 default:
                     break;
@@ -283,15 +291,15 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
         /// <param name="isDeleted"></param>
         /// <param name="ids">模板ID字符串,多个以逗号隔开</param>
         /// <returns></returns>
-        private ResponseModel UpdateIsDelete(CommonEnum.IsDeleted isDeleted, string ids)
+        private async Task<ResponseModel> UpdateIsDelete(CommonEnum.IsDeleted isDeleted, string ids)
         {
-            using (_dbContext)
+            await using (_dbContext)
             {
                 var parameters = ids.Split(",").Select((id, index) => new SqlParameter(string.Format("@p{0}", index), id)).ToList();
                 var parameterNames = string.Join(", ", parameters.Select(p => p.ParameterName));
-                var sql = string.Format("UPDATE WorkflowTemplate SET IsDeleted=@IsDeleted WHERE Guid IN ({0})", parameterNames);
+                var sql = $"UPDATE WorkflowTemplate SET IsDeleted=@IsDeleted WHERE Guid IN ({parameterNames})";
                 parameters.Add(new SqlParameter("@IsDeleted", (int)isDeleted));
-                _dbContext.Database.ExecuteSqlCommand(sql, parameters);
+                await _dbContext.Database.ExecuteSqlCommandAsync(sql, parameters);
                 var response = ResponseModelFactory.CreateInstance;
                 return response;
             }
@@ -303,23 +311,25 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
         /// <param name="status">模板状态</param>
         /// <param name="ids">模板ID字符串,多个以逗号隔开</param>
         /// <returns></returns>
-        private ResponseModel UpdateStatus(UserStatus status, string ids)
+        private async Task<ResponseModel> UpdateStatus(UserStatus status, string ids)
         {
-            using (_dbContext)
+            await using (_dbContext)
             {
                 var parameters = ids.Split(",").Select((id, index) => new SqlParameter(string.Format("@p{0}", index), id)).ToList();
                 var parameterNames = string.Join(", ", parameters.Select(p => p.ParameterName));
-                var sql = string.Format("UPDATE WorkflowTemplate SET Status=@Status WHERE Guid IN ({0})", parameterNames);
+                var sql = $"UPDATE WorkflowTemplate SET Status=@Status WHERE Guid IN ({parameterNames})";
                 parameters.Add(new SqlParameter("@Status", (int)status));
-                _dbContext.Database.ExecuteSqlCommand(sql, parameters);
+                await _dbContext.Database.ExecuteSqlCommandAsync(sql, parameters);
                 var response = ResponseModelFactory.CreateInstance;
                 return response;
             }
         }
 
-        private List<TemplateTree> LoadMenuTree(string selectedCode = null)
+        private async Task<List<TemplateTree>> LoadMenuTree(string selectedCode = null)
         {
-            var temp = _dbContext.WorkflowTemplate.Where(x => x.IsDeleted == CommonEnum.IsDeleted.No && x.Status == CommonEnum.Status.Normal).ToList().
+            var temp =(await  _dbContext.WorkflowTemplate.
+                Where(x => x.IsDeleted == CommonEnum.IsDeleted.No && 
+                           x.Status == CommonEnum.Status.Normal).ToListAsync()).
                 Select(x => new TemplateTree
                 {
                 Code=x.Code,
