@@ -82,7 +82,9 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
                 {
                     query = query.OrderBy(payload.FirstSort.Field, payload.FirstSort.Direct == "DESC");
                 }
-                var list = await query.Paged(payload.CurrentPage, payload.PageSize).ToListAsync();
+                var list = await query.Paged(payload.CurrentPage, payload.PageSize)
+                    .Include(x=>x.Department)
+                    .Include(x=>x.Position).ToListAsync();
                 var totalCount = await query.CountAsync();
                 var data = list.Select(_mapper.Map<DncUser, UserJsonModel>);
                 var response = ResponseModelFactory.CreateResultInstance;
@@ -118,6 +120,8 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
                 //RSAHelper rSAHelper = new RSAHelper
                 //    (RSAType.RSA,Encoding.UTF8, CeyhConfiguration.TheRSASetting.Private,CeyhConfiguration.TheRSASetting.Public);
                 var entity = _mapper.Map<UserCreateViewModel, DncUser>(model);
+                entity.Department = await _dbContext.UserDepartment.FindAsync(model.DepartmentCode);
+                entity.Position = await _dbContext.UserPosition.FindAsync(model.PositionCode);
                 entity.CreatedOn = DateTime.Now;
                 entity.Password = _rSaHelper.Encrypt(model.Password);
                 entity.Guid = Guid.NewGuid();
@@ -141,7 +145,10 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         {
             await using (_dbContext)
             {
-                var entity = await _dbContext.DncUser.FirstOrDefaultAsync(x => x.Guid == guid);
+                var entity = await _dbContext.DncUser
+                    .Include(x=>x.Department)
+                    .Include(x=>x.Position)
+                    .FirstOrDefaultAsync(x => x.Guid == guid);
                 var response = ResponseModelFactory.CreateInstance;
                 var resEntity = _mapper.Map<DncUser, UserEditViewModel>(entity);
                 if (entity != null) resEntity.Password = _rSaHelper.Decrypt(entity.Password);
@@ -190,6 +197,8 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
                 entity.Status = model.Status;
                 entity.UserType = model.UserType;
                 entity.Description = model.Description;
+                entity.Department = await _dbContext.UserDepartment.FindAsync(model.DepartmentCode);
+                entity.Position = await _dbContext.UserPosition.FindAsync(model.PositionCode);
                 await _dbContext.SaveChangesAsync();
                 response = ResponseModelFactory.CreateInstance;
                 return Ok(response);
@@ -286,7 +295,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
                 CreatedOn = DateTime.Now,
                 RoleCode = x.Trim()
             }).ToList();
-            await _dbContext.Database.ExecuteSqlCommandAsync("DELETE FROM DncUserRoleMapping WHERE UserGuid={0}", model.UserGuid);
+            await _dbContext.Database.ExecuteSqlRawAsync("DELETE FROM DncUserRoleMapping WHERE UserGuid={0}", model.UserGuid);
             var success = true;
             if (roles.Count > 0)
             {
@@ -341,11 +350,15 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
                 ////  _dbContext.Database.ExecuteSqlCommand($"UPDATE DncUser SET IsDeleted=1 WHERE Id = {x}");
                 ////});
                 //_dbContext.Database.ExecuteSqlCommand($"UPDATE DncUser SET IsDeleted={(int)isDeleted} WHERE Id IN ({ids})");
-                var parameters = ids.Split(",").Select((id, index) => new SqlParameter(string.Format("@p{0}", index), id)).ToList();
-                var parameterNames = string.Join(", ", parameters.Select(p => p.ParameterName));
-                var sql = $"UPDATE DncUser SET IsDeleted=@IsDeleted WHERE Guid IN ({parameterNames})";
-                parameters.Add(new SqlParameter("@IsDeleted", (int)isDeleted));
-                await _dbContext.Database.ExecuteSqlCommandAsync(sql, parameters);
+                // var parameters = ids.Split(",").Select((id, index) => new SqlParameter(string.Format("@p{0}", index), id)).ToList();
+                // var parameterNames = string.Join(", ", parameters.Select(p => p.ParameterName));
+                // var sql = $"UPDATE DncUser SET IsDeleted=@IsDeleted WHERE Guid IN ({parameterNames})";
+                // parameters.Add(new SqlParameter("@IsDeleted", (int)isDeleted));
+                // await _dbContext.Database.ExecuteSqlCommandAsync(sql, parameters);
+                var formatIds = ids.Split(',').Aggregate("", (current, id) => current + $"'{id}',");
+                formatIds = formatIds.Substring(0, formatIds.Length - 1);
+                var sql = $"UPDATE DncUser SET IsDeleted={(int)isDeleted} WHERE Guid IN ({formatIds})";
+                await _dbContext.Database.ExecuteSqlRawAsync(sql);
                 var response = ResponseModelFactory.CreateInstance;
                 return response;
             }
@@ -361,11 +374,15 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         {
             await using (_dbContext)
             {
-                var parameters = ids.Split(",").Select((id, index) => new SqlParameter(string.Format("@p{0}", index), id)).ToList();
-                var parameterNames = string.Join(", ", parameters.Select(p => p.ParameterName));
-                var sql = $"UPDATE DncUser SET Status=@Status WHERE Guid IN ({parameterNames})";
-                parameters.Add(new SqlParameter("@Status", (int)status));
-                await _dbContext.Database.ExecuteSqlCommandAsync(sql, parameters);
+                // var parameters = ids.Split(",").Select((id, index) => new SqlParameter(string.Format("@p{0}", index), id)).ToList();
+                // var parameterNames = string.Join(", ", parameters.Select(p => p.ParameterName));
+                // var sql = $"UPDATE DncUser SET Status=@Status WHERE Guid IN ({parameterNames})";
+                // parameters.Add(new SqlParameter("@Status", (int)status));
+                // await _dbContext.Database.ExecuteSqlCommandAsync(sql, parameters);
+                var formatIds = ids.Split(',').Aggregate("", (current, id) => current + $"'{id}',");
+                formatIds = formatIds.Substring(0, formatIds.Length - 1);
+                var sql = $"UPDATE DncUser SET Status={(int)status} WHERE Guid IN ({formatIds})";
+                await _dbContext.Database.ExecuteSqlRawAsync(sql);
                 var response = ResponseModelFactory.CreateInstance;
                 return response;
             }

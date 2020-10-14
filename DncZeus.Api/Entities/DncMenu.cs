@@ -61,7 +61,7 @@ namespace DncZeus.Api.Entities
         /// <summary>
         /// 描述信息
         /// </summary>
-        [Column(TypeName = "nvarchar(800)")]
+        [Column(TypeName = "nvarchar(255)")]
         public string Description { get; set; }
         /// <summary>
         /// 排序
@@ -126,6 +126,6 @@ namespace DncZeus.Api.Entities
         /// <summary>
         /// 菜单拥有的权限列表
         /// </summary>
-        public ICollection<DncPermission> Permissions { get; set; }
+        public virtual ICollection<DncPermission> Permissions { get; set; }
     }
 }

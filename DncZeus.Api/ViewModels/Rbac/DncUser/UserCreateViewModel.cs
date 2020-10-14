@@ -60,5 +60,16 @@ namespace DncZeus.Api.ViewModels.Rbac.DncUser
         /// 用户描述信息
         /// </summary>
         public string Description { get; set; }
+        
+        /// <summary>
+        /// 部门
+        /// </summary>
+
+        public string DepartmentCode { get; set; }
+        /// <summary>
+        /// 职位
+        /// </summary>
+
+        public string PositionCode { get; set; }    
     }
 }

@@ -30,7 +30,10 @@ namespace DncZeus.Api.Controllers.Api.V1.Finance
         private readonly IMapper _mapper;
         private readonly DictionaryService _dictionaryService;
 
-        public FinanceInfoController(DncZeusDbContext dbContext, IMapper mapper, DictionaryService dictionaryService)
+        public FinanceInfoController(
+            DncZeusDbContext dbContext,
+            IMapper mapper, 
+            DictionaryService dictionaryService)
         {
             _dbContext = dbContext;
             _mapper = mapper;
@@ -57,7 +60,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Finance
                     join department in _dbContext.UserDepartment 
                              on f.DepartmentCode equals department.Code
                              into t2
-                             from departiment in t2.DefaultIfEmpty()
+                             from department in t2.DefaultIfEmpty()
                              select new FinanceInfoJsonModel
                              {
                                  Title=f.Title,
@@ -75,7 +78,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Finance
                                  Note=f.Note,
                                  Type=f.Type,
                                  DepartmentCode = f.DepartmentCode,
-                                 DepartmentName = departiment.Name,
+                                 DepartmentName = department.Name,
                                  Code = f.Code,
                                  CreatedOn = f.CreatedOn.ToString(),
                                  CreatedByUserGuid = f.CreatedByUserGuid,
@@ -121,7 +124,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Finance
         /// <returns></returns>
         [HttpPost]
         [ProducesResponseType(200)]
-        public ActionResult<ResponseModel> Create(FinanceInfoCreateViewModel model)
+        public async Task<ActionResult<ResponseModel>> Create(FinanceInfoCreateViewModel model)
         {
             var response = ResponseModelFactory.CreateInstance;
             if (model.Title.Trim().Length <= 0)
@@ -129,7 +132,8 @@ namespace DncZeus.Api.Controllers.Api.V1.Finance
                 response.SetFailed("请输入财务管理名称");
                 return Ok(response);
             }
-            using (_dbContext)
+
+            await using (_dbContext)
             {
                 var entity = _mapper.Map<FinanceInfoCreateViewModel, FinanceInfo>(model);
 
@@ -138,8 +142,8 @@ namespace DncZeus.Api.Controllers.Api.V1.Finance
                 entity.CreatedByUserGuid = AuthContextService.CurrentUser.Guid;
                 entity.CreatedByUserName = AuthContextService.CurrentUser.DisplayName;
 
-                _dbContext.FinanceInfo.Add(entity);
-                _dbContext.SaveChanges();
+                await _dbContext.FinanceInfo.AddAsync(entity);
+                await _dbContext.SaveChangesAsync();
 
                 response.SetSuccess();
                 return Ok(response);
@@ -153,11 +157,11 @@ namespace DncZeus.Api.Controllers.Api.V1.Finance
         /// <returns></returns>
         [HttpGet("{code}")]
         [ProducesResponseType(200)]
-        public ActionResult<ResponseModel<FinanceInfoCreateViewModel>> Edit(string code)
+        public async Task<ActionResult<ResponseModel<FinanceInfoCreateViewModel>>> Edit(string code)
         {
-            using (_dbContext)
+            await using (_dbContext)
             {
-                var entity = _dbContext.FinanceInfo.FirstOrDefault(x => x.Code == code);
+                var entity = await _dbContext.FinanceInfo.FirstOrDefaultAsync(x => x.Code == code);
                 var response = ResponseModelFactory.CreateInstance;
                 var resEntity = _mapper.Map<FinanceInfo, FinanceInfoCreateViewModel>(entity);
                 response.SetData(resEntity);
@@ -173,7 +177,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Finance
         /// <returns></returns>
         [HttpPut]
         [ProducesResponseType(200)]
-        public ActionResult<ResponseModel> Edit(FinanceInfoCreateViewModel model)
+        public async Task<ActionResult<ResponseModel>> Edit(FinanceInfoCreateViewModel model)
         {
             var response = ResponseModelFactory.CreateInstance;
             if (ConfigurationManager.AppSettings.IsTrialVersion)
@@ -181,7 +185,8 @@ namespace DncZeus.Api.Controllers.Api.V1.Finance
                 response.SetIsTrial();
                 return Ok(response);
             }
-            using (_dbContext)
+
+            await using (_dbContext)
             {
                 //if (_dbContext.FinanceInfo.Count(x => x.Name == model.Name && x.Code != model.Code) > 0)
                 //{
@@ -196,7 +201,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Finance
                 entity.ModifiedByUserName = AuthContextService.CurrentUser.DisplayName;
 
                 _dbContext.Entry(entity).State = EntityState.Modified;
-                _dbContext.SaveChanges();
+                await _dbContext.SaveChangesAsync();
                 return Ok(response);
             }
         }
@@ -208,7 +213,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Finance
         /// <returns></returns>
         [HttpDelete("{ids}")]
         [ProducesResponseType(200)]
-        public ActionResult<ResponseModel> Delete(string ids)
+        public async Task<ActionResult<ResponseModel>> Delete(string ids)
         {
             var response = ResponseModelFactory.CreateInstance;
             if (ConfigurationManager.AppSettings.IsTrialVersion)
@@ -216,7 +221,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Finance
                 response.SetIsTrial();
                 return Ok(response);
             }
-            response = UpdateIsDelete(CommonEnum.IsDeleted.Yes, ids);
+            response = await UpdateIsDelete(CommonEnum.IsDeleted.Yes, ids);
             return Ok(response);
         }
 
@@ -227,9 +232,9 @@ namespace DncZeus.Api.Controllers.Api.V1.Finance
         /// <returns></returns>
         [HttpPost("{ids}")]
         [ProducesResponseType(200)]
-        public ActionResult<ResponseModel> Recover(string ids)
+        public async Task<ActionResult<ResponseModel>> Recover(string ids)
         {
-            var response = UpdateIsDelete(CommonEnum.IsDeleted.No, ids);
+            var response =await UpdateIsDelete(CommonEnum.IsDeleted.No, ids);
             return Ok(response);
         }
         /// <summary>
@@ -240,7 +245,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Finance
         /// <returns></returns>
         [HttpPost]
         [ProducesResponseType(200)]
-        public ActionResult<ResponseModel> Batch(string command, string ids)
+        public async Task<ActionResult<ResponseModel>> Batch(string command, string ids)
         {
             var response = ResponseModelFactory.CreateInstance;
             switch (command)
@@ -251,10 +256,10 @@ namespace DncZeus.Api.Controllers.Api.V1.Finance
                         response.SetIsTrial();
                         return Ok(response);
                     }
-                    response = UpdateIsDelete(CommonEnum.IsDeleted.Yes, ids);
+                    response =await UpdateIsDelete(CommonEnum.IsDeleted.Yes, ids);
                     break;
                 case "recover":
-                    response = UpdateIsDelete(CommonEnum.IsDeleted.No, ids);
+                    response = await UpdateIsDelete(CommonEnum.IsDeleted.No, ids);
                     break;
                 case "forbidden":
                     if (ConfigurationManager.AppSettings.IsTrialVersion)
@@ -262,10 +267,10 @@ namespace DncZeus.Api.Controllers.Api.V1.Finance
                         response.SetIsTrial();
                         return Ok(response);
                     }
-                    response = UpdateStatus(UserStatus.Forbidden, ids);
+                    response = await UpdateStatus(UserStatus.Forbidden, ids);
                     break;
                 case "normal":
-                    response = UpdateStatus(UserStatus.Normal, ids);
+                    response = await UpdateStatus(UserStatus.Normal, ids);
                     break;
                 default:
                     break;
@@ -281,15 +286,19 @@ namespace DncZeus.Api.Controllers.Api.V1.Finance
         /// <param name="isDeleted"></param>
         /// <param name="ids">财务管理ID字符串,多个以逗号隔开</param>
         /// <returns></returns>
-        private ResponseModel UpdateIsDelete(CommonEnum.IsDeleted isDeleted, string ids)
+        private async Task<ResponseModel> UpdateIsDelete(CommonEnum.IsDeleted isDeleted, string ids)
         {
-            using (_dbContext)
+            await using (_dbContext)
             {
-                var parameters = ids.Split(",").Select((id, index) => new SqlParameter(string.Format("@p{0}", index), id)).ToList();
-                var parameterNames = string.Join(", ", parameters.Select(p => p.ParameterName));
-                var sql = string.Format("UPDATE FinanceInfo SET IsDeleted=@IsDeleted WHERE Code IN ({0})", parameterNames);
-                parameters.Add(new SqlParameter("@IsDeleted", (int)isDeleted));
-                _dbContext.Database.ExecuteSqlCommand(sql, parameters);
+                // var parameters = ids.Split(",").Select((id, index) => new SqlParameter(string.Format("@p{0}", index), id)).ToList();
+                // var parameterNames = string.Join(", ", parameters.Select(p => p.ParameterName));
+                // var sql = string.Format("UPDATE FinanceInfo SET IsDeleted=@IsDeleted WHERE Code IN ({0})", parameterNames);
+                // parameters.Add(new SqlParameter("@IsDeleted", (int)isDeleted));
+                // _dbContext.Database.ExecuteSqlCommand(sql, parameters);
+                var formatIds = ids.Split(',').Aggregate("", (current, id) => current + $"'{id}',");
+                formatIds = formatIds.Substring(0, formatIds.Length - 1);
+                var sql = $"UPDATE FinanceInfo SET IsDeleted={(int)isDeleted} WHERE Code IN ({formatIds})";
+                await _dbContext.Database.ExecuteSqlRawAsync(sql);
                 var response = ResponseModelFactory.CreateInstance;
                 return response;
             }
@@ -301,15 +310,14 @@ namespace DncZeus.Api.Controllers.Api.V1.Finance
         /// <param name="status">财务管理状态</param>
         /// <param name="ids">财务管理ID字符串,多个以逗号隔开</param>
         /// <returns></returns>
-        private ResponseModel UpdateStatus(UserStatus status, string ids)
+        private async Task<ResponseModel> UpdateStatus(UserStatus status, string ids)
         {
-            using (_dbContext)
+            await using (_dbContext)
             {
-                var parameters = ids.Split(",").Select((id, index) => new SqlParameter(string.Format("@p{0}", index), id)).ToList();
-                var parameterNames = string.Join(", ", parameters.Select(p => p.ParameterName));
-                var sql = string.Format("UPDATE FinanceInfo SET InfoStatus=@Status WHERE Code IN ({0})", parameterNames);
-                parameters.Add(new SqlParameter("@Status", (int)status));
-                _dbContext.Database.ExecuteSqlCommand(sql, parameters);
+                var formatIds = ids.Split(',').Aggregate("", (current, id) => current + $"'{id}',");
+                formatIds = formatIds.Substring(0, formatIds.Length - 1);
+                var sql = $"UPDATE FinanceInfo SET Status={(int)status} WHERE Code IN ({formatIds})";
+                await _dbContext.Database.ExecuteSqlRawAsync(sql);
                 var response = ResponseModelFactory.CreateInstance;
                 return response;
             }

@@ -41,6 +41,8 @@ namespace DncZeus.Api.Entities
         public string Friday { get; set; }
         public string Saturday { get; set; }
         public string Sunday { get; set; }
+
+        public virtual ICollection<DncUser> DncUsers { get; set; }
     }
 
     

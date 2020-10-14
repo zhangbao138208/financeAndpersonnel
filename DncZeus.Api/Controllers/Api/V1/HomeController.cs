@@ -11,6 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using DncZeus.Api.Extensions.AuthContext;
 using DncZeus.Api.Extensions.DataAccess;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging;
@@ -50,8 +51,47 @@ namespace DncZeus.Api.Controllers.Api.V1
             await using (_dbContext)
             {
                 var dics = _dictionaryService.GetSYSSeting("dashboard_countCards");
-               
                 var random = new Random();
+                //我的工作
+                var color1 = "#";
+                for (var j = 0; j < 6; j++)
+                {
+                    color1 += colors[random.Next(0, 15)];
+                }
+                var countCard1 = new CountCard
+                {
+                    Title = "我的工作",
+                    Color = color1,
+                    Count = AuthContextService.CurrentUser.UserType == UserType.SuperAdministrator
+                        ?await _dbContext.WorkflowList.CountAsync():
+                        await _dbContext.WorkflowList.
+                            CountAsync(x=>x.User==AuthContextService.CurrentUser.Guid),
+                    Route = (await _dbContext.DncMenu.FirstOrDefaultAsync(m => m.Name == "我的工作" && m.Level != 0))
+                        ?.Alias,
+                    Icon = (await _dbContext.DncMenu.FirstOrDefaultAsync(m => m.Name == "我的工作" && m.Level != 0))?.Icon
+                };
+                homeJsonModel.CountCards.Add(countCard1);
+                
+                //我的审批
+                var color2 = "#";
+                for (var j = 0; j < 6; j++)
+                {
+                    color1 += colors[random.Next(0, 15)];
+                }
+                var countCard2 = new CountCard
+                {
+                    Title = "我的审批",
+                    Color = color2,
+                    Count = AuthContextService.CurrentUser.UserType == UserType.SuperAdministrator
+                        ?await _dbContext.WorkflowReceiver.CountAsync():
+                        await _dbContext.WorkflowReceiver.
+                            CountAsync(x=>x.User==AuthContextService.CurrentUser.Guid),
+                    Route = (await _dbContext.DncMenu.FirstOrDefaultAsync(m => m.Name == "我的审批" && m.Level != 0))
+                        ?.Alias,
+                    Icon = (await _dbContext.DncMenu.FirstOrDefaultAsync(m => m.Name == "我的审批" && m.Level != 0))?.Icon
+                };
+                homeJsonModel.CountCards.Add(countCard2);
+                
                 foreach (var dic in dics.Value.ToString().Split("|"))
                 {
                     var color = "#";
@@ -59,7 +99,7 @@ namespace DncZeus.Api.Controllers.Api.V1
                     {
                         color += colors[random.Next(0, 15)];
                     }
-                    CountCard countCard = new CountCard
+                    var countCard = new CountCard
                     {
                         Title = dic,
                         Color = color,

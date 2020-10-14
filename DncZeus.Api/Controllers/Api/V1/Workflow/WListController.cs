@@ -88,7 +88,10 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
                                  CurrentStepName = step1.Title,
                                  NextStepName = step2.Title,
                              });
-                query = query.Where(q=>q.User== AuthContextService.CurrentUser.Guid);
+                if (AuthContextService.CurrentUser.UserType!=UserType.SuperAdministrator)
+                {
+                    query = query.Where(q=>q.User== AuthContextService.CurrentUser.Guid);
+                }
                 if (!string.IsNullOrEmpty(payload.Kw))
                 {
                     query = query.Where(x => x.Title.Contains(payload.Kw.Trim()) ||
@@ -215,8 +218,11 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
                     var dic = await _dictionaryService.GetSYSDictionaryAsync("workflow_receiver_status", receiver.Status);
                     note.StatusName =  dic?.Name;
                     note.Status = receiver.Status;
-                    var user = await _dbContext.DncUser.FindAsync(receiver.User);
+                    var user = await _dbContext.DncUser
+                        .FindAsync(receiver.User);
                     note.UserName = user?.DisplayName;
+                    note.Department = user?.Department?.Name;
+                    note.Position = user?.Position?.Name;
                     note.Opinion = receiver.Note;
                     note.NodeDate = receiver.CheckDate ==
                         DateTime.MinValue ? "" : receiver.CheckDate.ToString("yyyy-MM-dd");
@@ -407,10 +413,14 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
         {
             await using (_dbContext)
             {
-                var parameters = ids.Split(",").Select((id, index) => new SqlParameter(string.Format("@p{0}", index), id)).ToList();
-                var parameterNames = string.Join(", ", parameters.Select(p => p.ParameterName));
-                var sql = $"DELETE WorkflowList  WHERE Code IN ({parameterNames})";
-                await _dbContext.Database.ExecuteSqlCommandAsync(sql, parameters);
+                // var parameters = ids.Split(",").Select((id, index) => new SqlParameter(string.Format("@p{0}", index), id)).ToList();
+                // var parameterNames = string.Join(", ", parameters.Select(p => p.ParameterName));
+                // var sql = $"DELETE WorkflowList  WHERE Code IN ({parameterNames})";
+                // await _dbContext.Database.ExecuteSqlCommandAsync(sql, parameters);
+                var formatIds = ids.Split(',').Aggregate("", (current, id) => current + $"'{id}',");
+                formatIds = formatIds.Substring(0, formatIds.Length - 1);
+                var sql = $"DELETE WorkflowList  WHERE Code IN ({formatIds})";
+                await _dbContext.Database.ExecuteSqlRawAsync(sql);
                 var response = ResponseModelFactory.CreateInstance;
                 return response;
             }

@@ -46,7 +46,7 @@ namespace DncZeus.Api.Entities
         /// <summary>
         /// 
         /// </summary>
-        [Column(TypeName = "nvarchar(max)")]
+        [Column(TypeName = "nvarchar(255)")]
         public string Description { get; set; }
         /// <summary>
         /// 

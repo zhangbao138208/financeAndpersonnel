@@ -267,11 +267,15 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         {
             await using (_dbContext)
             {
-                var parameters = ids.Split(",").Select((id, index) => new SqlParameter(string.Format("@p{0}", index), id)).ToList();
-                var parameterNames = string.Join(", ", parameters.Select(p => p.ParameterName));
-                var sql = $"UPDATE DncMenu SET IsDeleted=@IsDeleted WHERE Guid IN ({parameterNames})";
-                parameters.Add(new SqlParameter("@IsDeleted", (int)isDeleted));
-                await _dbContext.Database.ExecuteSqlCommandAsync(sql, parameters);
+                // var parameters = ids.Split(",").Select((id, index) => new SqlParameter(string.Format("@p{0}", index), id)).ToList();
+                // var parameterNames = string.Join(", ", parameters.Select(p => p.ParameterName));
+                // var sql = $"UPDATE DncMenu SET IsDeleted=@IsDeleted WHERE Guid IN ({parameterNames})";
+                // parameters.Add(new SqlParameter("@IsDeleted", (int)isDeleted));
+                // await _dbContext.Database.ExecuteSqlCommandAsync(sql, parameters);
+                var formatIds = ids.Split(',').Aggregate("", (current, id) => current + $"'{id}',");
+                formatIds = formatIds.Substring(0, formatIds.Length - 1);
+                var sql = $"UPDATE DncMenu SET IsDeleted={(int)isDeleted} WHERE Guid IN ({formatIds})";
+                await _dbContext.Database.ExecuteSqlRawAsync(sql);
                 var response = ResponseModelFactory.CreateInstance;
                 return response;
             }
@@ -287,11 +291,15 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         {
             await using (_dbContext)
             {
-                var parameters = ids.Split(",").Select((id, index) => new SqlParameter(string.Format("@p{0}", index), id)).ToList();
-                var parameterNames = string.Join(", ", parameters.Select(p => p.ParameterName));
-                var sql = $"UPDATE DncMenu SET Status=@Status WHERE Guid IN ({parameterNames})";
-                parameters.Add(new SqlParameter("@Status", (int)status));
-                await _dbContext.Database.ExecuteSqlCommandAsync(sql, parameters);
+                // var parameters = ids.Split(",").Select((id, index) => new SqlParameter(string.Format("@p{0}", index), id)).ToList();
+                // var parameterNames = string.Join(", ", parameters.Select(p => p.ParameterName));
+                // var sql = $"UPDATE DncMenu SET Status=@Status WHERE Guid IN ({parameterNames})";
+                // parameters.Add(new SqlParameter("@Status", (int)status));
+                // await _dbContext.Database.ExecuteSqlCommandAsync(sql, parameters);
+                var formatIds = ids.Split(',').Aggregate("", (current, id) => current + $"'{id}',");
+                formatIds = formatIds.Substring(0, formatIds.Length - 1);
+                var sql = $"UPDATE DncMenu SET Status={(int)status} WHERE Guid IN ({formatIds})";
+                await _dbContext.Database.ExecuteSqlRawAsync(sql);
                 var response = ResponseModelFactory.CreateInstance;
                 return response;
             }

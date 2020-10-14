@@ -39,10 +39,18 @@ namespace DncZeus.Api.Configurations
         public MappingProfile()
         {
             #region DncUser
-            CreateMap<DncUser, UserJsonModel>();
+            CreateMap<DncUser, UserJsonModel>()
+                .ForMember(d => d.DepartmentName, s 
+                    => s.MapFrom(x => x.Department.Name))
+                .ForMember(d => d.PositionName, s 
+                    => s.MapFrom(x => x.Position.Name));
             CreateMap<UserCreateViewModel, DncUser>();
             CreateMap<UserEditViewModel, DncUser>();
-            CreateMap<DncUser, UserEditViewModel>();
+            CreateMap<DncUser, UserEditViewModel>()
+                .ForMember(d => d.DepartmentCode, s 
+                    => s.MapFrom(x => x.Department.Code))
+                .ForMember(d => d.PositionCode, s 
+                    => s.MapFrom(x => x.Position.Code));
             #endregion
 
             #region DncRole

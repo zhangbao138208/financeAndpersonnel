@@ -289,6 +289,59 @@
             </div>
           </Upload>
         </FormItem>
+        <Row :gutter="16">
+          <Col span="12">
+            <FormItem>
+              <mu-select
+                label="请选择部门"
+                v-model="formModel.fields.departmentCode"
+              >
+                <mu-option
+                  :key="department.code"
+                  :label="department.name"
+                  :value="department.code"
+                  avatar
+                  v-for="(department) in departments"
+                >
+                  <mu-list-item-action avatar>
+                    <mu-avatar :size="36" color="primary">
+                      {{ department.name.substring(0, 1) }}</mu-avatar
+                    >
+                  </mu-list-item-action>
+                  <mu-list-item-content>
+                    <mu-list-item-title>{{ department.name }}</mu-list-item-title>
+                  </mu-list-item-content>
+                </mu-option>
+              </mu-select>
+            </FormItem>
+          </Col>
+          <Col span="12">
+            <FormItem>
+              <mu-select
+                label="请选择岗位"
+                v-model="formModel.fields.positionCode"
+              >
+                <mu-option
+                  :key="position.code"
+                  :label="position.name"
+                  :value="position.code"
+                  avatar
+                  v-for="(position) in positions"
+                >
+                  <mu-list-item-action avatar>
+                    <mu-avatar :size="36" color="primary">
+                      {{ position.name.substring(0, 1) }}</mu-avatar
+                    >
+                  </mu-list-item-action>
+                  <mu-list-item-content>
+                    <mu-list-item-title>{{ position.name }}</mu-list-item-title>
+                  </mu-list-item-content>
+                </mu-option>
+              </mu-select>
+            </FormItem>
+          </Col>
+        </Row>
+
         <FormItem label="备注" label-position="top">
           <Input
             type="textarea"
@@ -362,6 +415,8 @@ import {
 } from '@/api/rbac/user'
 import { upload } from '@/api/common'
 import { loadRoleListByUserGuid } from '@/api/rbac/role'
+import { loadPositionSimpleList } from '@/api/user/position'
+import { loadDepartmentSimpleList } from '@/api/user/department'
 export default {
   name: 'rbac_user_page',
   components: {
@@ -369,6 +424,8 @@ export default {
   },
   data() {
     return {
+      positions: [],
+      departments: [],
       commands: {
         delete: { name: 'delete', title: '删除' },
         recover: { name: 'recover', title: '恢复' },
@@ -385,6 +442,8 @@ export default {
           loginName: '',
           displayName: '',
           password: '',
+          departmentCode: '',
+          positionCode: '',
           avatar: '',
           userType: 0,
           isLocked: 0,
@@ -453,8 +512,8 @@ export default {
           },
           columns: [
             { type: 'selection', width: 50, key: 'handle' },
-            { title: '登录名', key: 'loginName', width: 250, sortable: true },
-            { title: '显示名', key: 'displayName', width: 250 },
+            { title: '登录名', key: 'loginName', width: 150, sortable: true },
+            { title: '显示名', key: 'displayName', width: 150 },
             { title: '用户类型', key: 'userType', slot: 'userType' },
             {
               title: '状态',
@@ -463,6 +522,8 @@ export default {
               width: 120,
               slot: 'status',
             },
+            { title: '部门', key: 'departmentName', width: 150 },
+            { title: '职位', key: 'positionName', width: 150 },
             {
               title: '创建时间',
               width: 120,
@@ -508,6 +569,15 @@ export default {
     },
   },
   methods: {
+    InitData() {
+      loadPositionSimpleList().then((res) => {
+        this.positions = res.data.data
+      })
+      loadDepartmentSimpleList().then((res) => {
+        this.departments = res.data.data
+        console.log(this.departments)
+      })
+    },
     handleUpload(file) {
       let formData = new FormData()
       formData.append('file', file) //formData.append('data', data);   // 上传文件的同时， 也可以上传其他数据
@@ -745,6 +815,7 @@ export default {
   },
   mounted() {
     this.loadUserList()
+    this.InitData()
   },
 }
 </script>

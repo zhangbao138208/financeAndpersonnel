@@ -24,16 +24,13 @@ namespace DncZeus.Api.Controllers.Api.V1
     {
         private readonly DncZeusDbContext _dbContext;
         private readonly IMapper _mapper;
-        private ILogger<LogerController> _logger;
-
+        
         public LogerController(
             DncZeusDbContext dbContext,
-            IMapper mapper,
-            ILogger<LogerController> logger)
+            IMapper mapper )
         {
             _dbContext = dbContext;
             _mapper = mapper;
-            _logger = logger;
         }
         /// <summary>
         /// 日志列表
@@ -48,7 +45,6 @@ namespace DncZeus.Api.Controllers.Api.V1
             {
                 var d = string.Join("", payload.Start.ToString().Split('/', '-', ':'));
             }
-            _logger.LogWarning("测绘");
             await using (_dbContext)
             {
                 var query = _dbContext.SystemLog.AsQueryable();

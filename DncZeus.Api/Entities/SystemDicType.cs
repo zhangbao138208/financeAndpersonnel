@@ -23,6 +23,6 @@ namespace DncZeus.Api.Entities
         /// 使用
         /// </summary>
         public string Value { get; set; }
-        public ICollection<SystemDictionary> SystemDictionarys { get; set; }
+        public virtual ICollection<SystemDictionary> SystemDictionarys { get; set; }
     }
 }

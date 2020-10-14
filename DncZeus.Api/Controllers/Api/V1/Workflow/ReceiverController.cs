@@ -8,7 +8,7 @@ using DncZeus.Api.RequestPayload.Workflow.Receiver;
 using DncZeus.Api.Services;
 using DncZeus.Api.ViewModels.Workflow.Receiver;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Data.SqlClient;
+using System.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -83,7 +83,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
                                  WorkflowCode = ls.WorkflowCode,
                                  IsCheck = ls.IsCheck,
                                  OldStatus = ls.Status,
-                                 Status = w.EndDate < DateTime.Now ? "-1" : ls.Status,
+                                 Status = w.EndDate < DateTime.Now&&!ls.IsCheck ? "-1" : ls.Status,
                                  TemplateCode = ls.TemplateCode,
                                  ListType = ls.Type,
                                  User = ls.User,
@@ -93,7 +93,10 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
                                  StepName = step1.Title,
 
                              }); ; ;
-                query = query.Where(q => q.User == AuthContextService.CurrentUser.Guid);
+                if (AuthContextService.CurrentUser.UserType!=UserType.SuperAdministrator)
+                {
+                    query = query.Where(q=>q.User== AuthContextService.CurrentUser.Guid);
+                }
                 if (!string.IsNullOrEmpty(payload.Kw))
                 {
                     query = query.Where(x => x.WorkflowName.Contains(payload.Kw.Trim()) ||
@@ -117,7 +120,9 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
                 var totalCount = query.Count();
                 var data = list;
                 //更新已过期
-                var arr = data.Where(d => d.Status == "-1" && d.OldStatus != "-1").Select(s => s.Id).ToArray();
+                var arr = data
+                    .Where(d => d.Status == "-1"
+                                && d.OldStatus != "-1").Select(s => s.Id).ToArray();
                 if (arr.Length>0)
                 {
                    await UpdateStatus(arr);
@@ -333,19 +338,23 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
                 resEntity.WorkflowName = workflow?.Title;
                 if (workflow != null)
                     resEntity.DateSpan =
-                        $"{workflow.StartDate.ToString("yyyy-MM-dd HH:mm")} 至 {workflow.EndDate.ToString("yyyy-MM-dd HH:mm")}";
+                        $"{workflow.StartDate:yyyy-MM-dd HH:mm} 至 {workflow.EndDate:yyyy-MM-dd HH:mm}";
                 var receivers = await _dbContext.WorkflowReceiver.
                     Where(w => w.WorkflowCode == entity.WorkflowCode).ToListAsync();
                 var notes = new List<Note>();
                 foreach (var receiver in receivers)
                 {
                     var note = new Note();
-                    var step = await _dbContext.WorkflowStep.FindAsync(receiver.StepCode);
+                    var step = await _dbContext.WorkflowStep
+                        .FindAsync(receiver.StepCode);
                     note.NodeName = step?.Title;
                     var dic = await _dictionaryService.GetSYSDictionaryAsync("workflow_receiver_status", receiver.Status);
                     note.StatusName = dic?.Name;
                     note.Status = receiver.Status;
-                    var user = await _dbContext.DncUser.FindAsync(receiver.User);
+                    var user = await _dbContext.DncUser
+                        .FindAsync(receiver.User);
+                    note.Department = user.Department?.Name;
+                    note.Position = user.Position?.Name;
                     note.UserName = user?.DisplayName;
                     note.Opinion = receiver.Note;
                     note.NodeDate = receiver.CheckDate==
@@ -377,15 +386,23 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
         /// </summary>
         /// <param name="ids"></param>
         /// <returns></returns>
-        [Obsolete]
+       
         private async Task<ResponseModel> UpdateStatus(int[] ids)
         {
             await using (_dbContext)
             {
-                var parameters = ids.Select((id, index) => new SqlParameter($"@p{index}", id)).ToList();
-                var parameterNames = string.Join(", ", parameters.Select(p => p.ParameterName));
-                var sql = $"UPDATE WorkflowReceiver SET Status='-1'  WHERE ID IN ({parameterNames})";
-                await _dbContext.Database.ExecuteSqlCommandAsync(sql, parameters);
+                // var parameters = 
+                //     ids.Select((id, index) => 
+                //         new SqlParameter($"@p{index}", id)).ToList();
+                //
+                // var parameterNames = 
+                //     string.Join(", ", parameters.
+                //         Select(p => p.ParameterName));
+                
+                var formatIds = ids.Aggregate("", (current, id) => current + $"'{id}',");
+                formatIds = formatIds.Substring(0, formatIds.Length - 1);
+                var sql = $"UPDATE WorkflowReceiver SET Status='-1'  WHERE ID IN ({formatIds})";
+                 await _dbContext.Database.ExecuteSqlRawAsync(sql);
                 var response = ResponseModelFactory.CreateInstance;
                 return response;
             }

@@ -284,7 +284,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
             FindSimpleListAsync(string templateCode)
         {
             var response = ResponseModelFactory.CreateInstance;
-            using (_dbContext)
+            await using (_dbContext)
             {
                 var query = _dbContext.WorkflowStep.
                     Where(x => x.IsDeleted == CommonEnum.IsDeleted.No && x.Status == CommonEnum.Status.Normal);
@@ -332,13 +332,14 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
         /// <returns></returns>
         private async Task<ResponseModel> UpdateIsDelete(CommonEnum.IsDeleted isDeleted, string ids)
         {
-            using (_dbContext)
+            await using (_dbContext)
             {
-                var parameters = ids.Split(",").Select((id, index) => new SqlParameter(string.Format("@p{0}", index), id)).ToList();
-                var parameterNames = string.Join(", ", parameters.Select(p => p.ParameterName));
-                var sql = string.Format("UPDATE WorkflowStep SET IsDeleted=@IsDeleted WHERE Code IN ({0})", parameterNames);
-                parameters.Add(new SqlParameter("@IsDeleted", (int)isDeleted));
-                await _dbContext.Database.ExecuteSqlCommandAsync(sql, parameters);
+                // var parameters = ids.Split(",").Select((id, index) => new SqlParameter(string.Format("@p{0}", index), id)).ToList();
+                // var parameterNames = string.Join(", ", parameters.Select(p => p.ParameterName));
+                var formatIds = ids.Split(',').Aggregate("", (current, id) => current + $"'{id}',");
+                formatIds = formatIds.Substring(0, formatIds.Length - 1);
+                var sql = $"UPDATE WorkflowStep SET IsDeleted={(int)isDeleted} WHERE Code IN ({formatIds})";
+                await _dbContext.Database.ExecuteSqlRawAsync(sql);
                 var response = ResponseModelFactory.CreateInstance;
                 return response;
             }
@@ -352,13 +353,17 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
         /// <returns></returns>
         private  async Task<ResponseModel> UpdateStatus(UserStatus status, string ids)
         {
-            using (_dbContext)
+            await using (_dbContext)
             {
-                var parameters = ids.Split(",").Select((id, index) => new SqlParameter(string.Format("@p{0}", index), id)).ToList();
-                var parameterNames = string.Join(", ", parameters.Select(p => p.ParameterName));
-                var sql = string.Format("UPDATE WorkflowStep SET Status=@Status WHERE Code IN ({0})", parameterNames);
-                parameters.Add(new SqlParameter("@Status", (int)status));
-                await _dbContext.Database.ExecuteSqlCommandAsync(sql, parameters);
+                // var parameters = ids.Split(",").Select((id, index) => new SqlParameter(string.Format("@p{0}", index), id)).ToList();
+                // var parameterNames = string.Join(", ", parameters.Select(p => p.ParameterName));
+                // var sql = string.Format("UPDATE WorkflowStep SET Status=@Status WHERE Code IN ({0})", parameterNames);
+                // parameters.Add(new SqlParameter("@Status", (int)status));
+                // await _dbContext.Database.ExecuteSqlCommandAsync(sql, parameters);
+                var formatIds = ids.Split(',').Aggregate("", (current, id) => current + $"'{id}',");
+                formatIds = formatIds.Substring(0, formatIds.Length - 1);
+                var sql = $"UPDATE WorkflowStep SET Status={(int)status} WHERE Code IN ({formatIds})";
+                await _dbContext.Database.ExecuteSqlRawAsync(sql);
                 var response = ResponseModelFactory.CreateInstance;
                 return response;
             }

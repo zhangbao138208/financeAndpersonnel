@@ -1,9 +1,10 @@
 ﻿using System;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 namespace DncZeus.Api.Migrations
 {
-    public partial class init : Migration
+    public partial class mysqlInit : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {
@@ -12,12 +13,12 @@ namespace DncZeus.Api.Migrations
                 columns: table => new
                 {
                     Id = table.Column<int>(nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
+                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
                     Code = table.Column<string>(type: "nvarchar(50)", nullable: false),
                     Size = table.Column<string>(type: "nvarchar(20)", nullable: true),
                     Color = table.Column<string>(type: "nvarchar(50)", nullable: true),
                     Custom = table.Column<string>(type: "nvarchar(60)", nullable: true),
-                    Description = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Description = table.Column<string>(type: "nvarchar(255)", nullable: true),
                     Status = table.Column<int>(nullable: false),
                     IsDeleted = table.Column<int>(nullable: false),
                     CreatedOn = table.Column<DateTime>(nullable: false),
@@ -44,7 +45,7 @@ namespace DncZeus.Api.Migrations
                     ParentGuid = table.Column<Guid>(nullable: true),
                     ParentName = table.Column<string>(nullable: true),
                     Level = table.Column<int>(nullable: false),
-                    Description = table.Column<string>(type: "nvarchar(800)", nullable: true),
+                    Description = table.Column<string>(type: "nvarchar(255)", nullable: true),
                     Sort = table.Column<int>(nullable: false),
                     Status = table.Column<int>(nullable: false),
                     IsDeleted = table.Column<int>(nullable: false),
@@ -103,7 +104,7 @@ namespace DncZeus.Api.Migrations
                 {
                     Code = table.Column<string>(type: "nvarchar(50)", nullable: false),
                     Name = table.Column<string>(type: "nvarchar(50)", nullable: false),
-                    Description = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Description = table.Column<string>(type: "nvarchar(255)", nullable: true),
                     Status = table.Column<int>(nullable: false),
                     IsDeleted = table.Column<int>(nullable: false),
                     CreatedOn = table.Column<DateTime>(nullable: false),
@@ -121,16 +122,10 @@ namespace DncZeus.Api.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "DncUser",
+                name: "FinanceAccount",
                 columns: table => new
                 {
-                    Guid = table.Column<Guid>(nullable: false),
-                    LoginName = table.Column<string>(type: "nvarchar(50)", nullable: false),
-                    DisplayName = table.Column<string>(type: "nvarchar(50)", nullable: true),
-                    Password = table.Column<string>(type: "nvarchar(255)", nullable: true),
-                    Avatar = table.Column<string>(type: "nvarchar(255)", nullable: true),
-                    UserType = table.Column<int>(nullable: false),
-                    IsLocked = table.Column<int>(nullable: false),
+                    Code = table.Column<string>(type: "nvarchar(50)", nullable: false),
                     Status = table.Column<int>(nullable: false),
                     IsDeleted = table.Column<int>(nullable: false),
                     CreatedOn = table.Column<DateTime>(nullable: false),
@@ -139,11 +134,50 @@ namespace DncZeus.Api.Migrations
                     ModifiedOn = table.Column<DateTime>(nullable: true),
                     ModifiedByUserGuid = table.Column<Guid>(nullable: true),
                     ModifiedByUserName = table.Column<string>(nullable: true),
-                    Description = table.Column<string>(type: "nvarchar(800)", nullable: true)
+                    Holder = table.Column<string>(nullable: true),
+                    DepartmentCode = table.Column<string>(nullable: true),
+                    Type = table.Column<string>(nullable: true),
+                    Name = table.Column<string>(nullable: true),
+                    Account = table.Column<string>(nullable: true),
+                    Owner = table.Column<string>(nullable: true),
+                    Title = table.Column<string>(nullable: true),
+                    Description = table.Column<string>(nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_DncUser", x => x.Guid);
+                    table.PrimaryKey("PK_FinanceAccount", x => x.Code);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "FinanceInfo",
+                columns: table => new
+                {
+                    Code = table.Column<string>(type: "nvarchar(50)", nullable: false),
+                    Status = table.Column<int>(nullable: false),
+                    IsDeleted = table.Column<int>(nullable: false),
+                    CreatedOn = table.Column<DateTime>(nullable: false),
+                    CreatedByUserGuid = table.Column<Guid>(nullable: false),
+                    CreatedByUserName = table.Column<string>(nullable: true),
+                    ModifiedOn = table.Column<DateTime>(nullable: true),
+                    ModifiedByUserGuid = table.Column<Guid>(nullable: true),
+                    ModifiedByUserName = table.Column<string>(nullable: true),
+                    User = table.Column<string>(nullable: true),
+                    DepartmentCode = table.Column<string>(nullable: true),
+                    FinanceAccount = table.Column<string>(nullable: true),
+                    Type = table.Column<string>(nullable: true),
+                    InfoStatus = table.Column<string>(nullable: true),
+                    Title = table.Column<string>(nullable: true),
+                    Description = table.Column<string>(nullable: true),
+                    Note = table.Column<string>(nullable: true),
+                    HandleName = table.Column<string>(nullable: true),
+                    HandleDate = table.Column<string>(nullable: true),
+                    Amount = table.Column<decimal>(type: "decimal(18,4)", nullable: false),
+                    ImagePath = table.Column<string>(nullable: true),
+                    FilePath = table.Column<string>(nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_FinanceInfo", x => x.Code);
                 });
 
             migrationBuilder.CreateTable(
@@ -204,6 +238,19 @@ namespace DncZeus.Api.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_ResumeInfo", x => x.Code);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "SystemDicType",
+                columns: table => new
+                {
+                    Code = table.Column<string>(type: "nvarchar(50)", nullable: false),
+                    Name = table.Column<string>(nullable: true),
+                    Value = table.Column<string>(nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_SystemDicType", x => x.Code);
                 });
 
             migrationBuilder.CreateTable(
@@ -272,6 +319,142 @@ namespace DncZeus.Api.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "WageInfo",
+                columns: table => new
+                {
+                    Code = table.Column<string>(type: "nvarchar(50)", nullable: false),
+                    Status = table.Column<int>(nullable: false),
+                    IsDeleted = table.Column<int>(nullable: false),
+                    CreatedOn = table.Column<DateTime>(nullable: false),
+                    CreatedByUserGuid = table.Column<Guid>(nullable: false),
+                    CreatedByUserName = table.Column<string>(nullable: true),
+                    ModifiedOn = table.Column<DateTime>(nullable: true),
+                    ModifiedByUserGuid = table.Column<Guid>(nullable: true),
+                    ModifiedByUserName = table.Column<string>(nullable: true),
+                    UserGuid = table.Column<Guid>(nullable: false),
+                    RealName = table.Column<string>(nullable: true),
+                    DepartmentCode = table.Column<string>(nullable: true),
+                    PositionCode = table.Column<string>(nullable: true),
+                    StartDate = table.Column<DateTime>(nullable: true),
+                    EndDate = table.Column<DateTime>(nullable: true),
+                    BaseWage = table.Column<decimal>(type: "decimal(18,4)", nullable: true),
+                    WorkDays = table.Column<int>(nullable: true),
+                    OTWage = table.Column<decimal>(type: "decimal(18,4)", nullable: true),
+                    OTDays = table.Column<int>(nullable: true),
+                    PerformanceWage = table.Column<decimal>(type: "decimal(18,4)", nullable: true),
+                    ReissueWage = table.Column<decimal>(type: "decimal(18,4)", nullable: true),
+                    Commission = table.Column<decimal>(type: "decimal(18,4)", nullable: true),
+                    Bonus = table.Column<decimal>(type: "decimal(18,4)", nullable: true),
+                    Additions = table.Column<string>(nullable: true),
+                    Subsidy = table.Column<decimal>(type: "decimal(18,4)", nullable: true),
+                    SocialSecurity = table.Column<decimal>(type: "decimal(18,4)", nullable: true),
+                    AccumulationFund = table.Column<decimal>(type: "decimal(18,4)", nullable: true),
+                    IncomeTax = table.Column<decimal>(type: "decimal(18,4)", nullable: true),
+                    Deductions = table.Column<string>(nullable: true),
+                    TotalWage = table.Column<decimal>(type: "decimal(18,4)", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_WageInfo", x => x.Code);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "WorkflowList",
+                columns: table => new
+                {
+                    Code = table.Column<string>(type: "nvarchar(50)", nullable: false),
+                    User = table.Column<Guid>(nullable: false),
+                    DepartmentCode = table.Column<string>(nullable: true),
+                    TemplateCode = table.Column<string>(nullable: true),
+                    Type = table.Column<string>(nullable: true),
+                    Status = table.Column<string>(nullable: true),
+                    CurrentStepCode = table.Column<string>(nullable: true),
+                    NextStepCode = table.Column<string>(nullable: true),
+                    Number = table.Column<string>(nullable: true),
+                    Title = table.Column<string>(nullable: true),
+                    Description = table.Column<string>(nullable: true),
+                    StartDate = table.Column<DateTime>(nullable: false),
+                    EndDate = table.Column<DateTime>(nullable: false),
+                    NotifyUser = table.Column<Guid>(nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_WorkflowList", x => x.Code);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "WorkflowReceiver",
+                columns: table => new
+                {
+                    Id = table.Column<int>(nullable: false)
+                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
+                    WorkflowCode = table.Column<string>(nullable: true),
+                    TemplateCode = table.Column<string>(nullable: true),
+                    StepCode = table.Column<string>(nullable: true),
+                    User = table.Column<Guid>(nullable: false),
+                    IsCheck = table.Column<bool>(nullable: false),
+                    CheckDate = table.Column<DateTime>(nullable: false),
+                    Type = table.Column<string>(nullable: true),
+                    Status = table.Column<string>(nullable: true),
+                    Note = table.Column<string>(nullable: true),
+                    Description = table.Column<string>(nullable: true),
+                    CreateUser = table.Column<Guid>(nullable: false),
+                    CreateDate = table.Column<DateTime>(nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_WorkflowReceiver", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "WorkflowStep",
+                columns: table => new
+                {
+                    Code = table.Column<string>(type: "nvarchar(50)", nullable: false),
+                    Status = table.Column<int>(nullable: false),
+                    IsDeleted = table.Column<int>(nullable: false),
+                    CreatedOn = table.Column<DateTime>(nullable: false),
+                    CreatedByUserGuid = table.Column<Guid>(nullable: false),
+                    CreatedByUserName = table.Column<string>(nullable: true),
+                    ModifiedOn = table.Column<DateTime>(nullable: true),
+                    ModifiedByUserGuid = table.Column<Guid>(nullable: true),
+                    ModifiedByUserName = table.Column<string>(nullable: true),
+                    TemplateCode = table.Column<string>(nullable: true),
+                    UserList = table.Column<string>(nullable: true),
+                    Title = table.Column<string>(nullable: true),
+                    SortID = table.Column<string>(nullable: true),
+                    IsCounterSign = table.Column<bool>(nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_WorkflowStep", x => x.Code);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "WorkflowTemplate",
+                columns: table => new
+                {
+                    Code = table.Column<string>(type: "nvarchar(50)", nullable: false),
+                    Status = table.Column<int>(nullable: false),
+                    IsDeleted = table.Column<int>(nullable: false),
+                    CreatedOn = table.Column<DateTime>(nullable: false),
+                    CreatedByUserGuid = table.Column<Guid>(nullable: false),
+                    CreatedByUserName = table.Column<string>(nullable: true),
+                    ModifiedOn = table.Column<DateTime>(nullable: true),
+                    ModifiedByUserGuid = table.Column<Guid>(nullable: true),
+                    ModifiedByUserName = table.Column<string>(nullable: true),
+                    Name = table.Column<string>(nullable: true),
+                    Description = table.Column<string>(nullable: true),
+                    ParentCode = table.Column<string>(nullable: true),
+                    Visible = table.Column<bool>(nullable: false),
+                    IsStepFree = table.Column<bool>(nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_WorkflowTemplate", x => x.Code);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "DncPermission",
                 columns: table => new
                 {
@@ -280,7 +463,7 @@ namespace DncZeus.Api.Migrations
                     Name = table.Column<string>(type: "nvarchar(50)", nullable: false),
                     ActionCode = table.Column<string>(type: "nvarchar(80)", nullable: false),
                     Icon = table.Column<string>(nullable: true),
-                    Description = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Description = table.Column<string>(type: "nvarchar(255)", nullable: true),
                     Status = table.Column<int>(nullable: false),
                     IsDeleted = table.Column<int>(nullable: false),
                     Type = table.Column<int>(nullable: false),
@@ -303,27 +486,65 @@ namespace DncZeus.Api.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "DncUserRoleMapping",
+                name: "SystemDictionary",
                 columns: table => new
                 {
-                    UserGuid = table.Column<Guid>(nullable: false),
-                    RoleCode = table.Column<string>(nullable: false),
-                    CreatedOn = table.Column<DateTime>(nullable: false)
+                    Code = table.Column<string>(type: "nvarchar(50)", nullable: false),
+                    TypeCode = table.Column<string>(nullable: true),
+                    Name = table.Column<string>(nullable: true),
+                    Value = table.Column<string>(nullable: true),
+                    Fixed = table.Column<bool>(nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_DncUserRoleMapping", x => new { x.UserGuid, x.RoleCode });
+                    table.PrimaryKey("PK_SystemDictionary", x => x.Code);
                     table.ForeignKey(
-                        name: "FK_DncUserRoleMapping_DncRole_RoleCode",
-                        column: x => x.RoleCode,
-                        principalTable: "DncRole",
+                        name: "FK_SystemDictionary_SystemDicType_TypeCode",
+                        column: x => x.TypeCode,
+                        principalTable: "SystemDicType",
+                        principalColumn: "Code",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "DncUser",
+                columns: table => new
+                {
+                    Guid = table.Column<Guid>(nullable: false),
+                    LoginName = table.Column<string>(type: "nvarchar(50)", nullable: false),
+                    DisplayName = table.Column<string>(type: "nvarchar(50)", nullable: true),
+                    Password = table.Column<string>(type: "nvarchar(255)", nullable: true),
+                    Avatar = table.Column<string>(type: "nvarchar(255)", nullable: true),
+                    DepartmentCode = table.Column<string>(nullable: true),
+                    PositionCode = table.Column<string>(nullable: true),
+                    TelegramBotToken = table.Column<string>(nullable: true),
+                    TelegramChatId = table.Column<string>(nullable: true),
+                    UserType = table.Column<int>(nullable: false),
+                    IsLocked = table.Column<int>(nullable: false),
+                    Status = table.Column<int>(nullable: false),
+                    IsDeleted = table.Column<int>(nullable: false),
+                    CreatedOn = table.Column<DateTime>(nullable: false),
+                    CreatedByUserGuid = table.Column<Guid>(nullable: false),
+                    CreatedByUserName = table.Column<string>(nullable: true),
+                    ModifiedOn = table.Column<DateTime>(nullable: true),
+                    ModifiedByUserGuid = table.Column<Guid>(nullable: true),
+                    ModifiedByUserName = table.Column<string>(nullable: true),
+                    Description = table.Column<string>(type: "nvarchar(800)", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_DncUser", x => x.Guid);
+                    table.ForeignKey(
+                        name: "FK_DncUser_UserDepartment_DepartmentCode",
+                        column: x => x.DepartmentCode,
+                        principalTable: "UserDepartment",
                         principalColumn: "Code",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "FK_DncUserRoleMapping_DncUser_UserGuid",
-                        column: x => x.UserGuid,
-                        principalTable: "DncUser",
-                        principalColumn: "Guid",
+                        name: "FK_DncUser_UserDepartment_PositionCode",
+                        column: x => x.PositionCode,
+                        principalTable: "UserDepartment",
+                        principalColumn: "Code",
                         onDelete: ReferentialAction.Restrict);
                 });
 
@@ -352,6 +573,31 @@ namespace DncZeus.Api.Migrations
                         onDelete: ReferentialAction.Restrict);
                 });
 
+            migrationBuilder.CreateTable(
+                name: "DncUserRoleMapping",
+                columns: table => new
+                {
+                    UserGuid = table.Column<Guid>(nullable: false),
+                    RoleCode = table.Column<string>(nullable: false),
+                    CreatedOn = table.Column<DateTime>(nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_DncUserRoleMapping", x => new { x.UserGuid, x.RoleCode });
+                    table.ForeignKey(
+                        name: "FK_DncUserRoleMapping_DncRole_RoleCode",
+                        column: x => x.RoleCode,
+                        principalTable: "DncRole",
+                        principalColumn: "Code",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_DncUserRoleMapping_DncUser_UserGuid",
+                        column: x => x.UserGuid,
+                        principalTable: "DncUser",
+                        principalColumn: "Guid",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
             migrationBuilder.CreateIndex(
                 name: "IX_DncPermission_Code",
                 table: "DncPermission",
@@ -375,9 +621,30 @@ namespace DncZeus.Api.Migrations
                 column: "PermissionCode");
 
             migrationBuilder.CreateIndex(
+                name: "IX_DncUser_DepartmentCode",
+                table: "DncUser",
+                column: "DepartmentCode");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_DncUser_PositionCode",
+                table: "DncUser",
+                column: "PositionCode");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_DncUserRoleMapping_RoleCode",
                 table: "DncUserRoleMapping",
                 column: "RoleCode");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_SystemDictionary_Code",
+                table: "SystemDictionary",
+                column: "Code",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_SystemDictionary_TypeCode",
+                table: "SystemDictionary",
+                column: "TypeCode");
         }
 
         protected override void Down(MigrationBuilder migrationBuilder)
@@ -398,13 +665,34 @@ namespace DncZeus.Api.Migrations
                 name: "DncUserRoleMapping");
 
             migrationBuilder.DropTable(
+                name: "FinanceAccount");
+
+            migrationBuilder.DropTable(
+                name: "FinanceInfo");
+
+            migrationBuilder.DropTable(
                 name: "ResumeInfo");
 
             migrationBuilder.DropTable(
-                name: "UserDepartment");
+                name: "SystemDictionary");
 
             migrationBuilder.DropTable(
                 name: "UserPosition");
+
+            migrationBuilder.DropTable(
+                name: "WageInfo");
+
+            migrationBuilder.DropTable(
+                name: "WorkflowList");
+
+            migrationBuilder.DropTable(
+                name: "WorkflowReceiver");
+
+            migrationBuilder.DropTable(
+                name: "WorkflowStep");
+
+            migrationBuilder.DropTable(
+                name: "WorkflowTemplate");
 
             migrationBuilder.DropTable(
                 name: "DncPermission");
@@ -416,7 +704,13 @@ namespace DncZeus.Api.Migrations
                 name: "DncUser");
 
             migrationBuilder.DropTable(
+                name: "SystemDicType");
+
+            migrationBuilder.DropTable(
                 name: "DncMenu");
+
+            migrationBuilder.DropTable(
+                name: "UserDepartment");
         }
     }
 }

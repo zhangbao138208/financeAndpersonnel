@@ -1,4 +1,5 @@
-﻿using DncZeus.Api.Extensions;
+﻿using System;
+using DncZeus.Api.Extensions;
 using DncZeus.Api.Models.Response;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -18,7 +19,7 @@ namespace DncZeus.Api.Controllers
 
         public TestController(ILogger<TestController> logger)
         {
-            _logger = logger;
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         /// <summary>
@@ -33,7 +34,7 @@ namespace DncZeus.Api.Controllers
             _logger.LogInformation(message: "LogInformation()...");
             _logger.LogWarning(message: "LogWarning()...");
             _logger.LogError(message: "LogError()...");
-            ResponseResultModel response = ResponseModelFactory.CreateResultInstance;
+            var response = ResponseModelFactory.CreateResultInstance;
             response.SetSuccess(message: "test logger success");
             return Ok(value: response);
         }

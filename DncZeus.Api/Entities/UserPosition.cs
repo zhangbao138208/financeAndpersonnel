@@ -17,5 +17,6 @@ namespace DncZeus.Api.Entities
         public string ParentCode { get; set; }
         public int LevelID { get; set; }
         public int SortID { get; set; }
+        public virtual ICollection<DncUser> DncUsers { get; set; }
     }
 }

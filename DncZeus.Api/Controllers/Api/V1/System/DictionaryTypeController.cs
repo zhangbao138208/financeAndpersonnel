@@ -12,6 +12,7 @@ using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace DncZeus.Api.Controllers.Api.V1.System
 {
@@ -36,10 +37,11 @@ namespace DncZeus.Api.Controllers.Api.V1.System
         /// </summary>
         /// <returns></returns>
         [HttpPost]
-        public ActionResult<ResponseResultModel<IEnumerable<DicTypeJsonModel>>> List(DicTypeRequestPaload payload)
+        public async Task<ActionResult<ResponseResultModel<IEnumerable<DicTypeJsonModel>>>> 
+            List(DicTypeRequestPaload payload)
         {
             var response = ResponseModelFactory.CreateResultInstance;
-            using (_dbContext)
+            await using (_dbContext)
             {
                 var query = _dbContext.SystemDicType.AsQueryable();
                 if (!string.IsNullOrEmpty(payload.Kw))
@@ -47,7 +49,7 @@ namespace DncZeus.Api.Controllers.Api.V1.System
                     query = query.Where(x => x.Name.Contains(payload.Kw.Trim()) ||
                     x.Code.Contains(payload.Kw.Trim())||x.Value.Contains(payload.Kw.Trim()));
                 }
-                var list = query.Paged(payload.CurrentPage, payload.PageSize).ToList();
+                var list = await query.Paged(payload.CurrentPage, payload.PageSize).ToListAsync();
                 var totalCount = query.Count();
                 var data = list.Select(_mapper.Map<SystemDicType, DicTypeJsonModel>);
 
@@ -63,7 +65,7 @@ namespace DncZeus.Api.Controllers.Api.V1.System
         /// <returns></returns>
         [HttpPost]
         [ProducesResponseType(200)]
-        public ActionResult<ResponseModel> Create(DicTypeCreateViewModel model)
+        public async Task<ActionResult<ResponseModel>> Create(DicTypeCreateViewModel model)
         {
             var response = ResponseModelFactory.CreateInstance;
             if (model.Name.Trim().Length <= 0)
@@ -71,17 +73,18 @@ namespace DncZeus.Api.Controllers.Api.V1.System
                 response.SetFailed("请输入字典类型名称");
                 return Ok(response);
             }
-            using (_dbContext)
+
+            await using (_dbContext)
             {
-                if (_dbContext.DncRole.Count(x => x.Name == model.Name) > 0)
+                if (await _dbContext.DncRole.CountAsync(x => x.Name == model.Name) > 0)
                 {
                     response.SetFailed("字典类型已存在");
                     return Ok(response);
                 }
                 var entity = _mapper.Map<DicTypeCreateViewModel, SystemDicType>(model);
                 entity.Code = RandomHelper.GetRandomizer(8, true, false, true, true);
-                _dbContext.SystemDicType.Add(entity);
-                _dbContext.SaveChanges();
+                await _dbContext.SystemDicType.AddAsync(entity);
+                await _dbContext.SaveChangesAsync();
                 //清理缓存
                 _dictionaryService.ClearDictionaryCache();
                 response.SetSuccess();
@@ -96,11 +99,12 @@ namespace DncZeus.Api.Controllers.Api.V1.System
         /// <returns></returns>
         [HttpGet("{code}")]
         [ProducesResponseType(200)]
-        public ActionResult<ResponseModel<DicTypeCreateViewModel>> Edit(string code)
+        public async Task<ActionResult<ResponseModel<DicTypeCreateViewModel>>> Edit(string code)
         {
-            using (_dbContext)
+            await using (_dbContext)
             {
-                var entity = _dbContext.SystemDicType.FirstOrDefault(x => x.Code == code);
+                var entity = await _dbContext.SystemDicType
+                    .FirstOrDefaultAsync(x => x.Code == code);
                 var response = ResponseModelFactory.CreateInstance;
                 var resEntity = _mapper.Map<SystemDicType, DicTypeCreateViewModel>(entity);
                 response.SetData(resEntity);
@@ -116,7 +120,7 @@ namespace DncZeus.Api.Controllers.Api.V1.System
         /// <returns></returns>
         [HttpPut]
         [ProducesResponseType(200)]
-        public ActionResult<ResponseModel> Edit(DicTypeCreateViewModel model)
+        public async Task<ActionResult<ResponseModel>> Edit(DicTypeCreateViewModel model)
         {
             var response = ResponseModelFactory.CreateInstance;
             if (ConfigurationManager.AppSettings.IsTrialVersion)
@@ -124,7 +128,8 @@ namespace DncZeus.Api.Controllers.Api.V1.System
                 response.SetIsTrial();
                 return Ok(response);
             }
-            using (_dbContext)
+
+            await using (_dbContext)
             {
                 if (_dbContext.SystemDicType.Count(x => x.Name == model.Name && x.Code != model.Code) > 0)
                 {
@@ -134,7 +139,7 @@ namespace DncZeus.Api.Controllers.Api.V1.System
 
                 var entity = _mapper.Map<DicTypeCreateViewModel, SystemDicType>(model);
                 _dbContext.Entry(entity).State = EntityState.Modified;
-                _dbContext.SaveChanges();
+                await _dbContext.SaveChangesAsync();
                 //清理缓存
                 _dictionaryService.ClearDictionaryCache();
                 return Ok(response);
@@ -148,7 +153,7 @@ namespace DncZeus.Api.Controllers.Api.V1.System
         /// <returns></returns>
         [HttpDelete("{ids}")]
         [ProducesResponseType(200)]
-        public ActionResult<ResponseModel> Delete(string ids)
+        public async Task<ActionResult<ResponseModel>> Delete(string ids)
         {
             var response = ResponseModelFactory.CreateInstance;
             if (ConfigurationManager.AppSettings.IsTrialVersion)
@@ -161,12 +166,13 @@ namespace DncZeus.Api.Controllers.Api.V1.System
                 response.SetFailed("请选择删除项");
                 return Ok(response);
             }
-            using (_dbContext)
+
+            await using (_dbContext)
             {
                 _dbContext.SystemDicType.RemoveRange(_dbContext.SystemDicType
                     .Where(w => ids.Contains(w.Code)).ToList()
                     );
-                _dbContext.SaveChanges();
+                await _dbContext.SaveChangesAsync();
                 //清理缓存
                 _dictionaryService.ClearDictionaryCache();
             }
@@ -183,7 +189,7 @@ namespace DncZeus.Api.Controllers.Api.V1.System
         /// <returns></returns>
         [HttpPost]
         [ProducesResponseType(200)]
-        public ActionResult<ResponseModel> Batch(string command, string ids)
+        public async Task<ActionResult<ResponseModel>> Batch(string command, string ids)
         {
             var response = ResponseModelFactory.CreateInstance;
             switch (command)
@@ -194,7 +200,7 @@ namespace DncZeus.Api.Controllers.Api.V1.System
                         response.SetIsTrial();
                         return Ok(response);
                     }
-                    response = UpdateIsDelete(ids);
+                    response =await UpdateIsDelete(ids);
                     //清理缓存
                     _dictionaryService.ClearDictionaryCache();
                     return response;
@@ -223,12 +229,12 @@ namespace DncZeus.Api.Controllers.Api.V1.System
         /// </summary>
         /// <returns></returns>
         [HttpGet("/api/v1/system/dictionaryType/find_simple_list")]
-        public ActionResult<ResponseResultModel<IEnumerable<DicTypeJsonModel>>> FindSimpleList()
+        public async Task<ActionResult<ResponseResultModel<IEnumerable<DicTypeJsonModel>>>> FindSimpleList()
         {
             var response = ResponseModelFactory.CreateInstance;
-            using (_dbContext)
+            await using (_dbContext)
             {
-                var list = _dbContext.SystemDicType.ToList();
+                var list =await  _dbContext.SystemDicType.ToListAsync();
                 var data = list.Select(_mapper.Map<SystemDicType, DicTypeJsonModel>);
 
                 response.SetData(data);
@@ -242,14 +248,19 @@ namespace DncZeus.Api.Controllers.Api.V1.System
         /// </summary>
         /// <param name="ids">财务账号ID字符串,多个以逗号隔开</param>
         /// <returns></returns>
-        private ResponseModel UpdateIsDelete(string ids)
+        private async Task<ResponseModel> UpdateIsDelete(string ids)
+
         {
-            using (_dbContext)
+            await using (_dbContext)
             {
-                var parameters = ids.Split(",").Select((id, index) => new SqlParameter(string.Format("@p{0}", index), id)).ToList();
-                var parameterNames = string.Join(", ", parameters.Select(p => p.ParameterName));
-                var sql = string.Format("DELETE SystemDicType  WHERE Code IN ({0})", parameterNames);
-                _dbContext.Database.ExecuteSqlCommand(sql, parameters);
+                // var parameters = ids.Split(",").Select((id, index) => new SqlParameter(string.Format("@p{0}", index), id)).ToList();
+                // var parameterNames = string.Join(", ", parameters.Select(p => p.ParameterName));
+                // var sql = string.Format("DELETE SystemDicType  WHERE Code IN ({0})", parameterNames);
+                // _dbContext.Database.ExecuteSqlCommand(sql, parameters);
+                var formatIds = ids.Split(',').Aggregate("", (current, id) => current + $"'{id}',");
+                formatIds = formatIds.Substring(0, formatIds.Length - 1);
+                var sql = $"DELETE SystemDicType WHERE Code IN ({formatIds})";
+                await _dbContext.Database.ExecuteSqlRawAsync(sql);
                 var response = ResponseModelFactory.CreateInstance;
                 return response;
             }

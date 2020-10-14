@@ -23,6 +23,8 @@ namespace DncZeus.Api.ViewModels.Rbac.DncUser
         /// 
         /// </summary>
         public string LoginName { get; set; }
+        public string DepartmentName { get; set; }
+        public string PositionName { get; set; }
         /// <summary>
         /// 
         /// </summary>

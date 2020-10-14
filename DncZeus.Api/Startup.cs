@@ -85,15 +85,15 @@ namespace DncZeus.Api
 
             services.AddControllers().AddNewtonsoftJson();
 
+            // services.AddDbContext<DncZeusDbContext>(options =>
+            //     options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
             services.AddDbContext<DncZeusDbContext>(options =>
-                options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
-            //services.AddDbContext<DncZeusDbContext>(options =>
-            //        options
-            //        .UseLazyLoadingProxies()//启用懒加载
-            //               .UseMySql(Configuration.GetConnectionString("MYSQLConnection"), mysqlOptions => // 启用读写分离后，默认读库，否则默认写库
-            //                {
-            //                   mysqlOptions.ServerVersion(new Version(5, 7, 17), ServerType.MySql);
-            //               }));
+                   options
+                    .UseLazyLoadingProxies()//启用懒加载
+                           .UseMySql(Configuration.GetConnectionString("MYSQLConnection"), mysqlOptions => // 启用读写分离后，默认读库，否则默认写库
+                           {
+                              mysqlOptions.ServerVersion(new Version(5, 7, 17), ServerType.MySql);
+                          }));
 
 
             services.AddSwaggerGen(c =>
