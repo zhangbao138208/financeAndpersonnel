@@ -6,6 +6,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using DncZeus.Api.Extensions.AuthContext;
+using DncZeus.Api.Extensions.CustomException;
+using Microsoft.EntityFrameworkCore;
 
 namespace DncZeus.Api.Cache
 {
@@ -57,6 +60,82 @@ namespace DncZeus.Api.Cache
                 }
                 return list;
             }
+        }
+        
+        public OwnedApiPermission ApiEntry
+        {
+            get
+            {
+
+                var retEntry = CacheManager.GetCache<OwnedApiPermission>($"{AuthContextService.CurrentUser.Guid.ToString().ToLower()}OwnedApiPermission");
+                if (retEntry != null) return retEntry;
+                var entry = new OwnedApiPermission();
+                // _memoryCache = (IMemoryCache)context.HttpContext.RequestServices.GetService(typeof(IMemoryCache));
+                // _memoryCache.GetOrCreate("CK_PERMISSION_" + 
+                //                          AuthContextService.CurrentUser.LoginName,  (cache) =>
+                // { 
+                //    
+                //
+                //     
+                //     //entry = new OwnedApiPermission();
+                //     cache.SlidingExpiration = TimeSpan.FromMinutes(30);
+                //     return entry;
+                // });
+                // var optionsBuilder = new DbContextOptionsBuilder<DncZeusDbContext>();
+                // var builder = new ConfigurationBuilder()
+                //     .SetBasePath(Directory.GetCurrentDirectory())
+                //     .AddJsonFile("appsettings.json");
+                // var configuration = builder.Build();
+                // var connectionString = configuration.GetConnectionString("MYSQLConnection");
+                // optionsBuilder.UseMySql(connectionString);
+                // var dbContext = new DncZeusDbContext(optionsBuilder.Options);
+                //TODO: load real permission list from db
+                using (_dbContext)
+                {
+                    var roles = _dbContext.DncUserRoleMapping.Where(x => x.UserGuid == AuthContextService.CurrentUser.Guid)
+                        .Select(x => x.RoleCode).ToListAsync().Result;
+
+                    var pm = _dbContext.DncRolePermissionMapping.Where(x => roles.Contains(x.RoleCode))
+                        .Select(x => x.PermissionCode).ToListAsync().Result;
+
+                    var list = _dbContext.DncPermission.Where(x => pm.Contains(x.Code)).ToListAsync().Result;
+                    var gp = list.GroupBy(x => new { x.MenuGuid })
+                        .Select(group => new
+                        {
+                            @group.Key
+                        }).ToList();
+                    foreach (var canAccess in gp.Select(permission => new CanAccess
+                    {
+                        Controller = _dbContext.DncMenu
+                            .FindAsync(permission.Key.MenuGuid).Result.Alias,
+                        ControllerDisplayName = _dbContext.DncMenu
+                            .FindAsync(permission.Key.MenuGuid).Result.Name,
+                        Actions = _dbContext.DncPermission
+                            .Where(x => x.MenuGuid == permission.Key.MenuGuid).Select(x=>new CanAccessAction
+                            {
+                                Code = x.ActionCode,
+                                Name = x.Name
+                            })
+                            .ToListAsync().Result
+                    }))
+                    {
+                        entry.CanAccesses.Add(canAccess);
+                    }
+
+                    CacheManager.SetCache($"{AuthContextService.CurrentUser.Guid.ToString().ToLower()}OwnedApiPermission", entry);
+                    retEntry = entry;
+                }
+                return retEntry;
+            }
+        }
+
+        public void ClearApiEntryCache(List<string> users)
+        {
+            users.ForEach(u =>
+            {
+                CacheManager.RemoveCache($"{u.ToLower()}OwnedApiPermission");
+            });
+            
         }
 
         public void ClearDictionaryCache()

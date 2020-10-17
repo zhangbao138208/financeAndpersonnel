@@ -384,17 +384,17 @@ export default {
               key: 'statusName',
               render: (h, params) => {
                 let status = params.row.status
-                let statusColor = 'orange'
+                let statusColor = '#f29100'
                 let statusText = params.row.statusName
                 switch (status) {
                   case '-1':
                     statusColor = '#ccc'
                     break
                   case '1':
-                    statusColor = 'green'
+                    statusColor = '#19be6b'
                     break
                   case '2':
-                    statusColor = 'red'
+                    statusColor = '#e13d13'
                     break
                 }
                 return h(
@@ -480,15 +480,15 @@ export default {
               key: 'listTypeName',
               width: 150,
               render: (h, params) => {
-                let color = 'green'
+                let color = '#19be6b'
                 switch (params.row.listType) {
                   case '1':
                   case 1:
-                    color = 'orange'
+                    color = '#f29100'
                     break
                   case '2':
                   case 2:
-                    color = 'red'
+                    color = '#e13d13'
                     break
                   default:
                     break
@@ -526,17 +526,17 @@ export default {
               width: 150,
               render: (h, params) => {
                 let status = params.row.status
-                let statusColor = 'orange'
+                let statusColor = '#f29100'
                 let statusText = params.row.statusName
                 switch (status) {
                   case '-1':
                     statusColor = '#ccc'
                     break
                   case '1':
-                    statusColor = 'green'
+                    statusColor = '#19be6b'
                     break
                   case '2':
-                    statusColor = 'red'
+                    statusColor = '#e13d13'
                     break
                 }
                 return h(

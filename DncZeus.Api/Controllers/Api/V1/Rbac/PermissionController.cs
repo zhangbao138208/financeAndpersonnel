@@ -33,7 +33,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
     /// </summary>
     [Route("api/v1/rbac/[controller]/[action]")]
     [ApiController]
-    [CustomAuthorize]
+    [ServiceFilter(typeof(CustomAuthorizeAttribute))]
     public class PermissionController : Controller
     {
         private readonly DncZeusDbContext _dbContext;
@@ -299,20 +299,31 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
                         Title = x.Name
                     }).ToListAsync();
                 //DncPermissionWithAssignProperty
-                var sql = @"-- noinspection SqlNoDataSourceInspectionForFile
+                // var sql =  @"-- noinspection SqlNoDataSourceInspectionForFile
+                //
+                // SELECT P.Code,P.MenuGuid,P.Name,P.ActionCode,ISNULL(S.RoleCode,'') AS RoleCode,(CASE WHEN S.PermissionCode IS NOT NULL THEN 1 ELSE 0 END) AS IsAssigned FROM DncPermission AS P 
+                // LEFT JOIN (SELECT * FROM DncRolePermissionMapping AS RPM WHERE RPM.RoleCode={0}) AS S 
+                // ON S.PermissionCode= P.Code
+                // WHERE P.IsDeleted=0 AND P.Status=1";
+                var sql =  @"-- noinspection SqlNoDataSourceInspectionForFile
                 
-                SELECT P.Code,P.MenuGuid,P.Name,P.ActionCode,ISNULL(S.RoleCode,'') AS RoleCode,(CASE WHEN S.PermissionCode IS NOT NULL THEN 1 ELSE 0 END) AS IsAssigned FROM DncPermission AS P 
+                SELECT P.Code,P.MenuGuid,P.Name,P.ActionCode,S.RoleCode AS RoleCode,(CASE WHEN S.PermissionCode IS NOT NULL THEN 1 ELSE 0 END) AS IsAssigned FROM DncPermission AS P 
                 LEFT JOIN (SELECT * FROM DncRolePermissionMapping AS RPM WHERE RPM.RoleCode={0}) AS S 
                 ON S.PermissionCode= P.Code
                 WHERE P.IsDeleted=0 AND P.Status=1";
                 if (role.IsSuperAdministrator)
                 {
                     sql =
-                        $@"SELECT P.C{"ARG0"}ode,P.MenuGuid,P.Name,P.ActionCode,'SUPERADM' AS RoleCode,(CASE WHEN P.Code IS NOT NULL THEN 1 ELSE 0 END) AS IsAssigned FROM DncPermission AS P 
-WHERE P.IsDeleted=0 AND P.Status=1";
+                        @"-- noinspection SqlNoDataSourceInspectionForFile
+                        
+                        SELECT P.Code,P.MenuGuid,P.Name,P.ActionCode,'SUPERADM' AS RoleCode,(CASE WHEN P.Code IS NOT NULL THEN 1 ELSE 0 END) AS IsAssigned FROM DncPermission AS P 
+                        WHERE P.IsDeleted=0 AND P.Status=1";
                 }
                 var permissionList =await _dbContext.DncPermissionWithAssignProperty.
                     FromSqlRaw(sql, code).ToListAsync();
+                //为了mysql 和SqlServer通用
+                permissionList.ForEach(p => p.RoleCode ??= "");
+                
                 var tree = 
                     menu.FillRecursive(permissionList, Guid.Empty, role.IsSuperAdministrator);
                 response.SetData(new { tree, selectedPermissions = permissionList.Where(x => x.IsAssigned == 1).Select(x => x.Code) });

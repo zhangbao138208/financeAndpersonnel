@@ -39,5 +39,11 @@ namespace DncZeus.Api.Extensions.AuthContext
         /// 头像地址
         /// </summary>
         public string Avator { get; set; }
+        
+        /// <summary>
+        /// 用户角色
+        /// </summary>
+
+        public string Roles { get; set; }
     }
 }

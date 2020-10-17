@@ -8,6 +8,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.EntityFrameworkCore.Internal;
 
 namespace DncZeus.Api.Extensions.CustomException
 {
@@ -21,9 +22,22 @@ namespace DncZeus.Api.Extensions.CustomException
         /// </summary>
         public string Controller { get; set; }
         /// <summary>
+        /// 显示名称
+        /// </summary>
+
+        public string ControllerDisplayName { get; set; }
+        /// <summary>
         /// Action集合
         /// </summary>
-        public List<string> Actions { get; set; }
+        public List<CanAccessAction> Actions { get; set; }
+        
+        
+    }
+
+    public class CanAccessAction
+    {
+        public string Code { get; set; }
+        public string Name { get; set; }
     }
 
     /// <summary>
@@ -48,20 +62,29 @@ namespace DncZeus.Api.Extensions.CustomException
         /// </summary>
         /// <param name="controller"></param>
         /// <param name="action"></param>
+        /// <param name="controllerName"></param>
+        /// <param name="actionName"></param>
         /// <returns></returns>
-        public bool Can(string controller, string action)
+        public bool Can( string controller,  string action,out string controllerName,out string actionName)
         {
+            controllerName = "";
+            actionName = "";
             if (string.IsNullOrEmpty(controller) || string.IsNullOrEmpty(action))
             {
                 return false;
             }
-            var ctrl = CanAccesses.Where(x => string.Equals(controller, x.Controller,StringComparison.OrdinalIgnoreCase)).FirstOrDefault(x => x.Controller == controller);
-            if (ctrl == null)
-            {
+            var ctrl = CanAccesses.
+                FirstOrDefault(x=>x.Controller.Contains(controller,StringComparison.OrdinalIgnoreCase));
+            if (ctrl == null) return false;
+            controllerName = ctrl.ControllerDisplayName;
+            var allow = ctrl.Actions.
+                FirstOrDefault(a => 
+                    string.Equals(a.Code, action, StringComparison.OrdinalIgnoreCase));
+            if (allow == null)
                 return false;
-            }
+            actionName = allow.Name;
+            return true;
 
-            return ctrl.Actions.Contains(action, StringComparer.OrdinalIgnoreCase);
         }
     }
 }

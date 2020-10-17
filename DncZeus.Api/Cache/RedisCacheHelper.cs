@@ -1,12 +1,10 @@
 ﻿using DncZeus.Api.Utils;
 using Microsoft.Extensions.Caching.Redis;
 using Newtonsoft.Json;
-using StackExchange.Redis;
+
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net;
-using System.Threading.Tasks;
+using StackExchange.Redis;
 
 namespace DncZeus.Api.Cache
 {

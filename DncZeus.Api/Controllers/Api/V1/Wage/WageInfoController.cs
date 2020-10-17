@@ -26,7 +26,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Wage
 {
     [Route("api/v1/Wage/[controller]/[action]")]
     [ApiController]
-    [CustomAuthorize]
+    [ServiceFilter(typeof(CustomAuthorizeAttribute))]
     public class WageInfoController : ControllerBase
     {
         private readonly DncZeusDbContext _dbContext;

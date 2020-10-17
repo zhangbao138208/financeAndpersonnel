@@ -8,7 +8,7 @@ namespace DncZeus.Api.Controllers.api.v2
     /// <summary>
     /// 
     /// </summary>
-    //[CustomAuthorize]
+    //[ServiceFilter(typeof(CustomAuthorizeAttribute))]
     [Route("api/v2/[controller]/[action]")]
     [ApiController]
     public class UserController : ControllerBase

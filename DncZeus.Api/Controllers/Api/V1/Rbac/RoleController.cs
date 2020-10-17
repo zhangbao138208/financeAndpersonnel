@@ -22,29 +22,33 @@ using System.Linq;
 using Microsoft.Data.SqlClient;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using DncZeus.Api.Services;
 
 namespace DncZeus.Api.Controllers.Api.V1.Rbac
 {
     /// <summary>
     /// 
     /// </summary>
-    //[CustomAuthorize]
+    //[ServiceFilter(typeof(CustomAuthorizeAttribute))]
     [Route("api/v1/rbac/[controller]/[action]")]
     [ApiController]
-    [CustomAuthorize]
+    [ServiceFilter(typeof(CustomAuthorizeAttribute))]
     public class RoleController : ControllerBase
     {
         private readonly DncZeusDbContext _dbContext;
         private readonly IMapper _mapper;
+        private readonly OwnerApiService _ownerApiService;
+
         /// <summary>
         /// 
         /// </summary>
         /// <param name="dbContext"></param>
         /// <param name="mapper"></param>
-        public RoleController(DncZeusDbContext dbContext, IMapper mapper)
+        public RoleController(DncZeusDbContext dbContext, IMapper mapper,OwnerApiService ownerApiService)
         {
             _dbContext = dbContext;
             _mapper = mapper;
+            _ownerApiService = ownerApiService;
         }
 
         /// <summary>
@@ -283,7 +287,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
                     return Ok(response);
                 }
                 //先删除当前角色原来已分配的权限
-                await _dbContext.Database.ExecuteSqlCommandAsync("DELETE FROM DncRolePermissionMapping WHERE RoleCode={0}", payload.RoleCode);
+                await _dbContext.Database.ExecuteSqlRawAsync("DELETE FROM DncRolePermissionMapping WHERE RoleCode={0}", payload.RoleCode);
                 if (payload.Permissions == null || (payload.Permissions == null && payload.Permissions.Count <= 0))
                     return Ok(response);
                 {
@@ -295,6 +299,10 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
                     });
                     await _dbContext.DncRolePermissionMapping.AddRangeAsync(permissions);
                     await _dbContext.SaveChangesAsync();
+                    //移除redis缓存
+                    var users = await _dbContext.DncUserRoleMapping.Where(x => x.RoleCode == payload.RoleCode)
+                        .Select(x => x.UserGuid.ToString()).ToListAsync();
+                    _ownerApiService.ClearCache(users);
                 }
 
             }

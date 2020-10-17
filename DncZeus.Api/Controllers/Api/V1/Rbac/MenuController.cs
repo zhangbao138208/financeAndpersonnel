@@ -29,10 +29,10 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
     /// <summary>
     /// 
     /// </summary>
-    //[CustomAuthorize]
+    //[ServiceFilter(typeof(CustomAuthorizeAttribute))]
     [Route("api/v1/rbac/[controller]/[action]")]
     [ApiController]
-    [CustomAuthorize]
+    [ServiceFilter(typeof(CustomAuthorizeAttribute))]
     public class MenuController : ControllerBase
     {
         private readonly DncZeusDbContext _dbContext;

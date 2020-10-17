@@ -21,7 +21,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Finance
 {
     [Route("api/v1/finance/[controller]/[action]")]
     [ApiController]
-    [CustomAuthorize]
+    [ServiceFilter(typeof(CustomAuthorizeAttribute))]
     public class AccountController:ControllerBase
     {
         private readonly DncZeusDbContext _dbContext;

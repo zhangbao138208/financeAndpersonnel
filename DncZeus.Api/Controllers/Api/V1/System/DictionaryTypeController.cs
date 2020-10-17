@@ -18,7 +18,7 @@ namespace DncZeus.Api.Controllers.Api.V1.System
 {
     [Route("api/v1/system/[controller]/[action]")]
     [ApiController]
-    [CustomAuthorize]
+    [ServiceFilter(typeof(CustomAuthorizeAttribute))]
     public class DictionaryTypeController : ControllerBase
     {
         private readonly DncZeusDbContext _dbContext;

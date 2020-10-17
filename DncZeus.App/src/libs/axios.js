@@ -55,7 +55,6 @@ class HttpRequest {
 
     showError(error, errorInfo) {
         let message = "接口服务错误,请稍候再试.";
-
         let statusCode = -1;
         if (error.response && error.response.status) {
             statusCode = error.response.status;
@@ -76,6 +75,9 @@ class HttpRequest {
                     onOk: () => { window.location.href = window.location.href; }
                 });
                 //router.push("/login")
+                break;
+            case 403:
+                message = error.response.data.message
                 break;
             case 500:
                 message = "接口服务错误,原因:[" + error.response.statusText + "]";

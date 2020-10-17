@@ -44,7 +44,8 @@ namespace DncZeus.Api.Extensions.AuthContext
                     EmailAddress = Current.User.FindFirstValue("emailAddress"),
                     UserType = (UserType)Convert.ToInt32(Current.User.FindFirstValue("userType")),
                     Avator= Current.User.FindFirstValue("avator"),
-                    Guid= new Guid(Current.User.FindFirstValue("guid"))
+                    Guid= new Guid(Current.User.FindFirstValue("guid")),
+                    Roles = Current.User.FindFirstValue("roles"),
                 };
                 return user;
             }

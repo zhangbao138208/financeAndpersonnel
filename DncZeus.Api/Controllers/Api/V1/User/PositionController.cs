@@ -20,7 +20,7 @@ namespace DncZeus.Api.Controllers.Api.V1.User
 {
     [Route("api/v1/User/[controller]/[action]")]
     [ApiController]
-    [CustomAuthorize]
+    [ServiceFilter(typeof(CustomAuthorizeAttribute))]
     public class PositionController:ControllerBase
     {
         private readonly DncZeusDbContext _dbContext;

@@ -20,7 +20,8 @@ using System.Threading.Tasks;
 namespace DncZeus.Api.Controllers.Api.V1.Workflow
 {
     [ApiController]
-    [CustomAuthorize]
+    // [ServiceFilter(typeof(CustomAuthorizeAttribute))]
+    [ServiceFilter(typeof(CustomAuthorizeAttribute))]
     [Route("api/v1/Workflow/[controller]/[action]")]
     public class StepController : ControllerBase
     {

@@ -17,6 +17,7 @@ using DncZeus.Api.Utils.Encryption;
 using System.Text.Unicode;
 using System.Text;
 using System.Threading.Tasks;
+using DncZeus.Api.Extensions.CustomException;
 using DncZeus.Api.Utils;
 
 /******************************************
@@ -31,10 +32,10 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
     /// <summary>
     /// 
     /// </summary>
-    //[CustomAuthorize]
+    //[ServiceFilter(typeof(CustomAuthorizeAttribute))]
     [Route("api/v1/rbac/[controller]/[action]")]
     [ApiController]
-    //[CustomAuthorize]
+    [ServiceFilter(typeof(CustomAuthorizeAttribute))]
     public class UserController : ControllerBase
     {
         private readonly DncZeusDbContext _dbContext;

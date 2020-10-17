@@ -14,12 +14,6 @@ namespace DncZeus.Api.Extensions.CustomException
     /// </summary>
     public class UnauthorizeException : Exception
     {
-        /// <summary>
-        /// 
-        /// </summary>
-        public UnauthorizeException()
-        {
-            
-        }
+        
     }
 }

@@ -9,5 +9,6 @@ namespace DncZeus.Api.Models
     {
         public string userName { get; set; }
         public string password { get; set; }
+        public string  slideCookie { get; set; }
     }
 }

@@ -20,7 +20,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Resume
 {
     [Route("api/v1/Resume/[controller]/[action]")]
     [ApiController]
-    [CustomAuthorize]
+    [ServiceFilter(typeof(CustomAuthorizeAttribute))]
     public class ResumeInfoController:ControllerBase
     {
         private readonly DncZeusDbContext _dbContext;

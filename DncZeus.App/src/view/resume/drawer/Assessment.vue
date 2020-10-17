@@ -23,12 +23,12 @@
         </mu-col>
       </mu-row>
       <mu-button @click="closeAssessment" flat label="关闭" primary>关闭</mu-button>
-      <mu-button @click="assessmentData" color="blue" flat label="确定">确定</mu-button>
+      <mu-button @click="assessmentData" color="#2b85e4" flat label="确定">确定</mu-button>
     </mu-dialog>
 
     <div class="assessment-content">
       <div class="empty" v-if="assessmentEmpty">自我评价</div>
-      <div class="list" v-else v-for="(item,index) in assessments">
+      <div class="list" v-else :key="index" v-for="(item,index) in assessments">
         <mu-row gutter>
           <mu-col span="10">
             <span class="content-font">• {{item}}</span>

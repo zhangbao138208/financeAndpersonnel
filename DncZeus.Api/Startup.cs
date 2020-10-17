@@ -23,20 +23,17 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.WebEncoders;
 using Microsoft.OpenApi.Models;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Serialization;
 using System;
 using System.IO;
 using System.Reflection;
-using System.Security.Cryptography;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Unicode;
 using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
-
+using EasySlideVerification;
 
 namespace DncZeus.Api
 {
@@ -60,7 +57,8 @@ namespace DncZeus.Api
             services.AddCors(o =>
                 o.AddPolicy("CorsPolicy",
                     builder => builder
-                        .WithOrigins("http://localhost:9000", "http://localhost:7501")
+                       .WithOrigins("http://localhost:9000", "http://localhost:7501")
+                        //.WithOrigins("*")
                         .AllowAnyHeader()
                         .AllowAnyMethod()
                         //.AllowAnyOrigin()
@@ -83,7 +81,13 @@ namespace DncZeus.Api
                 options.TextEncoderSettings = new TextEncoderSettings(UnicodeRanges.BasicLatin, UnicodeRanges.CjkUnifiedIdeographs)
             );
 
+            
+
+           
+
             services.AddControllers().AddNewtonsoftJson();
+            
+           
 
             // services.AddDbContext<DncZeusDbContext>(options =>
             //     options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
@@ -125,6 +129,36 @@ namespace DncZeus.Api
             services.AddScoped<DictionaryService>();
             services.AddScoped<TelegramService>();
             services.AddScoped<RSAHelper>();
+            services.AddScoped<OwnerApiService>();
+            services.AddScoped<CustomAuthorizeAttribute>();
+
+            //注册滑动校验
+            services.AddSlideVerification(options =>
+            {
+                //可接受的误差范围
+                options.AcceptableDeviation = 5;
+                //右边框距离(防止由于太靠近右侧，自定义的滑动按钮无法到达）
+                options.Edge = 0;
+                //数据过期时间
+                options.Expire = new TimeSpan(0, 5, 0);
+                //混淆点数量
+                options.MixedCount = 0;
+            });
+
+            //注册滑动校验，使用Redis缓存
+            services.AddSlideVerification(
+                redisOptions =>
+                {
+                    redisOptions.Connection = Configuration["Redis:Connection"];
+                    redisOptions.DatabaseIndex = 0;
+                    redisOptions.KeyPrefix = "slide:";
+                },
+                options =>
+                {
+                });
+
+                //在startup全部注入完毕后，构建ServiceProvider对象
+            //GlobalAppConst.ServiceProvider = services.BuildServiceProvider();
         }
 
         /// <summary>
@@ -133,7 +167,7 @@ namespace DncZeus.Api
         /// <param name="app"></param>
         /// <param name="env"></param>
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILoggerFactory loggerFactory)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             if (env.IsDevelopment())
             {
@@ -143,7 +177,7 @@ namespace DncZeus.Api
             //将日志记录到数据库config/NLog.config
             NLog.LogManager.LoadConfiguration("nlog.config").GetCurrentClassLogger();
             NLog.LogManager.Configuration.Variables["connectionString"] = 
-                Configuration.GetConnectionString("LogConnection");
+                Configuration.GetConnectionString("MYSQLConnection");
             // NLog.LogManager.Configuration.Variables["dbProvider"] =
             //     Configuration["DbProvider"];
             //避免日志中的中文输出乱码
@@ -152,7 +186,7 @@ namespace DncZeus.Api
             app.UseDeveloperExceptionPage();
             //app.UseExceptionHandler("/error/500");
             //app.UseStatusCodePagesWithReExecute("/error/{0}");
-
+            
             app.UseStaticFiles();
             app.UseFileServer();
             app.UseAuthentication();
@@ -165,6 +199,7 @@ namespace DncZeus.Api
 
             app.UseRouting();
             app.UseAuthorization();
+            
             app.UseEndpoints(ep =>
             {
                 ep.MapControllerRoute(name: "areaRoute", pattern: "{area:exists}/{controller=Home}/{action=Index}/{id?}");

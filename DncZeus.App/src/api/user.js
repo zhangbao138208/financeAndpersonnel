@@ -6,12 +6,14 @@ const authUrl = process.env.NODE_ENV === 'development' ? config.authUrl.dev : co
 
 export const login = ({
     userName,
-    password
+    password,
+    slideCookie
 }) => {
     //return _axios.get(authUrl + '?username=' + userName + '&password=' + password)
     return _axios.post(authUrl, {
         userName,
-        password
+        password,
+        slideCookie
     })
 }
 
@@ -72,5 +74,20 @@ export const restoreTrash = msg_id => {
     return axios.request({
         url: 'message/restore/' + msg_id,
         method: 'get'
+    })
+}
+
+export const getVerification = () => {
+    return axios.request({
+        url: 'oauth/getVerification',
+        method: 'post'
+    })
+}
+
+export const verify = (param) => {
+    return axios.request({
+        url: 'oauth/verify',
+        method: 'post',
+        data: param
     })
 }

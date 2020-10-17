@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using AutoMapper;
 using DncZeus.Api.Entities;
 using DncZeus.Api.Extensions;
+using DncZeus.Api.Extensions.CustomException;
 using DncZeus.Api.Models.Response;
 using DncZeus.Api.RequestPayload.System.Loger;
 using DncZeus.Api.ViewModels.System.Loger;
@@ -19,7 +20,7 @@ namespace DncZeus.Api.Controllers.Api.V1
 {
     [Route("api/v1/[controller]/[action]")]
     [ApiController]
-    [Authorize]
+    [ServiceFilter(typeof(CustomAuthorizeAttribute))]
     public class LogerController: ControllerBase
     {
         private readonly DncZeusDbContext _dbContext;
@@ -70,8 +71,9 @@ namespace DncZeus.Api.Controllers.Api.V1
                             payload.End.ToString().Replace('-','/')) <= 0);
                 }
                 // var list = await query.Paged(payload.CurrentPage, payload.PageSize).ToListAsync();
-                var list = await query.Paged(payload.CurrentPage, payload.PageSize).
-                    OrderByDescending(r =>r.Operatingtime).ToListAsync();
+                var list = await query.OrderByDescending(r =>r.Operatingtime)
+                    .Paged(payload.CurrentPage, payload.PageSize)
+                    .ToListAsync();
                 var totalCount = await query.CountAsync();
                 var data = list.Select(_mapper.Map<SystemLog, SystemLogJsonModel>);
 

@@ -21,7 +21,8 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
 {
     [Route("api/v1/workflow/[controller]/[action]")]
     [ApiController]
-    [CustomAuthorize]
+    // [ServiceFilter(typeof(CustomAuthorizeAttribute))]
+    [ServiceFilter(typeof(CustomAuthorizeAttribute))]
     public class WListController : ControllerBase
     {
         private readonly DncZeusDbContext _dbContext;

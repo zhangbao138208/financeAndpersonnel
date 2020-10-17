@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using DncZeus.Api.Extensions.AuthContext;
+using DncZeus.Api.Extensions.CustomException;
 using DncZeus.Api.Extensions.DataAccess;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging;
@@ -28,15 +29,16 @@ namespace DncZeus.Api.Controllers.Api.V1
         private readonly DncZeusDbContext _dbContext;
         private readonly IMapper _mapper;
         private readonly DictionaryService _dictionaryService;
-       
+        private readonly ILogger<HomeController> _logger;
+
 
         public HomeController(DncZeusDbContext dbContext, IMapper mapper, 
-            DictionaryService dictionaryService)
+            DictionaryService dictionaryService,ILogger<HomeController> logger)
         {
             _dbContext = dbContext;
             _mapper = mapper;
             _dictionaryService = dictionaryService;
-            
+            _logger = logger;
         }
 
         [HttpGet]

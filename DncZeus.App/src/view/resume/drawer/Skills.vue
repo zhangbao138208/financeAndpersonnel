@@ -20,14 +20,14 @@
             <span>100</span>
           </mu-col>
         </mu-row>
-        <mu-button @click="closeSkills" color="blue" flat>取消</mu-button>
+        <mu-button @click="closeSkills" color="#2b85e4" flat>取消</mu-button>
         <mu-button @click="skillData" color="primary" flat>确定</mu-button>
       </mu-dialog>
     </div>
 
     <div class="skill-item">
       <div class="empty" v-if="skillEmpty">请先添加技能特点</div>
-      <div class="list" v-else v-for="(item,index) in skills">
+      <div class="list" v-else v-for="(item,index) in skills" :key="index">
         <p>
           <span>{{item.name}}</span>
           <a @click="deleteSkill(index)" class="delete" href="javascript:void(0);">

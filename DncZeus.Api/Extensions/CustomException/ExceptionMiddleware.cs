@@ -58,6 +58,12 @@ namespace DncZeus.Api.Extensions.CustomException
                 error.Message = "未授权的访问(未登录或者登录已超时)";
             }
 
+            if (exception is Forbidden)
+            {
+                error.StatusCode = 403;
+                error.Message = exception.Message;
+            }
+
             context.Response.ContentType = "application/json";
             context.Response.StatusCode = error.StatusCode;
 

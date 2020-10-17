@@ -11,6 +11,9 @@ using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.Caching.Memory;
 using System;
+using System.Linq;
+using DncZeus.Api.Entities;
+using DncZeus.Api.Services;
 
 namespace DncZeus.Api.Extensions.CustomException
 {
@@ -21,12 +24,22 @@ namespace DncZeus.Api.Extensions.CustomException
     public class CustomAuthorizeAttribute : AuthorizeAttribute, IAuthorizationFilter
     {
         // https://tpodolak.com/blog/2017/12/13/asp-net-core-memorycache-getorcreate-calls-factory-method-multiple-times/
-        private IMemoryCache _memoryCache;
+        private readonly IMemoryCache _memoryCache;
+        private readonly OwnerApiService _ownerApiService;
+        private readonly DictionaryService _dictionaryService;
+
+
         /// <summary>
         /// 
         /// </summary>
-        public CustomAuthorizeAttribute()
+        public CustomAuthorizeAttribute(
+            OwnerApiService ownerApiService,
+            IMemoryCache memoryCache,
+            DictionaryService dictionaryService)
         {
+            _ownerApiService = ownerApiService;
+            _memoryCache = memoryCache;
+            _dictionaryService = dictionaryService;
         }
 
         /// <summary>
@@ -38,9 +51,15 @@ namespace DncZeus.Api.Extensions.CustomException
         /// 
         /// </summary>
         /// <param name="context"></param>
-        public void OnAuthorization(AuthorizationFilterContext context)
+        public  void OnAuthorization(AuthorizationFilterContext context)
         {
-            return;
+            //return;
+
+            if (AuthContextService.CurrentUser.UserType == UserType.SuperAdministrator)
+            {
+                return;
+            }
+
             // 以下权限拦截器未现实，所以直接return
             var user = context.HttpContext.User;
 
@@ -48,26 +67,36 @@ namespace DncZeus.Api.Extensions.CustomException
             {
                 throw new UnauthorizeException();
             }
-            OwnedApiPermission entry = new OwnedApiPermission();
-            _memoryCache = (IMemoryCache)context.HttpContext.RequestServices.GetService(typeof(IMemoryCache));
-            _memoryCache.GetOrCreate("CK_PERMISSION_" + AuthContextService.CurrentUser.LoginName, (cache) =>
-            {
-                //TODO: load real permission list from db
-                //entry = new OwnedApiPermission();
-                cache.SlidingExpiration = TimeSpan.FromMinutes(30);
-                return entry;
-            });
+            //在方法前使用async 中间件捕捉不到异常
+            var  entry =  _ownerApiService.GetApiEntry().Result;
+           
+           
             var controllerActionDescriptor = context.ActionDescriptor as ControllerActionDescriptor;
-            string controllerName = controllerActionDescriptor?.ControllerName;
-            string actionName = controllerActionDescriptor?.ActionName;
+            var controllerName = controllerActionDescriptor?.ControllerName;
+            var actionName = controllerActionDescriptor?.ActionName;
             if (!string.IsNullOrEmpty(ActionAlias))
             {
                 actionName = ActionAlias;
             }
-            if (!entry.Can(controllerName, actionName))
-            {
-                throw new UnauthorizeException();
-            }
+
+            if (entry.Can(controllerName, actionName, out var cName, out var aName)) return;
+            cName = cName == "" ? controllerName : cName;
+           // aName = aName == "" ? actionName : aName;
+           var dic = _dictionaryService.
+               GetSYSSeting("operationControlCode");
+           var operationCode = dic.Value.Split('|').
+               FirstOrDefault(x=>x.Contains(actionName ?? "null",StringComparison.OrdinalIgnoreCase));
+
+           if (operationCode!=null&& operationCode.Split(':').Length==2)
+           {
+               actionName = operationCode.Split(':')[1];
+           }
+           
+            throw new Forbidden($"对不起您没有对【{cName}】的【{actionName}】权限，请联系管理员添加");
         }
+        
+        
     }
+
+    
 }
