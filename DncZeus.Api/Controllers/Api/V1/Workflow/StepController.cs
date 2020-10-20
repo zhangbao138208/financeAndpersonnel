@@ -306,8 +306,8 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
                 {
                     s.Users = s.UserList.Split('|').ToArray();
                     s.UsersName = await _dbContext.DncUser.
-                    Where(us => s.UserList.Contains(us.Guid.ToString())).
-                    Select(s => s.DisplayName).ToArrayAsync();
+                    Where(us => s.UserList.Contains(us.Guid.ToString(),StringComparison.OrdinalIgnoreCase)).
+                    Select(user => user.DisplayName).ToArrayAsync();
                 }
                 //这种异步写法有误
                 //steps.ForEach( async(s)=> {

@@ -9,8 +9,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DncZeus.Api.Migrations
 {
     [DbContext(typeof(DncZeusDbContext))]
-    [Migration("20201013105201_init1")]
-    partial class init1
+    [Migration("20201020050525_modifyworkflowreceiver")]
+    partial class modifyworkflowreceiver
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -1044,6 +1044,9 @@ namespace DncZeus.Api.Migrations
                     b.Property<string>("Code")
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<string>("Additions")
+                        .HasColumnType("longtext CHARACTER SET utf8mb4");
+
                     b.Property<string>("CurrentStepCode")
                         .HasColumnType("longtext CHARACTER SET utf8mb4");
 
@@ -1093,6 +1096,9 @@ namespace DncZeus.Api.Migrations
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
+
+                    b.Property<string>("Additions")
+                        .HasColumnType("longtext CHARACTER SET utf8mb4");
 
                     b.Property<DateTime>("CheckDate")
                         .HasColumnType("datetime(6)");
@@ -1260,11 +1266,11 @@ namespace DncZeus.Api.Migrations
             modelBuilder.Entity("DncZeus.Api.Entities.DncUser", b =>
                 {
                     b.HasOne("DncZeus.Api.Entities.UserDepartment", "Department")
-                        .WithMany()
+                        .WithMany("DncUsers")
                         .HasForeignKey("DepartmentCode");
 
-                    b.HasOne("DncZeus.Api.Entities.UserDepartment", "Position")
-                        .WithMany()
+                    b.HasOne("DncZeus.Api.Entities.UserPosition", "Position")
+                        .WithMany("DncUsers")
                         .HasForeignKey("PositionCode");
                 });
 

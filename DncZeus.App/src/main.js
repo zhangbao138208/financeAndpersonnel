@@ -46,6 +46,11 @@ import 'muse-ui/dist/muse-ui.css';
 
 Vue.use(MuseUI);
 
+//打印
+import Print from 'vue-print-nb'
+
+Vue.use(Print);
+
 import '@/directive/echartResizeHelper.js';
 
 import JSEncrypt from 'jsencrypt';

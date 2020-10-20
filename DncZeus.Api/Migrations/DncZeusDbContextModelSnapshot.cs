@@ -1042,6 +1042,9 @@ namespace DncZeus.Api.Migrations
                     b.Property<string>("Code")
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<string>("Additions")
+                        .HasColumnType("longtext CHARACTER SET utf8mb4");
+
                     b.Property<string>("CurrentStepCode")
                         .HasColumnType("longtext CHARACTER SET utf8mb4");
 
@@ -1091,6 +1094,9 @@ namespace DncZeus.Api.Migrations
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
+
+                    b.Property<string>("Additions")
+                        .HasColumnType("longtext CHARACTER SET utf8mb4");
 
                     b.Property<DateTime>("CheckDate")
                         .HasColumnType("datetime(6)");

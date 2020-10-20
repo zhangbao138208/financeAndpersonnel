@@ -30,5 +30,7 @@ namespace DncZeus.Api.ViewModels.Workflow.Receiver
         public Guid CreateUser { get; set; }
         public string CreateUserName { get; set; }
         public DateTime CreateDate { get; set; }
+
+        public string Additions { get; set; }
     }
 }

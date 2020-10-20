@@ -8,3 +8,12 @@ export const upload = (data) => {
         data
     })
 }
+
+export const deleteFile = (data) => {
+    return axios.request({
+        withPrefix: false,
+        url: 'filedelete',
+        method: 'delete',
+        data
+    })
+}

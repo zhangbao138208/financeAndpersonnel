@@ -11,7 +11,7 @@ namespace DncZeus.Api.ViewModels.Workflow.Receiver
 
         public List<Note> Notes { get; set; }
         public List<string> Steps { get; set; }
-        public int currentStep { get; set; }
+        public int CurrentStep { get; set; }
         public string UserName { get; set; }
         public string Status { get; set; }
         public string StatusName { get; set; }
@@ -19,6 +19,8 @@ namespace DncZeus.Api.ViewModels.Workflow.Receiver
         public Guid CreateUser { get; set; }
         public string CreateUserName { get; set; }
         public string DateSpan { get; set; }
+        public string Additions { get; set; }
+        
     }
     public class Note
     {

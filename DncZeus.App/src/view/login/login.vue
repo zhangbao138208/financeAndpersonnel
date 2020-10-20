@@ -77,6 +77,7 @@ export default {
     loadData(callback) {
       getVerification().then((response) => {
         this.key = response.data.key
+         this.modalShow = true
         if (callback) {
           callback(response.data)
         }
@@ -104,7 +105,7 @@ export default {
     },
     ...mapActions(['handleLogin', 'getUserInfo']),
     handleValid() {
-      this.modalShow = true
+     
       this.loadData()
     },
     handleSubmit({ userName, password }) {

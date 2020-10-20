@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -79,8 +80,39 @@ namespace DncZeus.Api.Controllers.Api.V1
             }
 
         }
+        /// <summary>
+        /// 移除文件
+        /// </summary>
+        /// <param name="urls"></param>
+        /// <returns></returns>
+        [HttpDelete]
+        [Route("FileDelete")]
+        public async Task<IActionResult> FileDelete(List<string> urls)
+        {
+            var response = ResponseModelFactory.CreateResultInstance;
+            var r = urls[0].Replace(CeyhConfiguration.TheUploadFileSettings.HostUrl,  Directory.GetCurrentDirectory());
+            foreach (var url in urls.Where(url =>
+              
+                global::System.IO.File.Exists(url.Replace(CeyhConfiguration.TheUploadFileSettings.HostUrl, Directory.GetCurrentDirectory()))))
+            {
+                // Use a try block to catch IOExceptions, to
+                // handle the case of the file already being
+                // opened by another process.
+                try
+                {
+                    global::System.IO.File.Delete(url.Replace(CeyhConfiguration.TheUploadFileSettings.HostUrl, Directory.GetCurrentDirectory()));
+                    
+                }
+                catch (IOException e)
+                {
+                   response.SetError(e.Message);
+                }
+            }
 
-        [AllowAnonymous]
+            return Ok(response);
+        }
+
+        // [AllowAnonymous]
         [HttpPost]
         [Route("EditorUpload")]
         public async Task<IActionResult> EditorUpload()

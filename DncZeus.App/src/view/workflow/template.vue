@@ -166,17 +166,11 @@
         <Step title="止" icon="md-radio-button-off"></Step>
       </Steps> -->
         <Button type="success" shape="circle">起</Button>
-          <Icon type="md-fastforward" color='#ccc'/><Icon type="md-fastforward" color='#ccc'/><Icon
-              type="md-fastforward"
-              color='#ccc'
-            />
+          <img src="../../assets/images/arrow.png" style="width:40px;vertical-align: sub;">
           <div :key="item.code" v-for="(item) in steps" style="display:inline-block">
             <Button type="primary">{{ item.title }}</Button>
             
-            <Icon type="md-fastforward" color='#ccc'/><Icon type="md-fastforward" color='#ccc'/><Icon
-              type="md-fastforward"
-              color='#ccc'
-            />
+             <img src="../../assets/images/arrow.png" style="width:40px;vertical-align: sub;">
           </div>
 
           <Button type="error" shape="circle">止</Button>

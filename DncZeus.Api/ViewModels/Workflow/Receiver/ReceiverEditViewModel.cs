@@ -34,7 +34,9 @@ namespace DncZeus.Api.ViewModels.Workflow.Receiver
         public string ListTypeName { get; set; }
         public List<ReceiverStatus> Statuses { get; set; }
         public string Description { get; set; }
-        public string EndDate { get; set; }
+        public string EndDate { get; set; }    
+
+        public string Additions { get; set; }
     }
     public class NextUser
     {

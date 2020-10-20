@@ -83,6 +83,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
                                  Title = ls.Title,
                                  Type = ls.Type,
                                  User = ls.User,
+                                 Additions = ls.Additions,
                                  DepartmentName = de.Name,
                                  TemplateName = tl.Name,
                                  UserName = user.DisplayName,
@@ -169,6 +170,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
                         receiver.CreateUser = entity.User;
                         receiver.Description = entity.Description;
                         receiver.StepCode = entity.CurrentStepCode;
+                        receiver.Additions = entity.Additions;
                         receiver.TemplateCode = step?.TemplateCode;
                         receivers.Add(receiver);
                         //发送纸飞机通知
@@ -292,6 +294,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
                         receiver.WorkflowCode = entity.Code;
                         receiver.CreateUser = entity.User;
                         receiver.StepCode = entity.CurrentStepCode;
+                        receiver.Additions = entity.Additions;
                         receiver.TemplateCode = step?.TemplateCode;
                         receivers.Add(receiver);
                         //发送纸飞机通知

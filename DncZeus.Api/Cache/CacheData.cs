@@ -90,8 +90,7 @@ namespace DncZeus.Api.Cache
                 // optionsBuilder.UseMySql(connectionString);
                 // var dbContext = new DncZeusDbContext(optionsBuilder.Options);
                 //TODO: load real permission list from db
-                using (_dbContext)
-                {
+                
                     var roles = _dbContext.DncUserRoleMapping.Where(x => x.UserGuid == AuthContextService.CurrentUser.Guid)
                         .Select(x => x.RoleCode).ToListAsync().Result;
 
@@ -124,7 +123,7 @@ namespace DncZeus.Api.Cache
 
                     CacheManager.SetCache($"{AuthContextService.CurrentUser.Guid.ToString().ToLower()}OwnedApiPermission", entry);
                     retEntry = entry;
-                }
+                
                 return retEntry;
             }
         }

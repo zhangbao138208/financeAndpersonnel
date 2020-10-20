@@ -9,8 +9,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DncZeus.Api.Migrations
 {
     [DbContext(typeof(DncZeusDbContext))]
-    [Migration("20201009052015_mysqlInit")]
-    partial class mysqlInit
+    [Migration("20201019081537_init")]
+    partial class init
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -749,6 +749,50 @@ namespace DncZeus.Api.Migrations
                     b.ToTable("SystemDictionary");
                 });
 
+            modelBuilder.Entity("DncZeus.Api.Entities.SystemLog", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    b.Property<string>("Action")
+                        .HasColumnType("longtext CHARACTER SET utf8mb4");
+
+                    b.Property<string>("Application")
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("Callsite")
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("Exception")
+                        .HasColumnType("longtext CHARACTER SET utf8mb4");
+
+                    b.Property<string>("Levels")
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("Logger")
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("Message")
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("Operatingaddress")
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("Operatingtime")
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("Referrerurl")
+                        .HasColumnType("longtext CHARACTER SET utf8mb4");
+
+                    b.Property<string>("Requesturl")
+                        .HasColumnType("nvarchar(255)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("SystemLog");
+                });
+
             modelBuilder.Entity("DncZeus.Api.Entities.UserDepartment", b =>
                 {
                     b.Property<string>("Code")
@@ -1000,6 +1044,9 @@ namespace DncZeus.Api.Migrations
                     b.Property<string>("Code")
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<string>("Additions")
+                        .HasColumnType("longtext CHARACTER SET utf8mb4");
+
                     b.Property<string>("CurrentStepCode")
                         .HasColumnType("longtext CHARACTER SET utf8mb4");
 
@@ -1216,11 +1263,11 @@ namespace DncZeus.Api.Migrations
             modelBuilder.Entity("DncZeus.Api.Entities.DncUser", b =>
                 {
                     b.HasOne("DncZeus.Api.Entities.UserDepartment", "Department")
-                        .WithMany()
+                        .WithMany("DncUsers")
                         .HasForeignKey("DepartmentCode");
 
-                    b.HasOne("DncZeus.Api.Entities.UserDepartment", "Position")
-                        .WithMany()
+                    b.HasOne("DncZeus.Api.Entities.UserPosition", "Position")
+                        .WithMany("DncUsers")
                         .HasForeignKey("PositionCode");
                 });
 

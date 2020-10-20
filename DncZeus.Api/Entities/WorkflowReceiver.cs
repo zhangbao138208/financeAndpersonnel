@@ -24,6 +24,8 @@ namespace DncZeus.Api.Entities
         public string Description { get; set; }
         public Guid CreateUser { get; set; }
         public DateTime CreateDate { get; set; }
+
+        public string Additions { get; set; }
     }
 
 }

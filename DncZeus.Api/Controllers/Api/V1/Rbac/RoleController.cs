@@ -19,7 +19,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Linq;
-using Microsoft.Data.SqlClient;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using DncZeus.Api.Services;

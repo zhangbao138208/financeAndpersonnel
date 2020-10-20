@@ -27,5 +27,6 @@ namespace DncZeus.Api.ViewModels.Workflow.List
         public DateTime StartDate { get; set; }
         public DateTime EndDate { get; set; }
         public Guid NotifyUser { get; set; }
+        public string Additions { get; set; }
     }
 }

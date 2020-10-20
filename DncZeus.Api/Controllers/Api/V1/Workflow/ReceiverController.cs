@@ -8,7 +8,6 @@ using DncZeus.Api.RequestPayload.Workflow.Receiver;
 using DncZeus.Api.Services;
 using DncZeus.Api.ViewModels.Workflow.Receiver;
 using Microsoft.AspNetCore.Mvc;
-using System.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -56,7 +55,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
                     from tl in t2.DefaultIfEmpty()
                     join user in _dbContext.DncUser on ls.User equals user.Guid
                         into t3
-                    from User in t3.DefaultIfEmpty()
+                    from user in t3.DefaultIfEmpty()
                     join step1 in _dbContext.WorkflowStep on ls.StepCode equals step1.Code
                         into t4
                     from step1 in t4.DefaultIfEmpty()
@@ -82,7 +81,8 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
                         ListType = ls.Type,
                         User = ls.User,
                         TemplateName = tl.Name,
-                        UserName = User.DisplayName,
+                        Additions = ls.Additions,
+                        UserName = user.DisplayName,
                         WorkflowName = w.Title,
                         StepName = step1.Title,
                     });
@@ -104,7 +104,8 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
                     query = query.Where(x => x.Status == payload.Status.Trim());
                 }
 
-                var list = await query.Paged(payload.CurrentPage, payload.PageSize).ToListAsync();
+                var list = await query.OrderByDescending(o=>o.CreateDate).
+                    Paged(payload.CurrentPage, payload.PageSize).ToListAsync();
                 foreach (var r in list)
                 {
                     var dic = await _dictionaryService.GetSYSDictionaryAsync("workflow_list_type", r.ListType);
@@ -271,6 +272,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
                         receiver.CreateUser = AuthContextService.CurrentUser.Guid;
                         receiver.StepCode = model.NextStepCode;
                         receiver.TemplateCode = entity.TemplateCode;
+                        receiver.Additions = entity.Additions;
                         receivers.Add(receiver);
                         //发送纸飞机通知
                         var toDoUser = await _dbContext.DncUser.FindAsync(entity.User);
@@ -384,7 +386,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
                 var cur = await _dbContext.WorkflowStep.FindAsync(unCheck?.StepCode);
                 if (cur != null)
                 {
-                    resEntity.currentStep = int.Parse(cur.SortID) + 1;
+                    resEntity.CurrentStep = int.Parse(cur.SortID) + 1;
                 }
 
 
