@@ -1,0 +1,2 @@
+"Code"	"Status"	"IsDeleted"	"CreatedOn"	"CreatedByUserGuid"	"CreatedByUserName"	"ModifiedOn"	"ModifiedByUserGuid"	"ModifiedByUserName"	"Name"	"Phone1"	"Phone2"	"Fax"	"Email"	"Address"	"ParentCode"	"LevelID"	"SortID"	"TypeID"	"Province"	"City"	"County"	"Zone"	"Manager"	"Company"	"Monday"	"Tuesday"	"Wednesday"	"Thursday"	"Friday"	"Saturday"	"Sunday"
+"HWhbx6Ro"	"1"	"0"	"14/10/2020 17:03:47.000669"	"20263da4-aed4-4aba-a6cc-b985c016858e"	"系统管理员"				"总裁办"	"343434"			"conwayli@outlook.com"			"0"	"1"	"0"													

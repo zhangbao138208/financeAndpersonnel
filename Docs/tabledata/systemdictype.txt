@@ -1,0 +1,8 @@
+"Code"	"Name"	"Value"
+"4sJ07cQ3"	"流程审批工作状态"	"workflow_list_status"
+"94Gr9HOP"	"系统"	"system"
+"97R5Bg9P"	"财务管理类型"	"finance_manager_type"
+"dT8GmxRt"	"流程审批工作类型"	"workflow_list_type"
+"jntFJ4Ek"	"财务管理状态"	"finance_manager_status"
+"R26o4L71"	"审批状态"	"workflow_receiver_status"
+"wh7e1Lw3"	"财务账号类型"	"finance_account_type"

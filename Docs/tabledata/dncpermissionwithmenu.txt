@@ -1,0 +1,1 @@
+"PermissionCode"	"PermissionActionCode"	"PermissionName"	"PermissionType"	"MenuName"	"MenuGuid"	"MenuAlias"	"IsDefaultRouter"

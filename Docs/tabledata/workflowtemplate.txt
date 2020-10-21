@@ -1,0 +1,63 @@
+"Code"	"Status"	"IsDeleted"	"CreatedOn"	"CreatedByUserGuid"	"CreatedByUserName"	"ModifiedOn"	"ModifiedByUserGuid"	"ModifiedByUserName"	"Name"	"Description"	"ParentCode"	"Visible"	"IsStepFree"
+"E7kE7Isi"	"1"	"0"	"1/10/2020 16:55:31.853654"	"20263DA4-AED4-4ABA-A6CC-B985C016858E"	"系统管理员"				"财务"			"1"	"0"
+"ypgqh9XE"	"1"	"0"	"1/10/2020 16:57:33.273792"	"20263DA4-AED4-4ABA-A6CC-B985C016858E"	"系统管理员"				"请款"	"<div style=""text-align:center;"">
+	<h2>
+		请款申请单示例
+	</h2>
+	<table align=""center"" cellpadding=""0"" cellspacing=""0"" style=""width:600px;text-align:center;border:solid 1px #000;"">
+		<tbody>
+			<tr>
+				<td style=""height:35px;text-align:center;width:120px;border:solid 1px #000;"">
+					申请人
+				</td>
+				<td style=""text-align:center;border:solid 1px #000;width:180px;"">
+				</td>
+				<td style=""height:35px;text-align:center;width:120px;border:solid 1px #000;"">
+					申请日期
+				</td>
+				<td style=""text-align:center;border:solid 1px #000;width:180px;"">
+				</td>
+			</tr>
+			<tr>
+				<td style=""height:35px;text-align:center;width:120px;border:solid 1px #000;"">
+					部门
+				</td>
+				<td style=""text-align:center;border:solid 1px #000;width:180px;"">
+				</td>
+				<td style=""height:35px;text-align:center;width:120px;border:solid 1px #000;"">
+					金额
+				</td>
+				<td style=""text-align:center;border:solid 1px #000;width:180px;"">
+				</td>
+			</tr>
+			<tr>
+				<td style=""height:80px;text-align:center;width:120px;border:solid 1px #000;"">
+					申请理由
+				</td>
+				<td style=""text-align:center;border:solid 1px #000;"" colspan=""3"">
+				</td>
+			</tr>
+			<tr>
+				<td style=""height:80px;text-align:center;width:120px;border:solid 1px #000;"">
+					部门审批
+				</td>
+				<td style=""text-align:center;border:solid 1px #000;"" colspan=""3"">
+				</td>
+			</tr>
+			<tr>
+				<td style=""height:80px;text-align:center;width:120px;border:solid 1px #000;"">
+					财务审批
+				</td>
+				<td style=""text-align:center;border:solid 1px #000;"" colspan=""3"">
+				</td>
+			</tr>
+			<tr>
+				<td style=""height:80px;text-align:center;width:120px;border:solid 1px #000;"">
+					总监审批
+				</td>
+				<td style=""text-align:center;border:solid 1px #000;"" colspan=""3"">
+				</td>
+			</tr>
+		</tbody>
+	</table>
+</div>"	"E7kE7Isi"	"1"	"0"

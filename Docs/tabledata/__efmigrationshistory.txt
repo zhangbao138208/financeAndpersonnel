@@ -1,0 +1,5 @@
+"MigrationId"	"ProductVersion"
+"20201019081537_init"	"3.1.2"
+"20201020050525_modifyworkflowreceiver"	"3.1.2"
+"20201020073844_modifyrole"	"3.1.2"
+"20201021060643_modifyworkflowstep"	"3.1.2"

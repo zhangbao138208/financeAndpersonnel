@@ -1,0 +1,5 @@
+"Code"	"Name"	"Description"	"Status"	"IsDeleted"	"CreatedOn"	"CreatedByUserGuid"	"CreatedByUserName"	"ModifiedOn"	"ModifiedByUserGuid"	"ModifiedByUserName"	"IsSuperAdministrator"	"IsBuiltin"	"ParentCode"
+"9PeVLUMU"	"超级管理员"	"哈哈"	"1"	"0"	"20/11/2018 16:56:20.691958"	"00000000-0000-0000-0000-000000000000"	"超级管理员"	"18/9/2020 21:38:59.016451"	"20263DA4-AED4-4ABA-A6CC-B985C016858E"	"系统管理员"	"1"	"1"	
+"C7kPHIwu"	"普通用户"		"1"	"0"	"16/11/2018 15:54:37.166143"	"00000000-0000-0000-0000-000000000000"	"超级管理员"	"20/10/2020 16:35:32.624196"	"20263da4-aed4-4aba-a6cc-b985c016858e"	"系统管理员"	"0"	"0"	"WPbv96HC"
+"ihKhNu7A"	"普通用户2"		"1"	"0"	"20/10/2020 20:27:01.12046"	"20263da4-aed4-4aba-a6cc-b985c016858e"	"系统管理员"				"0"	"0"	"WPbv96HC"
+"WPbv96HC"	"管理员"		"1"	"0"	"16/11/2018 15:54:28.077839"	"00000000-0000-0000-0000-000000000000"	"超级管理员"	"20/10/2020 16:23:59.705073"	"20263da4-aed4-4aba-a6cc-b985c016858e"	"系统管理员"	"0"	"1"	"9PeVLUMU"
