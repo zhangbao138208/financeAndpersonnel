@@ -57,12 +57,16 @@ namespace DncZeus.Api
             services.AddCors(o =>
                 o.AddPolicy("CorsPolicy",
                     builder => builder
-                       .WithOrigins("http://localhost:9000", "http://localhost:7501")
-                        //.WithOrigins("*")
-                        .AllowAnyHeader()
-                        .AllowAnyMethod()
-                        //.AllowAnyOrigin()
-                        .AllowCredentials()
+                       // .WithOrigins("http://localhost:9000", "http://localhost:7501")
+                       //  //.WithOrigins("*")
+                       //  .AllowAnyHeader()
+                       //  .AllowAnyMethod()
+                       //  //.AllowAnyOrigin()
+                       //  .AllowCredentials()
+                       .SetIsOriginAllowed(origin => true)
+                       .AllowAnyMethod()
+                       .AllowAnyHeader()
+                       .AllowCredentials()//指定处理cookie
                 ));
 
             services.AddMemoryCache();
@@ -131,6 +135,7 @@ namespace DncZeus.Api
             services.AddScoped<RSAHelper>();
             services.AddScoped<OwnerApiService>();
             services.AddScoped<CustomAuthorizeAttribute>();
+            services.AddScoped<RoleService>();
 
             //注册滑动校验
             services.AddSlideVerification(options =>

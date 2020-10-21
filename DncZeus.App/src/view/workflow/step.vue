@@ -177,11 +177,22 @@
           <i-switch
             size="large"
             v-model="formModel.fields.isCounterSign"
-            :true-value="1"
-            :false-value="0"
+            :true-value="true"
+            :false-value="false"
           >
             <span slot="open">会签</span>
             <span slot="close">或签</span>
+          </i-switch>
+        </FormItem>
+        <FormItem label="手动指定审批人" label-position="left">
+          <i-switch
+            size="large"
+            v-model="formModel.fields.isManual"
+            :true-value="true"
+            :false-value="false"
+          >
+            <span slot="open">是</span>
+            <span slot="close">否</span>
           </i-switch>
         </FormItem>
       </Form>
@@ -223,7 +234,6 @@ export default {
   },
   data() {
     return {
-     
       userList: [],
       templates: [],
       commands: {
@@ -247,7 +257,8 @@ export default {
           restDays: [],
           isLocked: 0,
           status: 1,
-          isCounterSign: 0,
+          isCounterSign: false,
+          isManual: false,
           isDeleted: 0,
           description: '',
         },
@@ -362,6 +373,58 @@ export default {
               },
             },
             { title: '审批人', key: 'userListName', width: 200 },
+            {
+              title: '手动指定审批人',
+              key: 'isManual',
+              align: 'center',
+              width: 120,
+              render: (h, params) => {
+                let isManual = params.row.isManual
+                let isManualColor = 'success'
+                let statusText = '是'
+                switch (isManual) {
+                  case 0:
+                  case '0':
+                  case false:
+                    statusText = '否'
+                    isManualColor = 'default'
+                    break
+                }
+                return h(
+                  'Tooltip',
+                  {
+                    props: {
+                      placement: 'top',
+                      transfer: true,
+                      delay: 500,
+                    },
+                  },
+                  [
+                    //这个中括号表示是Tooltip标签的子标签
+                    h(
+                      'Tag',
+                      {
+                        props: {
+                          //type: "dot",
+                          color: isManualColor,
+                        },
+                      },
+                      statusText
+                    ), //表格列显示文字
+                    h(
+                      'p',
+                      {
+                        slot: 'content',
+                        style: {
+                          whiteSpace: 'normal',
+                        },
+                      },
+                      statusText //整个的信息即气泡内文字
+                    ),
+                  ]
+                )
+              },
+            },
             { title: '排序', key: 'sortID', width: 100 },
             {
               title: '签状',

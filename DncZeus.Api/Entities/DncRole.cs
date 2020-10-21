@@ -84,6 +84,8 @@ namespace DncZeus.Api.Entities
         /// </summary>
         public bool IsBuiltin { get; set; }
 
+        public string ParentCode { get; set; }
+
         /// <summary>
         /// 角色拥有的用户集合
         /// </summary>

@@ -59,7 +59,7 @@ namespace DncZeus.Api.Auth
             {
                 Subject = claimsIdentity,
                 // Expires = DateTime.UtcNow.AddDays(7),
-                Expires = DateTime.Now.AddMinutes(50),
+                Expires = DateTime.Now.AddMinutes(1),
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
             };
             var token = tokenHandler.CreateToken(tokenDescriptor);

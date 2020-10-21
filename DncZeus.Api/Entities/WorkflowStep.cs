@@ -17,6 +17,11 @@ namespace DncZeus.Api.Entities
         /// 会签
         /// </summary>
         public bool IsCounterSign { get; set; }
+        /// <summary>
+        /// 手动分配审批人
+        /// </summary>
+
+        public bool IsManual  { get; set; }
        
     }
 

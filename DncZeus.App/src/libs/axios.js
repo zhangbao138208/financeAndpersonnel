@@ -72,7 +72,10 @@ class HttpRequest {
                     content: message,
                     duration: 15,
                     closable: false,
-                    onOk: () => { window.location.href = window.location.href; }
+                    onOk: () => {
+                        console.log("=====刷新===")
+                        window.location.replace("/")
+                    }
                 });
                 //router.push("/login")
                 break;

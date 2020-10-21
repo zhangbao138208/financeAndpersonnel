@@ -75,3 +75,15 @@ export const assignPermission = (data) => {
         data
     })
 }
+
+//load menu role
+export const loadRoleTree = (code) => {
+    let url = "rbac/role/tree";
+    if (code != null) {
+        url += "/" + code;
+    }
+    return axios.request({
+        url: url,
+        method: "get"
+    });
+};

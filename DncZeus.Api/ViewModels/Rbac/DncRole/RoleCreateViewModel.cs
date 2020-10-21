@@ -16,6 +16,8 @@ namespace DncZeus.Api.ViewModels.Rbac.DncRole
     public class RoleCreateViewModel
     {
         public string Code { get; set; }
+        public string ParentCode { get; set; }
+        public string ParentName { get; set; }
         public string Name { get; set; }
         public string Description { get; set; }
         public Status Status { get; set; }

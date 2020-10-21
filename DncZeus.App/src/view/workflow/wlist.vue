@@ -633,7 +633,7 @@ export default {
           columns: [
             { type: 'selection', width: 50, key: 'handle' },
             { title: '标题', key: 'title', width: 300 },
-
+            { title: '发起人', key: 'userName', width: 200 },
             {
               title: '程度',
               key: 'typeName',

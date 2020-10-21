@@ -55,10 +55,8 @@ namespace DncZeus.Api.Extensions.CustomException
         {
             //return;
 
-            if (AuthContextService.CurrentUser.UserType == UserType.SuperAdministrator)
-            {
-                return;
-            }
+            
+           
 
             // 以下权限拦截器未现实，所以直接return
             var user = context.HttpContext.User;
@@ -66,6 +64,11 @@ namespace DncZeus.Api.Extensions.CustomException
             if (!user.Identity.IsAuthenticated)
             {
                 throw new UnauthorizeException();
+            }
+            
+            if (AuthContextService.CurrentUser.UserType == UserType.SuperAdministrator)
+            {
+                return;
             }
             //在方法前使用async 中间件捕捉不到异常
             var  entry =  _ownerApiService.GetApiEntry().Result;

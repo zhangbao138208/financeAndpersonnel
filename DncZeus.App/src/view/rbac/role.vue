@@ -39,26 +39,28 @@
                         v-model="stores.role.query.isDeleted"
                         @on-change="handleSearchRole"
                         placeholder="删除状态"
-                        style="width:60px;"
+                        style="width: 60px"
                       >
                         <Option
                           v-for="item in stores.role.sources.isDeletedSources"
                           :value="item.value"
                           :key="item.value"
-                        >{{item.text}}</Option>
+                          >{{ item.text }}</Option
+                        >
                       </Select>
                       <Select
                         slot="prepend"
                         v-model="stores.role.query.status"
                         @on-change="handleSearchRole"
                         placeholder="角色状态"
-                        style="width:60px;"
+                        style="width: 60px"
                       >
                         <Option
                           v-for="item in stores.role.sources.statusSources"
                           :value="item.value"
                           :key="item.value"
-                        >{{item.text}}</Option>
+                          >{{ item.text }}</Option
+                        >
                       </Select>
                     </Input>
                   </FormItem>
@@ -90,14 +92,19 @@
                     title="启用"
                     @click="handleBatchCommand('normal')"
                   ></Button>
-                  <Button icon="md-refresh" title="刷新" @click="handleRefresh"></Button>
+                  <Button
+                    icon="md-refresh"
+                    title="刷新"
+                    @click="handleRefresh"
+                  ></Button>
                 </ButtonGroup>
                 <Button
                   icon="md-create"
                   type="primary"
                   @click="handleShowCreateWindow"
                   title="新增角色"
-                >新增角色</Button>
+                  >新增角色</Button
+                >
               </Col>
             </Row>
           </section>
@@ -109,15 +116,59 @@
       v-model="formModel.opened"
       width="400"
       :mask-closable="false"
-      :mask="false"
+      :mask="true"
       :styles="styles"
     >
-      <Form :model="formModel.fields" ref="formRole" :rules="formModel.rules" label-position="left">
+      <Form
+        :model="formModel.fields"
+        ref="formRole"
+        :rules="formModel.rules"
+        label-position="left"
+      >
         <FormItem label="角色名称" prop="name" label-position="left">
-          <Input v-model="formModel.fields.name" placeholder="请输入角色名称"/>
+          <Input v-model="formModel.fields.name" placeholder="请输入角色名称" />
+        </FormItem>
+        <FormItem label-position="left">
+          <Input
+            v-model="formModel.fields.parentName"
+            placeholder="请选择上级角色"
+            :readonly="true"
+          >
+            <Dropdown
+              slot="append"
+              trigger="click"
+              :transfer="true"
+              placement="bottom-end"
+            >
+              <Button type="primary"
+                >选择...
+                <Icon type="ios-arrow-down"></Icon>
+              </Button>
+              <div class="text-left pad10" slot="list" style="min-width: 360px">
+                <div>
+                  <Button
+                    type="primary"
+                    icon="ios-search"
+                    @click="handleRefreshRoleTreeData"
+                    >刷新角色</Button
+                  >
+                </div>
+                <Tree
+                  class="text-left dropdown-tree"
+                  :data="stores.roleTree.data"
+                  @on-select-change="handleRoleTreeSelectChange"
+                ></Tree>
+              </div>
+            </Dropdown>
+          </Input>
         </FormItem>
         <FormItem label="角色状态" label-position="left">
-          <i-switch size="large" v-model="formModel.fields.status" :true-value="1" :false-value="0">
+          <i-switch
+            size="large"
+            v-model="formModel.fields.status"
+            :true-value="1"
+            :false-value="0"
+          >
             <span slot="open">正常</span>
             <span slot="close">禁用</span>
           </i-switch>
@@ -132,538 +183,577 @@
         </FormItem>
       </Form>
       <div class="demo-drawer-footer">
-        <Button icon="md-checkmark-circle" type="primary" @click="handleSubmitRole">保 存</Button>
-        <Button style="margin-left: 8px" icon="md-close" @click="formModel.opened = false">取 消</Button>
+        <Button
+          icon="md-checkmark-circle"
+          type="primary"
+          @click="handleSubmitRole"
+          >保 存</Button
+        >
+        <Button
+          style="margin-left: 8px"
+          icon="md-close"
+          @click="formModel.opened = false"
+          >取 消</Button
+        >
       </div>
     </Drawer>
   </div>
 </template>
 
 <script>
-import Tables from "_c/tables";
+import Tables from '_c/tables'
 import {
   getRoleList,
   createRole,
   loadRole,
   editRole,
   deleteRole,
-  batchCommand
-} from "@/api/rbac/role";
+  batchCommand,
+  loadRoleTree
+} from '@/api/rbac/role'
 export default {
-  name: "rbac_role_page",
+  name: 'rbac_role_page',
   components: {
-    Tables
+    Tables,
   },
   data() {
+    
     return {
+      parentName:'',
       commands: {
-        delete: { name: "delete", title: "删除" },
-        recover: { name: "recover", title: "恢复" },
-        forbidden: { name: "forbidden", title: "禁用" },
-        normal: { name: "normal", title: "启用" }
+        delete: { name: 'delete', title: '删除' },
+        recover: { name: 'recover', title: '恢复' },
+        forbidden: { name: 'forbidden', title: '禁用' },
+        normal: { name: 'normal', title: '启用' },
       },
       formModel: {
         opened: false,
-        title: "创建角色",
-        mode: "create",
+        title: '创建角色',
+        mode: 'create',
         selection: [],
         fields: {
-          code: "",
-          name: "",
-          avatar: "",
+          code: '',
+          parentCode:'',
+          parentName:'',
+          name: '',
+          avatar: '',
           isLocked: 0,
           status: 1,
           isDeleted: 0,
-          description: ""
+          description: '',
         },
         rules: {
           name: [
             {
-              type: "string",
+              type: 'string',
               required: true,
-              message: "请输入角色名称",
-              min: 2
-            }
-          ]
-        }
+              message: '请输入角色名称',
+              min: 2,
+            },
+          ],
+        },
       },
       stores: {
+         roleTree: {
+          data: []
+        },
         role: {
           query: {
             totalCount: 0,
             pageSize: 20,
             currentPage: 1,
-            kw: "",
+            kw: '',
             isDeleted: 0,
             status: -1,
             sort: [
               {
-                direct: "DESC",
-                field: "CreatedOn"
-              }
-            ]
+                direct: 'DESC',
+                field: 'CreatedOn',
+              },
+            ],
           },
           sources: {
             isDeletedSources: [
-              { value: -1, text: "全部" },
-              { value: 0, text: "正常" },
-              { value: 1, text: "已删" }
+              { value: -1, text: '全部' },
+              { value: 0, text: '正常' },
+              { value: 1, text: '已删' },
             ],
             statusSources: [
-              { value: -1, text: "全部" },
-              { value: 0, text: "禁用" },
-              { value: 1, text: "正常" }
+              { value: -1, text: '全部' },
+              { value: 0, text: '禁用' },
+              { value: 1, text: '正常' },
             ],
             statusFormSources: [
-              { value: 0, text: "禁用" },
-              { value: 1, text: "正常" }
-            ]
+              { value: 0, text: '禁用' },
+              { value: 1, text: '正常' },
+            ],
           },
           columns: [
-            { type: "selection", width: 50, key: "handle" },
-            { title: "角色名称", key: "name", width: 250, sortable: true },
+            { type: 'selection', width: 50, key: 'handle' },
+            { title: '角色名称', key: 'name', width: 250 },
+            { title: '父级角色', key: 'parentName', width: 250 },
             {
-              title: "状态",
-              key: "status",
-              align: "center",
+              title: '状态',
+              key: 'status',
+              align: 'center',
               width: 120,
               render: (h, params) => {
-                let status = params.row.status;
-                let statusColor = "success";
-                let statusText = "正常";
+                let status = params.row.status
+                let statusColor = 'success'
+                let statusText = '正常'
                 switch (status) {
                   case 0:
-                    statusText = "禁用";
-                    statusColor = "default";
-                    break;
+                    statusText = '禁用'
+                    statusColor = 'default'
+                    break
                 }
                 return h(
-                  "Tooltip",
+                  'Tooltip',
                   {
                     props: {
-                      placement: "top",
+                      placement: 'top',
                       transfer: true,
-                      delay: 500
-                    }
+                      delay: 500,
+                    },
                   },
                   [
                     //这个中括号表示是Tooltip标签的子标签
                     h(
-                      "Tag",
+                      'Tag',
                       {
                         props: {
                           //type: "dot",
-                          color: statusColor
-                        }
+                          color: statusColor,
+                        },
                       },
                       statusText
                     ), //表格列显示文字
                     h(
-                      "p",
+                      'p',
                       {
-                        slot: "content",
+                        slot: 'content',
                         style: {
-                          whiteSpace: "normal"
-                        }
+                          whiteSpace: 'normal',
+                        },
                       },
                       statusText //整个的信息即气泡内文字
-                    )
+                    ),
                   ]
-                );
-              }
+                )
+              },
             },
             {
-              title: "内置?",
-              key: "isBuiltin",
-              align: "center",
+              title: '内置?',
+              key: 'isBuiltin',
+              align: 'center',
               width: 80,
               render: (h, params) => {
-                let status = params.row.isBuiltin;
-                let statusColor = "success";
-                let statusText = "是";
+                let status = params.row.isBuiltin
+                let statusColor = 'success'
+                let statusText = '是'
                 switch (status) {
                   case false:
-                    statusText = "否";
-                    statusColor = "default";
-                    break;
+                    statusText = '否'
+                    statusColor = 'default'
+                    break
                 }
                 return h(
-                  "Tooltip",
+                  'Tooltip',
                   {
                     props: {
-                      placement: "top",
+                      placement: 'top',
                       transfer: true,
-                      delay: 500
-                    }
+                      delay: 500,
+                    },
                   },
                   [
                     //这个中括号表示是Tooltip标签的子标签
                     h(
-                      "Tag",
+                      'Tag',
                       {
                         props: {
                           //type: "dot",
-                          color: statusColor
-                        }
+                          color: statusColor,
+                        },
                       },
                       statusText
                     ), //表格列显示文字
                     h(
-                      "p",
+                      'p',
                       {
-                        slot: "content",
+                        slot: 'content',
                         style: {
-                          whiteSpace: "normal"
-                        }
+                          whiteSpace: 'normal',
+                        },
                       },
                       statusText //整个的信息即气泡内文字
-                    )
+                    ),
                   ]
-                );
-              }
+                )
+              },
             },
             {
-              title: "超管?",
-              key: "isSuperAdministrator",
-              align: "center",
+              title: '超管?',
+              key: 'isSuperAdministrator',
+              align: 'center',
               width: 80,
               render: (h, params) => {
-                let status = params.row.isSuperAdministrator;
-                let statusColor = "success";
-                let statusText = "是";
+                let status = params.row.isSuperAdministrator
+                let statusColor = 'success'
+                let statusText = '是'
                 switch (status) {
                   case false:
-                    statusText = "否";
-                    statusColor = "default";
-                    break;
+                    statusText = '否'
+                    statusColor = 'default'
+                    break
                 }
                 return h(
-                  "Tooltip",
+                  'Tooltip',
                   {
                     props: {
-                      placement: "top",
+                      placement: 'top',
                       transfer: true,
-                      delay: 500
-                    }
+                      delay: 500,
+                    },
                   },
                   [
                     //这个中括号表示是Tooltip标签的子标签
                     h(
-                      "Tag",
+                      'Tag',
                       {
                         props: {
                           //type: "dot",
-                          color: statusColor
-                        }
+                          color: statusColor,
+                        },
                       },
                       statusText
                     ), //表格列显示文字
                     h(
-                      "p",
+                      'p',
                       {
-                        slot: "content",
+                        slot: 'content',
                         style: {
-                          whiteSpace: "normal"
-                        }
+                          whiteSpace: 'normal',
+                        },
                       },
                       statusText //整个的信息即气泡内文字
-                    )
+                    ),
                   ]
-                );
-              }
+                )
+              },
             },
             {
-              title: "创建时间",
+              title: '创建时间',
               width: 150,
               ellipsis: true,
               tooltip: true,
-              key: "createdOn"
+              key: 'createdOn',
             },
-            { title: "创建者", key: "createdByUserName" },
+            { title: '创建者', key: 'createdByUserName' },
             {
-              title: "操作",
-              align: "center",
-              key: "handle",
+              title: '操作',
+              align: 'center',
+              key: 'handle',
               width: 150,
-              className: "table-command-column",
-              options: ["edit"],
+              className: 'table-command-column',
+              options: ['edit'],
               button: [
                 (h, params, vm) => {
                   return h(
-                    "Poptip",
+                    'Poptip',
                     {
                       props: {
                         confirm: true,
-                        title: "你确定要删除吗?"
+                        title: '你确定要删除吗?',
                       },
                       on: {
-                        "on-ok": () => {
-                          vm.$emit("on-delete", params);
-                        }
-                      }
+                        'on-ok': () => {
+                          vm.$emit('on-delete', params)
+                        },
+                      },
                     },
                     [
                       h(
-                        "Tooltip",
+                        'Tooltip',
                         {
                           props: {
-                            placement: "left",
+                            placement: 'left',
                             transfer: true,
-                            delay: 1000
-                          }
+                            delay: 1000,
+                          },
                         },
                         [
-                          h("Button", {
+                          h('Button', {
                             props: {
-                              shape: "circle",
-                              size: "small",
-                              icon: "md-trash",
-                              type: "error"
-                            }
+                              shape: 'circle',
+                              size: 'small',
+                              icon: 'md-trash',
+                              type: 'error',
+                            },
                           }),
                           h(
-                            "p",
+                            'p',
                             {
-                              slot: "content",
+                              slot: 'content',
                               style: {
-                                whiteSpace: "normal"
-                              }
+                                whiteSpace: 'normal',
+                              },
                             },
-                            "删除"
-                          )
+                            '删除'
+                          ),
                         ]
-                      )
+                      ),
                     ]
-                  );
+                  )
                 },
                 (h, params, vm) => {
                   return h(
-                    "Tooltip",
+                    'Tooltip',
                     {
                       props: {
-                        placement: "left",
+                        placement: 'left',
                         transfer: true,
-                        delay: 1000
-                      }
+                        delay: 1000,
+                      },
                     },
                     [
-                      h("Button", {
+                      h('Button', {
                         props: {
-                          shape: "circle",
-                          size: "small",
-                          icon: "md-create",
-                          type: "primary"
+                          shape: 'circle',
+                          size: 'small',
+                          icon: 'md-create',
+                          type: 'primary',
                         },
                         on: {
                           click: () => {
-                            vm.$emit("on-edit", params);
-                            vm.$emit("input", params.tableData);
-                          }
-                        }
+                            vm.$emit('on-edit', params)
+                            vm.$emit('input', params.tableData)
+                          },
+                        },
                       }),
                       h(
-                        "p",
+                        'p',
                         {
-                          slot: "content",
+                          slot: 'content',
                           style: {
-                            whiteSpace: "normal"
-                          }
+                            whiteSpace: 'normal',
+                          },
                         },
-                        "编辑"
-                      )
+                        '编辑'
+                      ),
                     ]
-                  );
-                }
-              ]
-            }
+                  )
+                },
+              ],
+            },
           ],
-          data: []
-        }
+          data: [],
+        },
       },
       styles: {
-        height: "calc(100% - 55px)",
-        overflow: "auto",
-        paddingBottom: "53px",
-        position: "static"
-      }
-    };
+        height: 'calc(100% - 55px)',
+        overflow: 'auto',
+        paddingBottom: '53px',
+        position: 'static',
+      },
+    }
   },
   computed: {
     formTitle() {
-      if (this.formModel.mode === "create") {
-        return "创建角色";
+      if (this.formModel.mode === 'create') {
+        return '创建角色'
       }
-      if (this.formModel.mode === "edit") {
-        return "编辑角色";
+      if (this.formModel.mode === 'edit') {
+        return '编辑角色'
       }
-      return "";
+      return ''
     },
     selectedRows() {
-      return this.formModel.selection;
+      return this.formModel.selection
     },
     selectedRowsId() {
-      return this.formModel.selection.map(x => x.code);
-    }
+      return this.formModel.selection.map((x) => x.code)
+    },
   },
   methods: {
-    loadRoleList() {
-      getRoleList(this.stores.role.query).then(res => {
-        this.stores.role.data = res.data.data;
-        this.stores.role.query.totalCount = res.data.totalCount;
+     doLoadRoleTree() {
+      loadRoleTree(null).then(res => {
+        this.stores.roleTree.data = res.data.data;
       });
     },
+     handleRoleTreeSelectChange(nodes) {
+       var node = nodes[0];
+      if (node) {
+        this.formModel.fields.parentCode = node.code;
+        this.formModel.fields.parentName = node.title;
+        this.parentName=this.formModel.fields.parentName
+        
+      }
+     
+    },
+     handleRefreshRoleTreeData() {
+      this.doLoadRoleTree();
+    },
+    loadRoleList() {
+      getRoleList(this.stores.role.query).then((res) => {
+        this.stores.role.data = res.data.data
+        this.stores.role.query.totalCount = res.data.totalCount
+      })
+    },
     handleOpenFormWindow() {
-      this.formModel.opened = true;
+      this.formModel.opened = true
     },
     handleCloseFormWindow() {
-      this.formModel.opened = false;
+      this.formModel.opened = false
     },
     handleSwitchFormModeToCreate() {
-      this.formModel.mode = "create";
+      this.formModel.mode = 'create'
     },
     handleSwitchFormModeToEdit() {
-      this.formModel.mode = "edit";
-      this.handleOpenFormWindow();
+      this.formModel.mode = 'edit'
+      this.handleOpenFormWindow()
     },
     handleEdit(params) {
-      this.handleSwitchFormModeToEdit();
-      this.handleResetFormRole();
-      this.doLoadRole(params.row.code);
+      this.handleSwitchFormModeToEdit()
+      this.handleResetFormRole()
+      this.doLoadRole(params.row.code)
     },
     handleSelect(selection, row) {},
     handleSelectionChange(selection) {
-      this.formModel.selection = selection;
+      this.formModel.selection = selection
     },
     handleRefresh() {
-      this.loadRoleList();
+      this.loadRoleList()
     },
     handleShowCreateWindow() {
-      this.handleSwitchFormModeToCreate();
-      this.handleOpenFormWindow();
-      this.handleResetFormRole();
+      this.handleSwitchFormModeToCreate()
+      this.handleOpenFormWindow()
+      this.handleResetFormRole()
     },
     handleSubmitRole() {
-      let valid = this.validateRoleForm();
+      let valid = this.validateRoleForm()
       if (valid) {
-        if (this.formModel.mode === "create") {
-          this.doCreateRole();
+        if (this.formModel.mode === 'create') {
+          this.doCreateRole()
         }
-        if (this.formModel.mode === "edit") {
-          this.doEditRole();
+        if (this.formModel.mode === 'edit') {
+          this.doEditRole()
         }
       }
     },
     handleResetFormRole() {
-      this.$refs["formRole"].resetFields();
+      this.$refs['formRole'].resetFields()
     },
     doCreateRole() {
-      createRole(this.formModel.fields).then(res => {
+      createRole(this.formModel.fields).then((res) => {
         if (res.data.code === 200) {
-          this.$Message.success(res.data.message);
-          this.loadRoleList();
+          this.$Message.success(res.data.message)
+          this.loadRoleList()
         } else {
-          this.$Message.warning(res.data.message);
+          this.$Message.warning(res.data.message)
         }
-        this.handleCloseFormWindow();
-      });
+        this.handleCloseFormWindow()
+      })
     },
     doEditRole() {
-      editRole(this.formModel.fields).then(res => {
+      editRole(this.formModel.fields).then((res) => {
         if (res.data.code === 200) {
-          this.$Message.success(res.data.message);
-          this.loadRoleList();
+          this.$Message.success(res.data.message)
+          this.loadRoleList()
         } else {
-          this.$Message.warning(res.data.message);
+          this.$Message.warning(res.data.message)
         }
-        this.handleCloseFormWindow();
-      });
+        this.handleCloseFormWindow()
+      })
     },
     validateRoleForm() {
-      let _valid = false;
-      this.$refs["formRole"].validate(valid => {
+      let _valid = false
+      this.$refs['formRole'].validate((valid) => {
         if (!valid) {
-          this.$Message.error("请完善表单信息");
-          _valid = false;
+          this.$Message.error('请完善表单信息')
+          _valid = false
         } else {
-          _valid = true;
+          _valid = true
         }
-      });
-      return _valid;
+      })
+      return _valid
     },
     doLoadRole(code) {
-      loadRole({ code: code }).then(res => {
-        this.formModel.fields = res.data.data;
-      });
+      loadRole({ code: code }).then((res) => {
+        this.formModel.fields = res.data.data
+      })
     },
     handleDelete(params) {
-      this.doDelete(params.row.code);
+      this.doDelete(params.row.code)
     },
     doDelete(ids) {
       if (!ids) {
-        this.$Message.warning("请选择至少一条数据");
-        return;
+        this.$Message.warning('请选择至少一条数据')
+        return
       }
-      deleteRole(ids).then(res => {
+      deleteRole(ids).then((res) => {
         if (res.data.code === 200) {
-          this.$Message.success(res.data.message);
-          this.loadRoleList();
+          this.$Message.success(res.data.message)
+          this.loadRoleList()
         } else {
-          this.$Message.warning(res.data.message);
+          this.$Message.warning(res.data.message)
         }
-      });
+      })
     },
     handleBatchCommand(command) {
       if (!this.selectedRowsId || this.selectedRowsId.length <= 0) {
-        this.$Message.warning("请选择至少一条数据");
-        return;
+        this.$Message.warning('请选择至少一条数据')
+        return
       }
       this.$Modal.confirm({
-        title: "操作提示",
+        title: '操作提示',
         content:
-          "<p>确定要执行当前 [" +
+          '<p>确定要执行当前 [' +
           this.commands[command].title +
-          "] 操作吗?</p>",
+          '] 操作吗?</p>',
         loading: true,
         onOk: () => {
-          this.doBatchCommand(command);
-        }
-      });
+          this.doBatchCommand(command)
+        },
+      })
     },
     doBatchCommand(command) {
       batchCommand({
         command: command,
-        ids: this.selectedRowsId.join(",")
-      }).then(res => {
+        ids: this.selectedRowsId.join(','),
+      }).then((res) => {
         if (res.data.code === 200) {
-          this.$Message.success(res.data.message);
-          this.loadRoleList();
-          this.formModel.selection=[];
+          this.$Message.success(res.data.message)
+          this.loadRoleList()
+          this.formModel.selection = []
         } else {
-          this.$Message.warning(res.data.message);
+          this.$Message.warning(res.data.message)
         }
-        this.$Modal.remove();
-      });
+        this.$Modal.remove()
+      })
     },
     handleSearchRole() {
-      this.loadRoleList();
+      this.loadRoleList()
     },
     rowClsRender(row, index) {
       if (row.isDeleted) {
-        return "table-row-disabled";
+        return 'table-row-disabled'
       }
-      return "";
+      return ''
     },
     handlePageChanged(page) {
-      this.stores.role.query.currentPage = page;
-      this.loadRoleList();
+      this.stores.role.query.currentPage = page
+      this.loadRoleList()
     },
     handlePageSizeChanged(pageSize) {
-      this.stores.role.query.pageSize = pageSize;
-      this.loadRoleList();
-    }
+      this.stores.role.query.pageSize = pageSize
+      this.loadRoleList()
+    },
   },
   mounted() {
-    this.loadRoleList();
-  }
-};
+    this.doLoadRoleTree();
+
+    this.loadRoleList()
+  },
+}
 </script>

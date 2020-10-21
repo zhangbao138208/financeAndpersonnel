@@ -29,14 +29,20 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
         private readonly IMapper _mapper;
         private readonly DictionaryService _dictionaryService;
         private readonly TelegramService _telegramService;
+        private readonly RoleService _roleService;
 
-        public WListController(DncZeusDbContext dbContext, IMapper mapper, 
-            DictionaryService dictionaryService, TelegramService telegramService)
+        public WListController(
+            DncZeusDbContext dbContext,
+            IMapper mapper, 
+            DictionaryService dictionaryService, 
+            TelegramService telegramService,
+            RoleService roleService)
         {
             _dbContext = dbContext;
             _mapper = mapper;
             _dictionaryService = dictionaryService;
             _telegramService = telegramService;
+            _roleService = roleService;
         }
         /// <summary>
         /// 审批工作列表
@@ -92,7 +98,10 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
                              });
                 if (AuthContextService.CurrentUser.UserType!=UserType.SuperAdministrator)
                 {
-                    query = query.Where(q=>q.User== AuthContextService.CurrentUser.Guid);
+                    var childUser = await _roleService.GetChildUserByUser(AuthContextService.CurrentUser.Guid);
+                    var guids = childUser.Select(x => x.Guid).ToList();
+                     query = query.Where(q=>q.User== AuthContextService.CurrentUser.Guid|| 
+                                            guids.Contains(q.User));
                 }
                 if (!string.IsNullOrEmpty(payload.Kw))
                 {

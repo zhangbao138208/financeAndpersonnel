@@ -62,6 +62,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
                                  UserList = l.UserList,
                                  Title = l.Title,
                                  Status = l.Status,
+                                 IsManual = l.IsManual,
                                  IsDeleted = l.IsDeleted,
                                  CreatedOn = l.CreatedOn.ToString(),
                                  CreatedByUserGuid = l.CreatedByUserGuid,
@@ -90,7 +91,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
                 foreach (var item in data)
                 {
                     var users = _dbContext.DncUser.
-                        Where(u => item.UserList.Contains(u.Guid.ToString())).
+                        Where(u => item.UserList.Contains(u.Guid.ToString(),StringComparison.OrdinalIgnoreCase)).
                         Select(r => r.DisplayName).ToArray();
                     item.UserListName = string.Join('|', users);
                 }
@@ -118,9 +119,11 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
 
             await using (_dbContext)
             {
-                if (await _dbContext.DncRole.CountAsync(x => x.Name == model.Title) > 0)
+                if (await _dbContext.WorkflowStep.
+                    CountAsync(x => (x.Title == model.Title&& x.TemplateCode==model.TemplateCode)||
+                                    (x.TemplateCode==model.TemplateCode && x.SortID==model.SortID)) > 0)
                 {
-                    response.SetFailed("角色已存在");
+                    response.SetFailed("步骤已存在");
                     return Ok(response);
                 }
                 var entity = _mapper.Map<StepCreateViewModel, WorkflowStep>(model);
@@ -179,7 +182,9 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
             await using (_dbContext)
             {
                 if (await _dbContext.WorkflowStep.
-                    CountAsync(x => x.Title == model.Title && x.Code != model.Code) > 0)
+                    CountAsync(x => (x.Title == model.Title &&
+                                     x.TemplateCode==model.TemplateCode && x.Code != model.Code) ||(
+                   x.SortID==model.SortID && x.TemplateCode==model.TemplateCode && x.Code != model.Code)) > 0)
                 {
                     response.SetFailed("步骤已存在");
                     return Ok(response);
@@ -193,7 +198,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Workflow
                 entity.UserList = string.Join('|', model.UserList);
                 entity.Status = model.Status;
                 entity.IsCounterSign = model.IsCounterSign;
-
+                entity.IsManual = model.IsManual;
 
                 entity.ModifiedOn = DateTime.Now;
                 entity.ModifiedByUserGuid = AuthContextService.CurrentUser.Guid;

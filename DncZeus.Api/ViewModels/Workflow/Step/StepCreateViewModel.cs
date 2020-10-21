@@ -19,6 +19,11 @@ namespace DncZeus.Api.ViewModels.Workflow.Step
         [Required(ErrorMessage = "{0}字段是必须的")]
         public string SortID { get; set; }
         public bool IsCounterSign { get; set; }
+        /// <summary>
+        /// 手动分配审批人
+        /// </summary>
+
+        public bool IsManual  { get; set; }
         public Status Status { get; set; }
         public string CreatedOn { get; set; }
         public Guid? CreatedByUserGuid { get; set; }

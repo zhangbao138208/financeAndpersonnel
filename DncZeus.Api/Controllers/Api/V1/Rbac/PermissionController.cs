@@ -17,6 +17,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Threading.Tasks;
@@ -24,6 +25,7 @@ using DncZeus.Api.ViewModels.Rbac.DncPermission;
 using static DncZeus.Api.Entities.Enums.CommonEnum;
 using DncZeus.Api.Extensions.CustomException;
 using Microsoft.Data.SqlClient;
+using NPOI.POIFS.Properties;
 using SqlParameter = Microsoft.Data.SqlClient.SqlParameter;
 
 namespace DncZeus.Api.Controllers.Api.V1.Rbac
@@ -172,7 +174,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
             await using (_dbContext)
             {
                 if (await _dbContext.DncPermission.CountAsync(x => x.ActionCode == model.ActionCode && 
-                                                        x.Code != model.Code) > 0)
+                                                        x.Code == model.Code&&x.Name==model.Name) > 0)
                 {
                     response.SetFailed("权限操作码已存在");
                     return Ok(response);
@@ -305,35 +307,92 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
                 // LEFT JOIN (SELECT * FROM DncRolePermissionMapping AS RPM WHERE RPM.RoleCode={0}) AS S 
                 // ON S.PermissionCode= P.Code
                 // WHERE P.IsDeleted=0 AND P.Status=1";
-                var sql =  @"-- noinspection SqlNoDataSourceInspectionForFile
+                var permissionList = await GetPermissions(role);
+                var dncPermissionWithAssignProperties = permissionList as DncPermissionWithAssignProperty[] ?? permissionList.ToArray();
+                var tree = 
+                    menu.FillRecursive(dncPermissionWithAssignProperties, Guid.Empty, role.IsSuperAdministrator);
+
+
+                if (!role.IsSuperAdministrator)
+                {
+                   //var removeTree=new List<PermissionMenuTree>();
+                    var parent = await _dbContext.DncRole.FindAsync(role.ParentCode);
+                    var pList = await GetPermissions(parent);
+                    var pCode = pList.
+                        Where(x => x.IsAssigned == 1).
+                        Select(x => x.Code).ToArray();
+                    SetUnauthorized(tree);
+                    void SetUnauthorized(IEnumerable<PermissionMenuTree> pTree)
+                    {
+                        
+                        foreach (var t in pTree)
+                        {
+                            var removePer=new List<PermissionElement>(t.Permissions.ToArray());
+                            foreach (var element in t.Permissions.
+                                Where(element => !pCode.Contains(element.Code,StringComparer.OrdinalIgnoreCase)))
+                            {
+                                removePer.Remove(element);
+                            }
+
+                            t.Permissions = removePer;
+                            SetUnauthorized(t.Children);
+                        }
+                    }
+
+                    tree = RemoveUnauthoirzed( tree);
+                    List<PermissionMenuTree> RemoveUnauthoirzed( ICollection<PermissionMenuTree> plist)
+                    {
+                        var copy = new List<PermissionMenuTree>(plist.ToArray());
+                        foreach (var p in plist)
+                        {
+                           p.Children= RemoveUnauthoirzed( p.Children);
+                            if (p.Children.Count==0&& p.Permissions.Count==0)
+                            {
+                                copy.Remove(p);
+                            }
+                        }
+
+                       return copy;
+
+
+                    }
+                   
+                }
+                
+                response.SetData(new { tree, selectedPermissions = dncPermissionWithAssignProperties.Where(x => x.IsAssigned == 1).Select(x => x.Code) });
+            }
+
+            return Ok(response);
+        }
+        
+        
+
+        #region 私有方法
+
+
+        private async Task<IEnumerable<DncPermissionWithAssignProperty>> GetPermissions(DncRole role)
+        {
+            var sql =  @"-- noinspection SqlNoDataSourceInspectionForFile
                 
                 SELECT P.Code,P.MenuGuid,P.Name,P.ActionCode,S.RoleCode AS RoleCode,(CASE WHEN S.PermissionCode IS NOT NULL THEN 1 ELSE 0 END) AS IsAssigned FROM DncPermission AS P 
                 LEFT JOIN (SELECT * FROM DncRolePermissionMapping AS RPM WHERE RPM.RoleCode={0}) AS S 
                 ON S.PermissionCode= P.Code
                 WHERE P.IsDeleted=0 AND P.Status=1";
-                if (role.IsSuperAdministrator)
-                {
-                    sql =
-                        @"-- noinspection SqlNoDataSourceInspectionForFile
+            if (role.IsSuperAdministrator)
+            {
+                sql =
+                    @"-- noinspection SqlNoDataSourceInspectionForFile
                         
                         SELECT P.Code,P.MenuGuid,P.Name,P.ActionCode,'SUPERADM' AS RoleCode,(CASE WHEN P.Code IS NOT NULL THEN 1 ELSE 0 END) AS IsAssigned FROM DncPermission AS P 
                         WHERE P.IsDeleted=0 AND P.Status=1";
-                }
-                var permissionList =await _dbContext.DncPermissionWithAssignProperty.
-                    FromSqlRaw(sql, code).ToListAsync();
-                //为了mysql 和SqlServer通用
-                permissionList.ForEach(p => p.RoleCode ??= "");
-                
-                var tree = 
-                    menu.FillRecursive(permissionList, Guid.Empty, role.IsSuperAdministrator);
-                response.SetData(new { tree, selectedPermissions = permissionList.Where(x => x.IsAssigned == 1).Select(x => x.Code) });
             }
-
-            return Ok(response);
+            var permissionList =await _dbContext.DncPermissionWithAssignProperty.
+                FromSqlRaw(sql, role.Code).ToListAsync();
+            //为了mysql 和SqlServer通用
+            permissionList.ForEach(p => p.RoleCode ??= "");
+            return permissionList;
         }
-
-        #region 私有方法
-
+        
         /// <summary>
         /// 删除权限
         /// </summary>
@@ -383,8 +442,8 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         }
         #endregion
     }
-
-
+    
+    
     /// <summary>
     /// 
     /// </summary>
@@ -398,30 +457,31 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
         /// <param name="parentGuid">父级菜单GUID</param>
         /// <param name="isSuperAdministrator">是否为超级管理员角色</param>
         /// <returns></returns>
-        public static List<PermissionMenuTree> FillRecursive(this List<PermissionMenuTree> menus, List<DncPermissionWithAssignProperty> permissions, Guid? parentGuid, bool isSuperAdministrator = false)
+        public static List<PermissionMenuTree> FillRecursive(this IEnumerable<PermissionMenuTree> menus, IEnumerable<DncPermissionWithAssignProperty> permissions, Guid? parentGuid, bool isSuperAdministrator = false)
         {
-            List<PermissionMenuTree> recursiveObjects = new List<PermissionMenuTree>();
-            foreach (var item in menus.Where(x => x.ParentGuid == parentGuid))
-            {
-                var children = new PermissionMenuTree
+            var permissionMenuTrees = menus as PermissionMenuTree[] ?? menus.ToArray();
+            return permissionMenuTrees.Where(x => x.ParentGuid == parentGuid)
+                .Select(item =>
                 {
-                    AllAssigned = isSuperAdministrator || (permissions.Where(x => x.MenuGuid == item.Guid).Count(x => x.IsAssigned == 0) == 0),
-                    Expand = true,
-                    Guid = item.Guid,
-                    ParentGuid = item.ParentGuid,
-                    Permissions = permissions.Where(x => x.MenuGuid == item.Guid).Select(x => new PermissionElement
+                    var dncPermissionWithAssignProperties = permissions as DncPermissionWithAssignProperty[] ?? permissions.ToArray();
+                    return new PermissionMenuTree
                     {
-                        Name = x.Name,
-                        Code = x.Code,
-                        IsAssignedToRole = IsAssigned(x.IsAssigned, isSuperAdministrator)
-                    }).ToList(),
-
-                    Title = item.Title,
-                    Children = FillRecursive(menus, permissions, item.Guid)
-                };
-                recursiveObjects.Add(children);
-            }
-            return recursiveObjects;
+                        AllAssigned = isSuperAdministrator || (dncPermissionWithAssignProperties
+                            .Where(x => x.MenuGuid == item.Guid).Count(x => x.IsAssigned == 0) == 0),
+                        Expand = true,
+                        Guid = item.Guid,
+                        ParentGuid = item.ParentGuid,
+                        Permissions = dncPermissionWithAssignProperties.Where(x => x.MenuGuid == item.Guid).Select(x =>
+                            new PermissionElement
+                            {
+                                Name = x.Name, Code = x.Code,
+                                IsAssignedToRole = IsAssigned(x.IsAssigned, isSuperAdministrator)
+                            }).OrderBy(x=>x.Name).ToList(),
+                        Title = item.Title,
+                        Children = FillRecursive(permissionMenuTrees, dncPermissionWithAssignProperties, item.Guid)
+                    };
+                })
+                .ToList();
         }
 
         private static bool IsAssigned(int isAssigned, bool isSuperAdministrator)

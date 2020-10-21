@@ -61,7 +61,30 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
             var response = ResponseModelFactory.CreateResultInstance;
             await using (_dbContext)
             {
-                var query = _dbContext.DncRole.AsQueryable();
+                var query = (from role in _dbContext.DncRole
+                    join copy in _dbContext.DncRole on 
+                        role.ParentCode equals copy.Code
+                        into t1
+                    from copy in t1.DefaultIfEmpty()
+                            
+                    select new RoleJsonModel
+                    {
+                        Code = role.Code,
+                        IsDeleted=role.IsDeleted,
+                        Description=role.Description,
+                        Name=role.Name,
+                        ParentCode = role.ParentCode,
+                        ParentName = copy.Name,
+                        Status = role.Status,
+                        IsBuiltin = role.IsBuiltin,
+                        IsSuperAdministrator = role.IsSuperAdministrator,
+                        CreatedOn = role.CreatedOn.ToString(),
+                        CreatedByUserGuid = role.CreatedByUserGuid,
+                        CreatedByUserName = role.CreatedByUserName,
+                        ModifiedOn = role.ModifiedOn.ToString(),
+                        ModifiedByUserGuid = role.ModifiedByUserGuid,
+                        ModifiedByUserName = role.ModifiedByUserName
+                    });
                 if (!string.IsNullOrEmpty(payload.Kw))
                 {
                     query = query.Where(x => x.Name.Contains(payload.Kw.Trim()) || x.Code.Contains(payload.Kw.Trim()));
@@ -76,7 +99,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
                 }
                 var list =await query.Paged(payload.CurrentPage, payload.PageSize).ToListAsync();
                 var totalCount = await query.CountAsync(); 
-                var data = list.Select(_mapper.Map<DncRole, RoleJsonModel>);
+                var data = list;
 
                 response.SetData(data, totalCount);
                 return Ok(response);
@@ -134,8 +157,14 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
             {
                 var entity = await _dbContext.DncRole.
                     FirstOrDefaultAsync(x => x.Code == code);
+                var parent = await _dbContext.DncRole.
+                    FindAsync(entity.ParentCode);
+                var ret = _mapper.Map<DncRole, RoleCreateViewModel>(entity);
+                ret.ParentName = parent?.Name;
                 var response = ResponseModelFactory.CreateInstance;
-                response.SetData(_mapper.Map<DncRole, RoleCreateViewModel>(entity));
+                response.SetData(ret);
+               
+                
                 return Ok(response);
             }
         }
@@ -175,6 +204,7 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
 
                 if (entity != null)
                 {
+                    entity.ParentCode = model.ParentCode;
                     entity.Name = model.Name;
                     entity.IsDeleted = model.IsDeleted;
                     entity.ModifiedByUserGuid = AuthContextService.CurrentUser.Guid;
@@ -344,6 +374,20 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
                 return Ok(response);
             }
         }
+        
+        
+        /// <summary>
+        /// 菜单树
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("{selected?}")]
+        public async Task<ActionResult<RoleTree>> Tree(string selected)
+        {
+            var response = ResponseModelFactory.CreateInstance;
+            var tree = await LoadRoleTreeAsync(selected?.ToString());
+            response.SetData(tree);
+            return Ok(response);
+        }
 
         /// <summary>
         /// 查询所有角色列表(只包含主要的字段信息:name,code)
@@ -414,5 +458,65 @@ namespace DncZeus.Api.Controllers.Api.V1.Rbac
             }
         }
         #endregion
+        
+        private async Task<List<RoleTree>> LoadRoleTreeAsync(string selectedGuid = null)
+        {
+            var list = await  _dbContext.DncRole.
+                Where(x => x.IsDeleted ==
+                    CommonEnum.IsDeleted.No && x.Status == CommonEnum.Status.Normal).
+                ToListAsync();
+            var temp = list.Select(x => new RoleTree
+            {
+                Code = x.Code,
+                 ParentCode= x.ParentCode,
+                Title = x.Name
+            }).ToList();
+            var root = new RoleTree
+            {
+                Title = "超级管理员",
+                Code = string.Empty,
+                ParentCode = null
+            };
+           // temp.Insert(0, root);
+            var tree = temp.BuildTree(selectedGuid);
+            return tree;
+        }
     }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    public static class RoleTreeHelper
+    {
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="role"></param>
+        /// <param name="selectedGuid"></param>
+        /// <returns></returns>
+        public static List<RoleTree> BuildTree(this List<RoleTree> role, 
+            string selectedGuid = null)
+        {
+            var lookup = role.ToLookup(x => x.ParentCode);
+
+            List<RoleTree> Build(string pid)
+            {
+                return lookup[pid]
+                    .Select(x => new RoleTree
+                    {
+                        Code = x.Code,
+                        ParentCode = x.ParentCode,
+                        Title = x.Title,
+                        Expand = string.IsNullOrEmpty(x.ParentCode),
+                        Selected = selectedGuid == x.Code,
+                        Children = Build(x.Code??"")
+                    })
+                    .ToList();
+            }
+
+            var result = Build(null);
+            return result;
+        }
+    }
+    
 }
